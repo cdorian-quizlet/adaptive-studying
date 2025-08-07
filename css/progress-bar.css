@@ -1,0 +1,65 @@
+/* Reusable Progress Bar Component */
+
+.progress-info {
+    text-align: center;
+    margin: -24px 0 48px 0;
+    padding: 0 72px;
+    width: 100%;
+    position: relative;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 16px;
+    background: #D8E5F8;
+    border-radius: 20px;
+    overflow: visible;
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    min-width: 200px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #6EE7B7;
+    border-radius: 20px;
+    transition: width 0.3s ease;
+    width: 0%;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.progress-number {
+    position: absolute;
+    left: -72px;
+    background: #C8F7E2;
+    color: #282E3E;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    transform: translateY(-50%);
+    top: 50%;
+    z-index: 1;
+    min-width: 60px;
+    text-align: center;
+}
+
+.progress-total {
+    position: absolute;
+    right: -72px;
+    background: #E5E7EB;
+    color: #282E3E;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    transform: translateY(-50%);
+    top: 50%;
+    z-index: 1;
+    min-width: 60px;
+    text-align: center;
+} 

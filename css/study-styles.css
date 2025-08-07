@@ -1,0 +1,456 @@
+/* Reset and Base Styles */
+/* Import reusable progress bar component */
+@import url('progress-bar.css');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #ffffff;
+    color: #333;
+    line-height: 1.6;
+    font-weight: 600;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+}
+
+.app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 414px;
+    margin: 0 auto;
+    background: #ffffff;
+}
+
+/* Header */
+.study-header {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 16px 0;
+}
+
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding: 0 20px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #586380;
+    font-size: 20px;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hide icon text until fonts are loaded */
+.material-icons-round,
+.material-symbols-rounded {
+    font-family: 'Material Icons Round', 'Material Symbols Rounded', sans-serif;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    visibility: hidden;
+}
+
+/* Show icons once fonts are loaded */
+.material-icons-round.loaded,
+.material-symbols-rounded.loaded {
+    visibility: visible;
+}
+
+.close-btn:hover {
+    background: rgba(88, 99, 128, 0.1);
+    transform: scale(1.05);
+}
+
+/* Progress bar styles imported from progress-bar.css */
+
+/* Main Content */
+.study-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 12px;
+}
+
+/* Question Container */
+.question-container {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.2s ease;
+    width: 100%;
+    margin: 0;
+}
+
+.question-container.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.question-card {
+    background: transparent;
+    text-align: left;
+}
+
+.question-text {
+    font-size: 28px;
+    font-weight: 600;
+    color: #282E3E;
+    margin: 0 0 24px 0;
+    line-height: 1.3;
+    text-align: left;
+}
+
+.question-prompt {
+    font-size: 16px;
+    color: #586380;
+    font-weight: 500;
+    margin: 0 0 12px 0;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.question-prompt.feedback {
+    color: #12815A;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.question-prompt.feedback.incorrect {
+    color: #FF6B6B;
+    font-weight: 600;
+}
+
+/* Answer Options */
+.answer-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    margin: 0;
+}
+
+.option-btn {
+    background: white;
+    border: 1px solid #EDEFF4;
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #282E3E;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.option-btn:hover {
+    border-color: #4255FF;
+    background: #F6F7FB;
+    transform: translateY(-1px);
+}
+
+.option-btn.selected {
+    border-color: #4255FF;
+    background: #4255FF;
+    color: white;
+}
+
+.option-btn.correct {
+    border: 2px dashed #12815A;
+    background: #FFFFFF;
+    color: #282E3E;
+    position: relative;
+    border-radius: 12px;
+}
+
+.option-btn.correct::before {
+    content: "check";
+    font-family: 'Material Icons Round';
+    color: #12815A;
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 20px;
+    vertical-align: middle;
+    display: inline-block;
+    line-height: 1;
+    position: relative;
+    top: -2px;
+}
+
+.option-btn.incorrect {
+    border: 2px solid #FFC38C;
+    background: white;
+    color: #282E3E;
+    position: relative;
+    border-radius: 12px;
+}
+
+.option-btn.incorrect::before {
+    content: "close";
+    font-family: 'Material Icons Round';
+    color: #FFC38C;
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 20px;
+    vertical-align: middle;
+    display: inline-block;
+    line-height: 1;
+    position: relative;
+    top: 1px;
+}
+
+/* Text Input */
+.text-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.text-input {
+    border: 2px solid #EDEFF4;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #282E3E;
+    background: white;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.text-input:focus {
+    border-color: #4255FF;
+    outline: none;
+}
+
+.text-input::placeholder {
+    color: #999;
+    font-weight: 500;
+}
+
+.submit-btn {
+    background: #4255FF;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+    background: #3a4be6;
+    transform: translateY(-1px);
+}
+
+/* True/False */
+.true-false-container {
+    display: flex;
+    gap: 12px;
+}
+
+.true-false-container .option-btn {
+    flex: 1;
+    text-align: center;
+}
+
+
+
+/* Continue Button */
+.continue-btn {
+    background: #4255FF;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 32px;
+    display: block;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.continue-btn:hover {
+    background: #3a4be6;
+    transform: translateY(-1px);
+}
+
+.continue-btn:active {
+    transform: translateY(0);
+}
+
+/* Flashcard Styles */
+.flashcard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.flashcard {
+    background: white;
+    border: 2px solid #EDEFF4;
+    border-radius: 16px;
+    padding: 32px 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px;
+}
+
+.flashcard:hover {
+    border-color: #4255FF;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(66, 85, 255, 0.1);
+}
+
+.flashcard.flipped {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.flashcard-back {
+    transform: rotateY(180deg);
+}
+
+.flashcard-term,
+.flashcard-definition {
+    font-size: 24px;
+    font-weight: 600;
+    color: #282E3E;
+    margin-bottom: 12px;
+}
+
+.flashcard-hint,
+.flashcard-explanation {
+    font-size: 16px;
+    color: #586380;
+    font-weight: 500;
+}
+
+.flashcard-buttons {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.flashcard-btn {
+    flex: 1;
+    background: #4255FF;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flashcard-btn:hover {
+    background: #3a4be6;
+    transform: translateY(-1px);
+}
+
+.flashcard-btn:active {
+    transform: translateY(0);
+}
+
+.study-again-btn {
+    background: #6B7280;
+}
+
+.study-again-btn:hover {
+    background: #4B5563;
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+    .app-container {
+        max-width: 480px;
+    }
+    
+    .question-card, .feedback-card {
+        padding: 40px 0;
+    }
+    
+    .question-text {
+        font-size: 28px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .app-container {
+        max-width: 520px;
+    }
+}
+
+/* Focus states for accessibility */
+.back-btn:focus, .close-btn:focus, .option-btn:focus, .submit-btn:focus, .next-btn:focus {
+    outline: 2px solid #4255FF;
+    outline-offset: 2px;
+}
+
+/* Animation for page load */
+.question-card, .feedback-card {
+    animation: fadeInUp 0.6s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+} 
