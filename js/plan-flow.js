@@ -170,7 +170,8 @@
       `<div class="course-list-card" id="goalList"></div>`+
       `<div class="course-list-card" id="addGoalCard">`+
       `  <div class="course-row" id="addGoalRow">`+
-      `    <div class="course-text"><div class="course-title">+ Add new goal</div></div>`+
+      `    <div class="course-check add" aria-hidden="true"></div>`+
+      `    <div class="course-text"><div class="course-title">Add new goal</div></div>`+
       `  </div>`+
       `</div>`+
       `<div class="cta-row"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
