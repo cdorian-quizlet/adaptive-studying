@@ -77,7 +77,10 @@
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">Let’s make a plan. What are you studying?</h1>`+
       `<div class="search-row">`+
-      `  <input id="courseSearch" class="search-input" placeholder="Search for a course" />`+
+      `  <div class="search-field">`+
+      `    <span class="material-icons-round search-icon" aria-hidden="true">search</span>`+
+      `    <input id="courseSearch" class="search-input" placeholder="Find a course (e.g. BIO 110)" aria-label="Find a course" />`+
+      `  </div>`+
       `  <div id="courseDropdown" class="dropdown"></div>`+
       `</div>`+
       `<div class="subtle">Your courses</div>`+
