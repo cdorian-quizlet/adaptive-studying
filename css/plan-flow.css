@@ -57,9 +57,9 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
   background:#fff;
 }
 .course-row + .course-row { border-top:1px solid #EEF2F7; }
-.course-text { display:flex; flex-direction:column; gap:6px; min-width:0; }
-.course-title { font-size:16px; line-height:24px; color:#2A324B; font-weight:800; }
-.course-subtitle { font-size:16px; line-height:24px; color:#5B6B8A; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.course-text { display:flex; flex-direction:column; gap:0; min-width:0; }
+.course-title { font-size:16px; line-height:24px; color:#2A324B; font-weight:800; margin:0; }
+.course-subtitle { font-size:16px; line-height:24px; color:#5B6B8A; font-weight:600; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-row:hover { background:#F6F7FB; }
 
 /* Checkbox indicator using images */
