@@ -26,6 +26,7 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
   word-break: break-word;
 }
 .subtle { color:#586380; font-size:14px; font-weight:600; }
+.search-row + .subtle { margin-top: 48px; }
 
 /* Course selection */
 .search-row { display:flex; flex-direction:column; gap:12px; }
