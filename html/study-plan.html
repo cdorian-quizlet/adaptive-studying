@@ -12,9 +12,110 @@
     <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- This file mirrors study-path.html markup; kept for future split -->
-    <?xml version="1.0"?>
-    <!-- Redirect-like include by copying original file content at build time if needed -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="study-path-header">
+            <button class="back-btn" id="backBtn">
+                <span class="material-icons-round">arrow_back</span>
+            </button>
+            <h1 class="header-title">BIOL 210 Exam 1</h1>
+            <button class="settings-btn" id="settingsBtn">
+                <span class="material-symbols-rounded">settings</span>
+            </button>
+        </header>
+
+        <!-- Progress Overview -->
+        <section class="progress-overview">
+            <div class="overview-card">
+                <div class="overview-header">
+                    <div class="overview-left">
+                        <h2 class="overview-title">Let's continue learning BIOL 210</h2>
+                        <p class="overview-subtitle" id="cardProgress">0 of 50 cards learned</p>
+                    </div>
+                    <div class="overview-right">
+                        <div class="circular-progress">
+                            <svg class="progress-ring" width="80" height="80">
+                                <circle class="progress-ring-bg" cx="40" cy="40" r="32" stroke-width="8"></circle>
+                                <circle class="progress-ring-fill" cx="40" cy="40" r="32" stroke-width="8"></circle>
+                            </svg>
+                            <div class="progress-center">
+                                <span class="progress-percentage" id="overallProgress">0%</span>
+                            </div>
+                        </div>
+                        <span class="progress-label">Complete</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Study Plan (Path) -->
+        <section class="study-path-section">
+            <div class="path-container">
+                <!-- Diagnostic Test -->
+                <div class="path-step diagnostic" data-round="diagnostic">
+                    <div class="step-indicator">
+                        <div class="step-circle">
+                            <span class="material-symbols-rounded step-icon">checklist</span>
+                        </div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-header">
+                            <h3 class="step-title">Diagnostic Test 1</h3>
+                            <div class="step-status" id="diagnosticStatus">
+                                <span class="status-text">Take Test</span>
+                            </div>
+                        </div>
+                        <p class="step-description">Test your knowledge to skip ahead</p>
+                    </div>
+                </div>
+
+                <!-- Round 1 -->
+                <div class="path-step" data-round="1">
+                    <div class="step-indicator">
+                        <div class="step-circle">
+                            <span class="material-icons-round step-icon">star</span>
+                        </div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-header">
+                            <h3 class="step-title">Round 1</h3>
+                            <div class="step-status" id="round1Status">
+                                <span class="status-text">Start</span>
+                            </div>
+                        </div>
+                        <p class="step-description">Cell Membrane, Basic Organelles</p>
+                        <div class="step-progress">
+                            <div class="step-progress-bar">
+                                <div class="step-progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="step-progress-text">0/7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional rounds and diagnostics are identical to study-path.html -->
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/study-path.js"></script>
+    <!-- Onboarding Bottom Sheet -->
+    <div class="onboarding-sheet" id="onboardingSheet" style="display:none;">
+        <div class="onboarding-content">
+            <div class="onboarding-header">
+                <span class="pill" id="onboardingPill">Somewhat confident</span>
+            </div>
+            <h3 class="onboarding-title" id="onboardingHeadline">We’ll move fast, fine-tune weak areas, and review test-style questions.</h3>
+            <div class="onboarding-actions">
+                <button class="primary-btn" id="onboardingClose">Sounds good, let’s go</button>
+                <button class="text-btn" id="onboardingCustomize">Customize</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 
