@@ -54,7 +54,8 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
   padding-top:0; /* rows provide internal padding */
 }
 .course-row {
-  padding:20px 24px; /* 24px left/right to match container spacing requirements */
+  height:76px;
+  padding:14px 24px; /* 24px left/right; top/bottom adjusted to achieve 76px total height with two 24px lines */
   display:flex;
   align-items:center;
   gap:16px; /* 16px between circle icon and text */
