@@ -84,7 +84,8 @@
       `  <div id="courseDropdown" class="dropdown"></div>`+
       `</div>`+
       `<div class="subtle">Your courses</div>`+
-      `<div class="course-list-card" id="courseList"></div>`;
+      `<div class="course-list-card" id="courseList"></div>`+
+      `<div class="cta-row"><button class="primary-btn" id="coursesContinue" disabled>Continue</button></div>`;
 
     const search = document.getElementById('courseSearch');
     const dropdown = document.getElementById('courseDropdown');
@@ -101,10 +102,20 @@
     function populateList(items){
       list.innerHTML = items.map(c => `
         <div class="course-row" data-course="${c}">
-          <div class="course-title">${escapeHtml(c)}</div>
-          <div class="course-subtitle">${escapeHtml(courseSubtitle[c] || 'Course description')}</div>
+          <div class="course-text">
+            <div class="course-title">${escapeHtml(c)}</div>
+            <div class="course-subtitle">${escapeHtml(courseSubtitle[c] || 'Course description')}</div>
+          </div>
+          <div class="course-check" aria-hidden="true"></div>
         </div>
       `).join('');
+      // Restore prior selection if any
+      if(state.course){
+        const sel = list.querySelector(`[data-course="${CSS.escape(state.course)}"]`);
+        if(sel){ sel.classList.add('selected'); }
+        const btn = document.getElementById('coursesContinue');
+        if(btn) btn.disabled = !state.course;
+      }
     }
     populateList(currentCourses);
 
@@ -124,14 +135,23 @@
       const item = e.target.closest('.dropdown-item');
       if(!item) return;
       state.course = item.dataset.course;
-      next();
+      const btn = document.getElementById('coursesContinue');
+      if(btn) btn.disabled = !state.course;
+      dropdown.style.display = 'none';
     });
 
     list.addEventListener('click', (e)=>{
       const item = e.target.closest('.course-row');
       if(!item) return;
+      list.querySelectorAll('.course-row').forEach(r=>r.classList.remove('selected'));
+      item.classList.add('selected');
       state.course = item.dataset.course;
-      next();
+      const btn = document.getElementById('coursesContinue');
+      if(btn) btn.disabled = !state.course;
+    });
+
+    document.getElementById('coursesContinue').addEventListener('click', ()=>{
+      if(state.course) next();
     });
   }
 
