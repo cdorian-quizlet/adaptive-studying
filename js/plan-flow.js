@@ -67,7 +67,8 @@
   // Step 1: Course selection (single select, auto next)
   function renderCourse(){
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">Let’s make a plan. What are you studying?</h1>`+
+      `<h1 class="flow-title">Let’s make a plan.</h1>`+
+      `<h2 class="flow-subtitle">What are you studying?</h2>`+
       `<div class="search-row">`+
       `  <input id="courseSearch" class="search-input" placeholder="Search for a course" />`+
       `  <div id="courseDropdown" class="dropdown"></div>`+
