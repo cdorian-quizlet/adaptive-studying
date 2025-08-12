@@ -167,30 +167,35 @@
     const goals = [...defaultGoals];
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What should be included from ${escapeHtml(state.course)}?</h1>`+
-      `<div class="list" id="goalList"></div>`+
+      `<div class="course-list-card" id="goalList"></div>`+
       `<button class="text-btn" id="addGoalBtn">+ Add new goal</button>`+
       `<div class="cta-row"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
 
     const list = document.getElementById('goalList');
+    function rowHtml(text, attrs){
+      const selected = Array.isArray(state.goals) && state.goals.includes(text);
+      return `<div class="course-row ${selected?'selected':''}" ${attrs}>
+        <div class="course-check" aria-hidden="true"></div>
+        <div class="course-text"><div class="course-title">${escapeHtml(text)}</div></div>
+      </div>`;
+    }
     function renderList(){
       const allSelected = state.goals.length === goals.length && goals.length>0;
-      const items = goals.map(g=>{
-        const sel = state.goals.includes(g);
-        return `<div class="list-item ${sel?'selected':''}" data-goal="${g}">
-          <span>${escapeHtml(g)}</span>
-          <span class="material-icons-round">${sel?'check_circle':'add_circle'}</span>
-        </div>`;
-      }).join('');
-      list.innerHTML = `<div class="list-item ${allSelected?'selected':''}" data-select-all="1"><span>All</span><span class="material-icons-round">${allSelected?'check_circle':'select_all'}</span></div>` + items;
+      const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+        <div class="course-check" aria-hidden="true"></div>
+        <div class="course-text"><div class="course-title">All</div></div>
+      </div>`;
+      const items = goals.map(g=> rowHtml(g, `data-goal="${g}"`)).join('');
+      list.innerHTML = allRow + items;
       document.getElementById('goalsContinue').disabled = state.goals.length===0;
     }
     renderList();
 
     list.addEventListener('click', (e)=>{
       const all = e.target.closest('[data-select-all]');
-      if(all){ state.goals = goals.slice(); return renderList(); }
-      const item = e.target.closest('.list-item');
-      if(!item) return; const g = item.dataset.goal; if(!g) return;
+      if(all){ state.goals = goals.slice(); renderList(); return; }
+      const item = e.target.closest('.course-row');
+      if(!item) return; const g = item.getAttribute('data-goal'); if(!g) return;
       const i = state.goals.indexOf(g);
       if(i>=0) state.goals.splice(i,1); else state.goals.push(g);
       renderList();
@@ -198,7 +203,7 @@
 
     document.getElementById('addGoalBtn').addEventListener('click', ()=>{
       const name = prompt('Goal name');
-      if(name && !goals.includes(name)){ goals.push(name); }
+      if(name){ const trimmed = name.trim(); if(trimmed && !goals.includes(trimmed)){ goals.push(trimmed); }}
       renderList();
     });
 
