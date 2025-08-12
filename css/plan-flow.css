@@ -75,6 +75,7 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 .course-row.selected .course-check {
   background-image: url('../images/circled-check-filled.png');
 }
+.course-check.add { background-image: url('../images/plus-circled.png'); }
 
 /* CTA spacing */
 .course-cta { position: relative; }
