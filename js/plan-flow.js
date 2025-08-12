@@ -6,6 +6,7 @@
   const progressAvatar = document.querySelector('.progress-avatar');
 
   const TOTAL_STEPS = 5; // Course, Goals, Concepts, Knowledge, Date
+  const START_OFFSET_PCT = 6; // small head-start to make progress feel begun
   let stepIndex = 1;
 
   const state = {
@@ -44,7 +45,8 @@
   };
 
   function updateProgress() {
-    const pct = (stepIndex-1)/TOTAL_STEPS * 100;
+    let pct = (stepIndex-1)/TOTAL_STEPS * 100;
+    if (pct === 0) pct = START_OFFSET_PCT; // first screen: show slight progress
     progressFill.style.width = pct + '%';
     const remaining = Math.max(0, TOTAL_STEPS - (stepIndex-1));
     if (stepsRemainingEl) {
