@@ -77,6 +77,10 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 }
 .course-check.add { background-image: url('../images/plus-circled.png'); }
 
+/* Goals step typography overrides: use semibold for goal rows and add row */
+#goalList .course-title,
+#addGoalCard .course-title { font-weight:600; }
+
 /* CTA spacing */
 .course-cta { position: relative; }
 
