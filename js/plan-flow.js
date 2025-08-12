@@ -3,6 +3,7 @@
   const backBtn = document.getElementById('flowBackBtn');
   const progressFill = document.getElementById('flowProgress');
   const stepsRemainingEl = document.getElementById('stepsRemaining');
+  const progressAvatar = document.querySelector('.progress-avatar');
 
   const TOTAL_STEPS = 5; // Course, Goals, Concepts, Knowledge, Date
   let stepIndex = 1;
@@ -46,7 +47,12 @@
     const pct = (stepIndex-1)/TOTAL_STEPS * 100;
     progressFill.style.width = pct + '%';
     const remaining = Math.max(0, TOTAL_STEPS - (stepIndex-1));
-    stepsRemainingEl.textContent = `${remaining} step${remaining===1?'':'s'} remaining`;
+    if (stepsRemainingEl) {
+      stepsRemainingEl.textContent = `${remaining} step${remaining===1?'':'s'} remaining`;
+    }
+    if (progressAvatar) {
+      progressAvatar.style.left = `calc(${pct}% - 22px)`; // 22px = half avatar width
+    }
   }
 
   function render() {
