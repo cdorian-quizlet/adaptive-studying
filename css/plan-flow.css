@@ -53,6 +53,7 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
   overflow:hidden;
   padding-top:0; /* rows provide internal padding */
 }
+#addGoalCard { margin-top: 32px; }
 .course-row {
   height:76px;
   padding:14px 24px; /* 24px left/right; top/bottom adjusted to achieve 76px total height with two 24px lines */
