@@ -51,7 +51,7 @@
       stepsRemainingEl.textContent = `${remaining} step${remaining===1?'':'s'} remaining`;
     }
     if (progressAvatar) {
-      progressAvatar.style.left = `calc(${pct}% - 22px)`; // 22px = half avatar width
+      progressAvatar.style.left = `calc(${pct}% - 20px)`; // 20px = half of 40px avatar
     }
   }
 

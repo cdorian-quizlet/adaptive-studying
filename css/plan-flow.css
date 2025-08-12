@@ -6,9 +6,9 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 .back-btn { background:none; border:none; padding:8px; border-radius:50%; cursor:pointer; color:#586380; display:flex; align-items:center; justify-content:center; }
 .back-btn:hover { background: rgba(88,99,128,0.1); }
 .progress-wrap { flex:1; display:flex; flex-direction:column; gap:10px; position:relative; }
-.progress-track { width:100%; height:14px; background:#DBDFFF; border-radius:999px; overflow:hidden; position:relative; }
+.progress-track { width:100%; height:16px; background:#DBDFFF; border-radius:999px; overflow:visible; position:relative; }
 .progress-fill { height:100%; width:0%; background:#4255FF; transition: width .25s ease; }
-.progress-avatar { width:44px; height:44px; border-radius:50%; object-fit:cover; position:absolute; left:calc(50% - 22px); top:50%; transform: translateY(-50%); box-shadow:0 6px 18px rgba(0,0,0,.12); }
+.progress-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; position:absolute; left:calc(50% - 20px); top:50%; transform: translateY(-50%); box-shadow:0 6px 18px rgba(0,0,0,.12); z-index: 2; }
 .flow-content { padding: 12px 20px 24px; display:flex; flex-direction:column; gap:16px; }
 
 .flow-title { font-size:32px; font-weight:800; line-height:1.15; margin: 20px 0 12px; text-align:center; }
