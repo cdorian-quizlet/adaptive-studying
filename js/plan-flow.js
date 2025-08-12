@@ -1,4 +1,11 @@
 (function(){
+  // Fade-in on load
+  document.addEventListener('DOMContentLoaded', ()=>{
+    document.body.classList.add('page-enter');
+    requestAnimationFrame(()=>{
+      document.body.classList.add('page-enter-active');
+    });
+  });
   const flowContent = document.getElementById('flowContent');
   const backBtn = document.getElementById('flowBackBtn');
   const progressFill = document.getElementById('flowProgress');

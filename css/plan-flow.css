@@ -1,6 +1,8 @@
 /* Plan Flow Styles */
 * { box-sizing: border-box; }
 body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#fff; color:#282E3E; }
+.page-enter { opacity: 0; }
+.page-enter-active { opacity: 1; transition: opacity .3s ease; }
 .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 .flow-header { display:flex; align-items:center; gap:12px; padding: 20px 20px 0; }
 .back-btn { background:none; border:none; padding:8px; border-radius:50%; cursor:pointer; color:#586380; display:flex; align-items:center; justify-content:center; }

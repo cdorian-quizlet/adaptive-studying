@@ -105,7 +105,7 @@ function setupEventListeners() {
             const action = this.textContent.trim();
             // Route to plan flow for study plan
             if (/^make a study plan$/i.test(action) || /^study plan$/i.test(action)) {
-                window.location.href = 'html/plan-flow.html';
+                smoothNavigate('html/plan-flow.html');
                 return;
             }
             openChatWithSelection(action);
@@ -395,6 +395,11 @@ function navigateToStudyScreen() {
         // Navigate to study path screen
         window.location.href = 'html/study-plan.html';
     }, 1000);
+}
+
+function smoothNavigate(url) {
+    document.body.classList.add('page-fade-out');
+    setTimeout(()=>{ window.location.href = url; }, 200);
 }
 
 // Bottom Sheet Functions
