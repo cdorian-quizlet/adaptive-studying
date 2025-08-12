@@ -2,13 +2,15 @@
 const searchInput = document.querySelector('.search-input');
 const jumpBackCard = document.querySelector('.jump-back-card');
 const continueButton = document.querySelector('.continue-button');
-const moreOptionsBtn = document.querySelector('.more-options');
+// Support multiple menus (progress card + help card)
+const moreOptionsBtns = document.querySelectorAll('.jump-back-card .more-options, .help-card .more-options');
 const recentItems = document.querySelectorAll('.recent-item');
 const navItems = document.querySelectorAll('.nav-item');
 const profileAvatar = document.querySelector('.profile-avatar');
 const bottomSheet = document.getElementById('bottomSheet');
 const closeBottomSheet = document.getElementById('closeBottomSheet');
 const resetProgressBtn = document.getElementById('resetProgress');
+const resetOnboardingBtn = document.getElementById('resetOnboarding');
 
 // Chat Elements
 const chatOverlay = document.getElementById('chatOverlay');
@@ -23,6 +25,8 @@ let PROGRESS_VALUE = 0; // Dynamic progress value
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     loadStudyProgress();
+    toggleFirstTimeState();
+    updateJumpBackCardFromOnboarding();
     // Load dynamic homepage content from API
     loadHomeContentFromApi();
     setupEventListeners();
@@ -56,9 +60,9 @@ function setupEventListeners() {
 
     // Jump back card interactions
     jumpBackCard.addEventListener('click', function(e) {
-        if (e.target !== continueButton && e.target !== moreOptionsBtn) {
-            navigateToStudyScreen();
-        }
+        if (e.target === continueButton) return;
+        if (e.target.closest && e.target.closest('.more-options')) return;
+        navigateToStudyScreen();
     });
 
     // Continue button
@@ -67,10 +71,12 @@ function setupEventListeners() {
         navigateToStudyScreen();
     });
 
-    // More options button
-    moreOptionsBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        showBottomSheet();
+    // More options buttons (progress card + help card)
+    moreOptionsBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showBottomSheet();
+        });
     });
 
     // Dynamic recent items (event delegation)
@@ -96,7 +102,12 @@ function setupEventListeners() {
     const studyOptions = document.querySelectorAll('.study-option');
     studyOptions.forEach(option => {
         option.addEventListener('click', function() {
-            const action = this.textContent;
+            const action = this.textContent.trim();
+            // Route to plan flow for study plan
+            if (/^make a study plan$/i.test(action) || /^study plan$/i.test(action)) {
+                window.location.href = 'html/plan-flow.html';
+                return;
+            }
             openChatWithSelection(action);
         });
     });
@@ -129,6 +140,13 @@ function setupEventListeners() {
         hideBottomSheet();
     });
 
+    if (resetOnboardingBtn) {
+        resetOnboardingBtn.addEventListener('click', function() {
+            resetOnboardingFlow();
+            hideBottomSheet();
+        });
+    }
+
     // Close bottom sheet on backdrop click
     bottomSheet.addEventListener('click', function(e) {
         if (e.target === bottomSheet) {
@@ -156,10 +174,67 @@ function setupEventListeners() {
     setupTouchGestures();
 }
 
+// Determine whether to show first-time help state or standard state
+function toggleFirstTimeState() {
+    const helpSection = document.querySelector('.help-section');
+    const jumpBackSection = document.querySelector('.jump-back-section');
+    const studyingNewSection = document.querySelector('.studying-new-section');
+
+    // Determine actual state based on onboarding flag
+    const hasOnboarded = localStorage.getItem('onboarding_completed') === 'true';
+    const isFirstTime = !hasOnboarded;
+
+    if (helpSection && jumpBackSection) {
+        if (isFirstTime) {
+            helpSection.style.display = 'block';
+            helpSection.classList.remove('as-section');
+            jumpBackSection.style.display = 'none';
+            if (studyingNewSection) studyingNewSection.style.display = 'none';
+        } else {
+            helpSection.style.display = 'block';
+            helpSection.classList.add('as-section');
+            jumpBackSection.style.display = '';
+            // Place help section below progress card
+            try {
+                if (helpSection.parentNode && jumpBackSection.parentNode && helpSection !== null) {
+                    jumpBackSection.insertAdjacentElement('afterend', helpSection);
+                }
+            } catch (_) {}
+        }
+    }
+}
+
+// Update jump-back card title using onboarding data if present
+function updateJumpBackCardFromOnboarding() {
+    try {
+        const hasOnboarded = localStorage.getItem('onboarding_completed') === 'true';
+        if (!hasOnboarded) return;
+        const course = localStorage.getItem('onboarding_course') || '';
+        let goals = [];
+        try { goals = JSON.parse(localStorage.getItem('onboarding_goals') || '[]'); } catch(_) {}
+        const firstGoal = Array.isArray(goals) && goals.length > 0 ? goals[0] : '';
+        const title = [course, firstGoal].filter(Boolean).join(' ');
+        const cardTitleEl = document.querySelector('.jump-back-card .card-title');
+        if (cardTitleEl && title) {
+            cardTitleEl.textContent = title;
+        }
+
+        // When progress card is shown, remove help card menu and sparkle; ensure debug menu is accessible via progress card menu
+        const helpMenu = document.querySelector('.help-card .more-options');
+        if (helpMenu) helpMenu.style.display = 'none';
+        const sparkle = document.querySelector('.help-sparkle-img');
+        if (sparkle) sparkle.style.display = 'none';
+        // Progress card menu already wired to bottom sheet; nothing else needed here
+    } catch (e) {
+        console.warn('Failed to update jump-back card from onboarding', e);
+    }
+}
+
 // Load homepage dynamic content from API
 async function loadHomeContentFromApi() {
     if (!window.QuizletApi) return;
-    const studyingOptions = document.querySelector('.studying-options');
+    // Prefer help card's options if visible; otherwise default
+    const studyingOptions = document.querySelector('.help-section .studying-options') || document.querySelector('.studying-new-section .studying-options');
     const recentsList = document.querySelector('.recents-list');
     const jumpBackTitle = document.querySelector('.jump-back-card .card-title');
 
@@ -382,12 +457,44 @@ function resetStudyProgress() {
     showToast('Study progress and path data reset successfully');
 }
 
+// Onboarding reset (for upcoming onboarding flow)
+function resetOnboardingFlow() {
+    // Clear any onboarding flags (future-proof)
+    localStorage.removeItem('onboarding_completed');
+    localStorage.removeItem('onboarding_step');
+    localStorage.removeItem('homeSubject');
+    localStorage.removeItem('onboarding_sheet_open');
+    localStorage.removeItem('onboarding_knowledge_pill');
+    localStorage.removeItem('onboarding_knowledge_headline');
+    localStorage.removeItem('onboarding_course');
+    localStorage.removeItem('onboarding_goals');
+    localStorage.removeItem('onboarding_concepts');
+    localStorage.removeItem('plan_due_date');
+    // Force first-time state on next load
+    showToast('Onboarding has been reset');
+    // Immediately show help card again
+    const helpSection = document.querySelector('.help-section');
+    const jumpBackSection = document.querySelector('.jump-back-section');
+    const studyingNewSection = document.querySelector('.studying-new-section');
+    if (helpSection && jumpBackSection) {
+        helpSection.style.display = 'block';
+        helpSection.classList.remove('as-section');
+        jumpBackSection.style.display = 'none';
+        const sparkle = document.querySelector('.help-sparkle-img');
+        if (sparkle) sparkle.style.display = '';
+        const helpMenu = document.querySelector('.help-card .more-options');
+        if (helpMenu) helpMenu.style.display = '';
+        if (studyingNewSection) studyingNewSection.style.display = 'none';
+    }
+}
+
 // Haptic Feedback (for mobile devices)
 function setupHapticFeedback() {
     if ('vibrate' in navigator) {
         // Add haptic feedback to interactive elements
         const interactiveElements = [
-            jumpBackCard, continueButton, moreOptionsBtn,
+            jumpBackCard, continueButton,
+            ...moreOptionsBtns,
             ...recentItems, ...navItems, profileAvatar
         ];
         
@@ -505,7 +612,7 @@ function setupAccessibility() {
     // Add ARIA labels
     searchInput.setAttribute('aria-label', 'Search study sets');
     continueButton.setAttribute('aria-label', 'Continue studying US Capitals');
-    moreOptionsBtn.setAttribute('aria-label', 'More options');
+    moreOptionsBtns.forEach(btn => btn.setAttribute('aria-label', 'More options'));
     profileAvatar.setAttribute('aria-label', 'Profile menu');
     
     // Add role attributes

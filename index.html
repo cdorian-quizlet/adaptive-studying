@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -25,6 +25,27 @@
                 <img src="images/penguin.png" alt="Profile Avatar" class="avatar-image">
             </div>
         </div>
+
+        <!-- First-time Help Section (shown when no study plan/progress yet) -->
+        <section class="help-section" style="display: none;">
+            <div class="help-card">
+                <div class="help-card-header">
+                    <div class="help-left">
+                        <img src="images/sparkle.png" class="help-sparkle-img" alt="" />
+                        <h2 class="help-title">How can we help?</h2>
+                    </div>
+                    <button class="more-options" aria-label="More options">
+                        <span class="material-icons-round">more_vert</span>
+                    </button>
+                </div>
+                <div class="studying-options">
+                    <button class="study-option plan"><img src="images/sparkle-twilight.png" class="btn-sparkle" alt="" /><span>Study plan</span></button>
+                    <button class="study-option">Cram for a test</button>
+                    <button class="study-option">Memorize terms</button>
+                    <button class="study-option">Something else</button>
+                </div>
+            </div>
+        </section>
 
         <!-- Jump Back In Section -->
         <section class="jump-back-section">
@@ -46,16 +67,7 @@
             </div>
         </section>
 
-        <!-- Studying Something New Section -->
-        <section class="studying-new-section">
-            <h2 class="section-title">Studying something new?</h2>
-            <div class="studying-options">
-                <button class="study-option">Make a study plan</button>
-                <button class="study-option">Cram for a test</button>
-                <button class="study-option">Quickly review</button>
-                <button class="study-option">Memorize terms</button>
-            </div>
-        </section>
+        
 
         <!-- Recents Section -->
         <section class="recents-section">
@@ -98,6 +110,10 @@
                 <button class="action-button" id="resetProgress">
                     <span class="material-icons-round">refresh</span>
                     Reset Study Progress
+                </button>
+                <button class="action-button" id="resetOnboarding">
+                    <span class="material-icons-round">restart_alt</span>
+                    Reset onboarding
                 </button>
             </div>
         </div>

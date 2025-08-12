@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -314,5 +314,18 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="../js/api.js"></script>
     <script src="../js/study-path.js"></script>
+    <!-- Onboarding Bottom Sheet -->
+    <div class="onboarding-sheet" id="onboardingSheet" style="display:none;">
+        <div class="onboarding-content">
+            <div class="onboarding-header">
+                <span class="pill" id="onboardingPill">Somewhat confident</span>
+            </div>
+            <h3 class="onboarding-title" id="onboardingHeadline">We’ll move fast, fine-tune weak areas, and review test-style questions.</h3>
+            <div class="onboarding-actions">
+                <button class="primary-btn" id="onboardingClose">Sounds good, let’s go</button>
+                <button class="text-btn" id="onboardingCustomize">Customize</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 

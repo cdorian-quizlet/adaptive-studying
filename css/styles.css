@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Montserrat', 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: #ffffff;
     color: #333;
     line-height: 1.6;
@@ -52,7 +52,73 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 60px 20px 48px;
+    padding: 48px 20px 48px;
+}
+
+/* Help Section (first-time state) */
+.help-section {
+    padding: 0 20px 48px;
+}
+
+.help-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 32px rgba(40, 46, 62, 0.10);
+    position: relative;
+}
+
+/* Variant: when a progress card is present, present help as a simple section like Studying something new */
+.help-section.as-section .help-card {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+}
+
+.help-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+}
+
+.help-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px; /* 8px between sparkle and heading */
+}
+
+/* In section variant, align like a header row */
+.help-section.as-section .help-left {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.help-sparkle {
+    font-size: 24px;
+    color: currentColor; /* inherit from surrounding text */
+}
+
+.help-sparkle-img {
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+}
+
+.help-title {
+    font-size: 20px;
+    line-height: 1.2;
+    color: #1F2937;
+    font-weight: 600;
+}
+
+/* Match section-title sizing when inline as a section */
+.help-section.as-section .help-title {
+    font-size: 18px;
+    color: #282E3E;
 }
 
 .search-bar {
@@ -162,6 +228,13 @@ body {
     justify-content: center;
 }
 
+/* Position help card menu to specific offsets from card edges */
+.help-card .more-options {
+    position: absolute;
+    top: 16px;
+    right: 12px;
+}
+
 .more-options .material-icons-round {
     font-size: 32px;
 }
@@ -242,6 +315,60 @@ body {
     line-height: 1.2;
 }
 
+/* Help card button padding override */
+.help-card .study-option {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Help card: style the first option as primary */
+.help-card .studying-options .study-option:first-child {
+    background: #4255FF;
+    color: #ffffff;
+}
+
+/* Help card: make options hug text (chips) rather than fill columns */
+.help-card .studying-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px; /* 24px between heading and buttons */
+}
+
+/* Grid like Studying something new when inline */
+.help-section.as-section .studying-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.help-card .study-option {
+    flex: 0 0 auto; /* do not stretch */
+    width: auto;
+}
+
+/* Buttons revert to larger size when inline section */
+.help-section.as-section .study-option {
+    padding: 10px 16px; /* 10px top/bottom, 16px left/right */
+    font-size: 14px;
+}
+
+/* Specific styling for Study plan button in inline section */
+.help-section.as-section .study-option.plan {
+    background: #EDEFFF;
+    color: #4255FF;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.help-section.as-section .study-option .btn-sparkle {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
 .study-option:hover {
     background: #E8F0FF;
     transform: translateY(-1px);
@@ -249,7 +376,7 @@ body {
 
 /* Recents Section */
 .recents-section {
-    padding: 0 20px 24px;
+    padding: 0 20px 48px;
     flex: 1;
 }
 

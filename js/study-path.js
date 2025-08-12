@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check for diagnostic completion and show confetti
     checkDiagnosticCompletion();
+
+    // Show onboarding bottom sheet if coming from plan flow
+    maybeShowOnboardingSheet();
 });
 
 // Load study path data from localStorage
@@ -365,6 +368,36 @@ function setupEventListeners() {
                 break;
         }
     });
+}
+
+// Onboarding sheet logic
+function maybeShowOnboardingSheet() {
+    try {
+        const shouldOpen = localStorage.getItem('onboarding_sheet_open') === 'true';
+        if (!shouldOpen) return;
+        const pill = localStorage.getItem('onboarding_knowledge_pill') || 'Somewhat confident';
+        const headline = localStorage.getItem('onboarding_knowledge_headline') || 'We’ll move fast, fine-tune weak areas, and review test-style questions.';
+        const sheet = document.getElementById('onboardingSheet');
+        if (!sheet) return;
+        sheet.style.display = 'block';
+        document.getElementById('onboardingPill').textContent = pill;
+        document.getElementById('onboardingHeadline').textContent = headline;
+        const closeBtn = document.getElementById('onboardingClose');
+        const customizeBtn = document.getElementById('onboardingCustomize');
+        closeBtn.addEventListener('click', () => {
+            sheet.style.display = 'none';
+            localStorage.removeItem('onboarding_sheet_open');
+            // Mark onboarding completed and reflect at home
+            localStorage.setItem('onboarding_completed','true');
+        });
+        customizeBtn.addEventListener('click', () => {
+            sheet.style.display = 'none';
+            localStorage.removeItem('onboarding_sheet_open');
+            showToast('Opening study plan settings (coming soon)');
+        });
+        // Clicking outside content closes
+        sheet.addEventListener('click', (e)=>{ if (e.target === sheet) { closeBtn.click(); } });
+    } catch (e) { console.warn('Onboarding sheet error', e); }
 }
 
 // Start a diagnostic test
