@@ -393,7 +393,7 @@ function navigateToStudyScreen() {
     // Simulate navigation delay
     setTimeout(() => {
         // Navigate to study path screen
-        window.location.href = 'html/study-path.html';
+        window.location.href = 'html/study-plan.html';
     }, 1000);
 }
 

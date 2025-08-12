@@ -544,12 +544,12 @@ function setupEventListeners() {
     // Navigation buttons
     closeBtn.addEventListener('click', () => {
         if (confirm('Are you sure you want to exit the diagnostic test? Your progress will be lost.')) {
-        window.location.href = '../html/study-path.html';
+        window.location.href = '../html/study-plan.html';
         }
     });
     
     continueBtn.addEventListener('click', () => {
-        window.location.href = '../html/study-path.html?diagnostic=1&accuracy=' + testResults.accuracy;
+        window.location.href = '../html/study-plan.html?diagnostic=1&accuracy=' + testResults.accuracy;
     });
 }
 

@@ -1179,7 +1179,7 @@ function completeRound() {
     localStorage.setItem('roundProgressData', JSON.stringify(roundProgressData));
     
     // Navigate back to study path
-    window.location.href = '../html/study-path.html';
+    window.location.href = '../html/study-plan.html';
 }
 
 // Update progress bar and counter
@@ -1216,7 +1216,7 @@ function endStudySession() {
 
     
     // Navigate to study path screen
-    window.location.href = '../html/study-path.html';
+    window.location.href = '../html/study-plan.html';
 }
 
 // Setup event listeners
@@ -1291,7 +1291,7 @@ function setupEventListeners() {
             if (window.StudyPath) {
                 window.StudyPath.updateRoundProgress(currentRoundProgress);
             }
-    window.location.href = '../html/study-path.html';
+    window.location.href = '../html/study-plan.html';
         }
     });
 }

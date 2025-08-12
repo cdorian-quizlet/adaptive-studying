@@ -263,7 +263,7 @@
       if(state.dueDate) localStorage.setItem('plan_due_date', state.dueDate);
     } catch(_){}
 
-    setTimeout(()=>{ window.location.href = '../html/study-path.html'; }, 3500);
+    setTimeout(()=>{ window.location.href = '../html/study-plan.html'; }, 3500);
   }
 
   // Helpers
