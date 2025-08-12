@@ -75,8 +75,7 @@
   // Step 1: Course selection (single select, auto next)
   function renderCourse(){
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">Let’s make a plan.</h1>`+
-      `<h2 class="flow-subtitle">What are you studying?</h2>`+
+      `<h1 class="flow-title">Let’s make a plan. What are you studying?</h1>`+
       `<div class="search-row">`+
       `  <input id="courseSearch" class="search-input" placeholder="Search for a course" />`+
       `  <div id="courseDropdown" class="dropdown"></div>`+
@@ -219,17 +218,32 @@
   // Step 4: Knowledge state (single select, auto-advance)
   function renderKnowledge(){
     const options = [
-      'Not at all', 'start from scratch', 'Somewhat', 'speed me along', 'Very', 'I just want extra practice', "I don't know", 'help me diagnose'
+      'Not at all, start from scratch',
+      'Somewhat, speed me along',
+      'Very, I just want extra practice',
+      "I don’t know, help me diagnose"
     ];
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">How confident are you feeling already?</h1>`+
-      `<div class="options-grid" id="knowledgeGrid"></div>`;
-    const grid = document.getElementById('knowledgeGrid');
-    grid.innerHTML = options.map(o=>`<div class="option-card" data-k="${o}">${escapeHtml(o)}</div>`).join('');
-    grid.addEventListener('click', (e)=>{
-      const card = e.target.closest('.option-card');
-      if(!card) return; state.knowledge = card.dataset.k; next();
+      `<div class="options-card" id="knowledgeCard"></div>`+
+      `<div class="cta-row"><button class="primary-btn" id="knowledgeContinue" disabled>Continue</button></div>`;
+    const card = document.getElementById('knowledgeCard');
+    const knowledgeContinue = document.getElementById('knowledgeContinue');
+    card.innerHTML = options.map((o, idx)=>`
+      <div class="option-row" data-k="${o}">
+        <div class="option-radio"></div>
+        <div class="option-text">${escapeHtml(o)}</div>
+      </div>
+    `).join('');
+    card.addEventListener('click', (e)=>{
+      const row = e.target.closest('.option-row');
+      if(!row) return;
+      card.querySelectorAll('.option-row').forEach(r=>r.classList.remove('selected'));
+      row.classList.add('selected');
+      state.knowledge = row.dataset.k;
+      knowledgeContinue.disabled = false;
     });
+    knowledgeContinue.addEventListener('click', ()=>{ if(!knowledgeContinue.disabled) next(); });
   }
 
   // Step 5: Date selection

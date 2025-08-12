@@ -9,10 +9,22 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 .progress-track { width:100%; height:16px; background:#DBDFFF; border-radius:999px; overflow:visible; position:relative; }
 .progress-fill { height:100%; width:0%; background:#4255FF; transition: width .25s ease; border-radius:999px; }
 .progress-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; position:absolute; left:calc(50% - 20px); top:50%; transform: translateY(-50%); box-shadow:0 6px 18px rgba(0,0,0,.12); z-index: 2; transition: left .25s ease; }
-.flow-content { padding: 12px 20px 24px; display:flex; flex-direction:column; gap:16px; }
+.flow-content { padding: 36px 20px 24px; display:flex; flex-direction:column; gap:16px; }
 
-.flow-title { font-size:24px; font-weight:800; line-height:32px; margin: 20px 0 12px; text-align:center; }
-.flow-subtitle { font-size:24px; font-weight:800; line-height:32px; text-align:center; margin:0 0 16px; }
+.flow-title {
+  font-size:24px;
+  font-weight:800;
+  line-height:32px;
+  margin: 0 0 48px;
+  text-align:center;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+}
 .subtle { color:#64748B; font-size:14px; }
 
 /* Course selection */
@@ -45,6 +57,34 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 .options-grid { display:flex; flex-wrap:wrap; gap:10px; }
 .option-card { border:1px solid #EDEFF4; border-radius:12px; padding:14px; cursor:pointer; background:#fff; }
 .option-card.selected { border-color:#4255FF; box-shadow:0 0 0 2px rgba(66,85,255,0.15); }
+
+/* Knowledge step - card list UI */
+.options-card {
+  background:#fff;
+  border-radius:20px;
+  box-shadow: 0 10px 40px rgba(40,46,62,0.08);
+  overflow:hidden;
+  border:1px solid #EEF2F7;
+}
+.option-row {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:20px 16px;
+  border-bottom:1px solid #EEF2F7;
+}
+.option-row:last-child { border-bottom:none; }
+.option-radio {
+  width:26px; height:26px; border-radius:50%;
+  border:2px solid #5B6B8A; display:flex; align-items:center; justify-content:center;
+}
+.option-radio::after {
+  content:""; width:14px; height:14px; border-radius:50%; background:transparent;
+}
+.option-row.selected .option-radio { border-color:#4255FF; }
+.option-row.selected .option-radio::after { background:#4255FF; }
+.option-text { font-size:18px; line-height:26px; color:#2A324B; font-weight:700; }
+.option-row.selected .option-text { color:#4255FF; }
 
 /* Date */
 .date-input { border:1px solid #D8E5F8; border-radius:12px; padding:12px 14px; font-size:16px; width:100%; }
