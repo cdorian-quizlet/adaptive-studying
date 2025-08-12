@@ -47,12 +47,13 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
   border-radius:20px;
   box-shadow: 0 20px 60px rgba(40,46,62,0.18);
   overflow:hidden;
+  padding-top:0; /* rows provide internal padding */
 }
 .course-row {
-  padding:20px;
+  padding:20px 24px; /* 24px left/right to match container spacing requirements */
   display:flex;
   align-items:center;
-  gap:12px;
+  gap:16px; /* 16px between circle icon and text */
   cursor:pointer;
   background:#fff;
 }
