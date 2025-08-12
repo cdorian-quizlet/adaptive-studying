@@ -87,12 +87,16 @@ body {
     top: 0; left: 0; right: 0; bottom: 0; /* cover full screen */
     background: rgba(1, 1, 16, 0.56); /* #010110 @ 56% */
     z-index: 1000;
-    display: none;
     display: none; /* toggled to block in JS */
     display: flex;
-    align-items: flex-end; /* dock content to bottom */
+    align-items: flex-end; /* container covers screen */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 .onboarding-content {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
     background: #fff;
     border-radius: 20px 20px 0 0;
     padding: 24px 20px 28px;
@@ -100,7 +104,12 @@ body {
     width: 100%;
     max-height: 80vh;
     overflow: hidden;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
 }
+
+.onboarding-sheet[style*="display: block"] { opacity: 1; pointer-events: auto; }
+.onboarding-sheet[style*="display: block"] .onboarding-content { transform: translateY(0); }
 .onboarding-header { margin-bottom: 12px; }
 .pill { display:inline-block; padding:6px 12px; border-radius:999px; background:#EDEFFF; color:#4255FF; font-weight:600; font-size:12px; }
 .onboarding-title { font-size:18px; font-weight:600; color:#282E3E; margin: 8px 0 16px; }

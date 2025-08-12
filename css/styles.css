@@ -541,23 +541,21 @@ body {
 /* Bottom Sheet */
 .bottom-sheet {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(1, 1, 16, 0.56); /* #010110 at 56% */
     display: flex;
-    align-items: flex-end; /* dock sheet content to bottom */
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
+    align-items: flex-end; /* container covers screen */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
     z-index: 1000;
 }
 
-.bottom-sheet.show {
-    transform: translateY(0);
-}
+.bottom-sheet.show { opacity: 1; pointer-events: auto; }
 
 .bottom-sheet-content {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
     padding: 24px 20px;
     background: white;
     border-radius: 20px 20px 0 0;
@@ -565,7 +563,11 @@ body {
     max-height: 80vh;
     width: 100%;
     overflow: hidden;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
 }
+
+.bottom-sheet.show .bottom-sheet-content { transform: translateY(0); }
 
 .bottom-sheet-header {
     display: flex;
