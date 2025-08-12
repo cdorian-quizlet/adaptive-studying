@@ -23,6 +23,8 @@ let PROGRESS_VALUE = 0; // Dynamic progress value
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     loadStudyProgress();
+    // Load dynamic homepage content from API
+    loadHomeContentFromApi();
     setupEventListeners();
     setupHapticFeedback();
     setupAccessibility();
@@ -71,13 +73,24 @@ function setupEventListeners() {
         showBottomSheet();
     });
 
-    // Recent items
-    recentItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const title = this.querySelector('.item-title').textContent;
-            showToast(`Opening ${title}`);
+    // Dynamic recent items (event delegation)
+    const recentsList = document.querySelector('.recents-list');
+    if (recentsList) {
+        recentsList.addEventListener('click', function(e) {
+            const item = e.target.closest('.recent-item');
+            if (!item) return;
+            const subject = item.dataset.subject;
+            const subcategory = item.dataset.subcategory;
+            if (subject && subcategory) {
+                window.location.href = `html/study.html?subject=${encodeURIComponent(subject)}&subcategory=${encodeURIComponent(subcategory)}`;
+            } else if (subject) {
+                window.location.href = `html/study.html?subject=${encodeURIComponent(subject)}`;
+            } else {
+                const title = item.querySelector('.item-title')?.textContent || 'set';
+                showToast(`Opening ${title}`);
+            }
         });
-    });
+    }
 
     // Study options
     const studyOptions = document.querySelectorAll('.study-option');
@@ -141,6 +154,108 @@ function setupEventListeners() {
 
     // Touch gestures
     setupTouchGestures();
+}
+
+// Load homepage dynamic content from API
+async function loadHomeContentFromApi() {
+    if (!window.QuizletApi) return;
+    const studyingOptions = document.querySelector('.studying-options');
+    const recentsList = document.querySelector('.recents-list');
+    const jumpBackTitle = document.querySelector('.jump-back-card .card-title');
+
+    // Decide a subject to feature
+    let featuredSubject = (localStorage.getItem('homeSubject') || '').trim();
+    try {
+        const subjects = await window.QuizletApi.getSubjects();
+        if (Array.isArray(subjects) && subjects.length > 0) {
+            if (!featuredSubject) {
+                featuredSubject = String(subjects[0]).toLowerCase();
+            }
+            // Render subject chips under the primary options
+            if (studyingOptions) {
+                // Avoid duplicating if called again
+                if (!studyingOptions.querySelector('.subject-chip')) {
+                    const fragment = document.createDocumentFragment();
+                    subjects.slice(0, 6).forEach(subj => {
+                        const btn = document.createElement('button');
+                        btn.className = 'study-option subject-chip';
+                        btn.textContent = String(subj).charAt(0).toUpperCase() + String(subj).slice(1);
+                        btn.addEventListener('click', () => {
+                            const s = String(subj).toLowerCase();
+                            localStorage.setItem('homeSubject', s);
+                            window.location.href = `html/study.html?subject=${encodeURIComponent(s)}`;
+                        });
+                        fragment.appendChild(btn);
+                    });
+                    studyingOptions.appendChild(fragment);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load subjects from API:', e);
+    }
+
+    // Update Jump Back In title to reflect featured subject
+    if (jumpBackTitle && featuredSubject) {
+        const pretty = featuredSubject.charAt(0).toUpperCase() + featuredSubject.slice(1);
+        jumpBackTitle.textContent = `${pretty} Study`;
+    }
+
+    // Populate Recents using API data
+    try {
+        const subjectForRecents = featuredSubject || 'biology';
+        const cards = await window.QuizletApi.getFlashcardsBySubject(subjectForRecents);
+        if (Array.isArray(cards) && cards.length > 0 && recentsList) {
+            // Group cards by subcategory/topic to approximate "sets"
+            const groups = new Map();
+            cards.forEach(card => {
+                const key = (card.subcategory || card.topic || 'General').toString();
+                if (!groups.has(key)) groups.set(key, { items: [], sample: card });
+                groups.get(key).items.push(card);
+            });
+            const groupArray = Array.from(groups.entries())
+                .sort((a, b) => b[1].items.length - a[1].items.length)
+                .slice(0, 4);
+
+            // Render
+            recentsList.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            groupArray.forEach(([subcategory, data]) => {
+                const item = document.createElement('div');
+                item.className = 'recent-item';
+                item.dataset.subject = subjectForRecents;
+                item.dataset.subcategory = subcategory;
+                item.innerHTML = `
+                    <div class="item-icon">
+                        <img src="images/thumbnails.png" alt="Study Set Thumbnail" class="thumbnail-image">
+                    </div>
+                    <div class="item-info">
+                        <h4 class="item-title">${escapeHtml(subcategory)}</h4>
+                        <p class="item-subtitle">${data.items.length} cards • ${capitalize(subjectForRecents)}</p>
+                    </div>
+                `;
+                fragment.appendChild(item);
+            });
+            recentsList.appendChild(fragment);
+        }
+    } catch (e) {
+        console.warn('Failed to load recents from API:', e);
+    }
+}
+
+// Utilities
+function capitalize(str) {
+    if (!str) return '';
+    return String(str).charAt(0).toUpperCase() + String(str).slice(1);
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // Load and display study progress

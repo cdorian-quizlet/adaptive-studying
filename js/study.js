@@ -597,8 +597,20 @@ async function fetchAndLoadQuestionsFromApi() {
         } else if (subject && window.QuizletApi?.getFlashcardsBySubject) {
             cards = await window.QuizletApi.getFlashcardsBySubject(subject);
         } else if (window.QuizletApi?.getFlashcardsBySubject) {
-            // Default to biology if nothing specified
-            cards = await window.QuizletApi.getFlashcardsBySubject('biology');
+            // No explicit subject: try preferred subject from home or first available from API
+            let fallbackSubject = (localStorage.getItem('homeSubject') || '').trim();
+            if (!fallbackSubject && window.QuizletApi?.getSubjects) {
+                try {
+                    const subjects = await window.QuizletApi.getSubjects();
+                    if (Array.isArray(subjects) && subjects.length > 0) {
+                        fallbackSubject = String(subjects[0]).toLowerCase();
+                    }
+                } catch (_) {
+                    // ignore
+                }
+            }
+            fallbackSubject = fallbackSubject || 'biology';
+            cards = await window.QuizletApi.getFlashcardsBySubject(fallbackSubject);
         }
 
         const mapped = window.QuizletApi?.mapApiCardsToQuestions ? window.QuizletApi.mapApiCardsToQuestions(cards) : [];
@@ -609,6 +621,8 @@ async function fetchAndLoadQuestionsFromApi() {
             // Prefer a manageable number; keep up to 50 like the UI references
             const limited = mapped.slice(0, 50);
             limited.forEach(q => questions.push(q));
+            // Mark that we're using API-backed content for this session
+            window.USING_API_CONTENT = true;
         }
     } catch (err) {
         console.error('Failed to load questions from API:', err);

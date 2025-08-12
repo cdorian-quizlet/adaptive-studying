@@ -396,8 +396,12 @@ function startRound(roundNumber) {
     // Save current state
     saveStudyPathData();
     
-    // Navigate to study screen; if a subject is selected elsewhere, we could pass it along later
-    window.location.href = '../html/study.html';
+    // Navigate to study screen; pass along preferred subject if available
+    const preferredSubject = (localStorage.getItem('homeSubject') || '').trim();
+    const url = preferredSubject
+        ? `../html/study.html?subject=${encodeURIComponent(preferredSubject)}`
+        : '../html/study.html';
+    window.location.href = url;
 }
 
 // Save study path data to localStorage

@@ -114,6 +114,16 @@ body {
     padding: 0 20px;
 }
 
+/* Align section headings with the inner content of the progress card (20px container + 20px card padding) */
+.studying-new-section .section-title {
+    padding-left: 0;
+}
+
+/* Remove all left padding for the Jump back in header */
+.jump-back-section .section-title {
+    padding-left: 0;
+}
+
 /* Jump Back In Section */
 .jump-back-section {
     padding: 0 20px 48px;
@@ -216,6 +226,8 @@ body {
     margin-top: 16px;
 }
 
+/* (Removed left nudge so the header can sit flush like Jump back in) */
+
 .study-option {
     background: var(--interactive-bg-secondary-default, #EDEFFF);
     border: none;
@@ -241,6 +253,11 @@ body {
     flex: 1;
 }
 
+/* Align Recents header flush like other sections */
+.recents-section .section-title {
+    padding-left: 0;
+}
+
 .recents-list {
     display: flex;
     flex-direction: column;
@@ -256,6 +273,21 @@ body {
     border-radius: 12px;
     transition: all 0.2s ease;
     cursor: pointer;
+}
+
+/* Remove left padding so thumbnails align with the section edge */
+.recents-section .recent-item {
+    /* Keep content (thumbnail) flush with the Recents heading */
+    padding-left: 0;
+    transition: margin 0.2s ease, padding 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+/* On hover/focus, expand the card background further left without shifting content */
+.recents-section .recent-item:hover,
+.recents-section .recent-item:focus,
+.recents-section .recent-item:focus-visible {
+    margin-left: -8px;   /* extend background to the left */
+    padding-left: 8px;   /* keep thumbnail aligned with heading */
 }
 
 .recent-item:hover {
