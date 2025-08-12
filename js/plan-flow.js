@@ -14,6 +14,7 @@
 
   const TOTAL_STEPS = 5; // Course, Goals, Concepts, Knowledge, Date
   const START_OFFSET_PCT = 12; // small head-start to make progress feel begun
+  let initProgressAnimated = false;
   let stepIndex = 1;
 
   const state = {
@@ -52,15 +53,34 @@
   };
 
   function updateProgress() {
-    let pct = (stepIndex-1)/TOTAL_STEPS * 100;
-    if (pct === 0) pct = START_OFFSET_PCT; // first screen: show slight progress
-    progressFill.style.width = pct + '%';
+    const computedPct = (stepIndex-1)/TOTAL_STEPS * 100;
     const remaining = Math.max(0, TOTAL_STEPS - (stepIndex-1));
     if (stepsRemainingEl) {
       stepsRemainingEl.textContent = `${remaining} step${remaining===1?'':'s'} remaining`;
     }
+
+    // Step 1: animate from 0% to START_OFFSET_PCT on first load only
+    if (stepIndex === 1) {
+      if (!initProgressAnimated) {
+        progressFill.style.width = '0%';
+        if (progressAvatar) progressAvatar.style.left = 'calc(0% - 20px)';
+        // allow layout to apply, then animate
+        setTimeout(() => {
+          progressFill.style.width = START_OFFSET_PCT + '%';
+          if (progressAvatar) progressAvatar.style.left = `calc(${START_OFFSET_PCT}% - 20px)`;
+        }, 50);
+        initProgressAnimated = true;
+      } else {
+        progressFill.style.width = START_OFFSET_PCT + '%';
+        if (progressAvatar) progressAvatar.style.left = `calc(${START_OFFSET_PCT}% - 20px)`;
+      }
+      return;
+    }
+
+    // Other steps: set based on computed percentage
+    progressFill.style.width = computedPct + '%';
     if (progressAvatar) {
-      progressAvatar.style.left = `calc(${pct}% - 20px)`; // 20px = half of 40px avatar
+      progressAvatar.style.left = `calc(${computedPct}% - 20px)`;
     }
   }
 
@@ -274,7 +294,7 @@
     document.getElementById('conceptsContinue').addEventListener('click', next);
   }
 
-  // Step 4: Knowledge state (single select, auto-advance)
+  // Step 4: Knowledge state (single select)
   function renderKnowledge(){
     const options = [
       'Not at all, start from scratch',
@@ -284,22 +304,23 @@
     ];
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">How confident are you feeling already?</h1>`+
-      `<div class="options-card" id="knowledgeCard"></div>`+
+      `<div class="course-list-card" id="knowledgeList"></div>`+
       `<div class="cta-row hidden"><button class="primary-btn" id="knowledgeContinue" disabled>Continue</button></div>`;
-    const card = document.getElementById('knowledgeCard');
+    const list = document.getElementById('knowledgeList');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
-    card.innerHTML = options.map((o, idx)=>`
-      <div class="option-row" data-k="${o}">
-        <div class="option-radio"></div>
-        <div class="option-text">${escapeHtml(o)}</div>
-      </div>
-    `).join('');
-    card.addEventListener('click', (e)=>{
-      const row = e.target.closest('.option-row');
+    function renderRows(){
+      list.innerHTML = options.map(o=>`
+        <div class="course-row ${state.knowledge===o?'selected':''}" data-k="${o}">
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">${escapeHtml(o)}</div></div>
+        </div>`).join('');
+    }
+    renderRows();
+    list.addEventListener('click', (e)=>{
+      const row = e.target.closest('.course-row');
       if(!row) return;
-      card.querySelectorAll('.option-row').forEach(r=>r.classList.remove('selected'));
-      row.classList.add('selected');
-      state.knowledge = row.dataset.k;
+      state.knowledge = row.getAttribute('data-k');
+      renderRows();
       knowledgeContinue.disabled = false;
       knowledgeContinue.parentElement.classList.remove('hidden');
     });
