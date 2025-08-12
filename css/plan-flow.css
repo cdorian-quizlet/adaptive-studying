@@ -64,7 +64,7 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 
 /* Checkbox indicator using images */
 .course-check {
-  width:26px; height:26px; flex-shrink:0;
+  width:24px; height:24px; flex-shrink:0;
   background: url('../images/circle.png') no-repeat center/contain;
 }
 .course-row.selected .course-check {
