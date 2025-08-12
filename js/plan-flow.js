@@ -223,24 +223,31 @@
     const concepts = [...defaultConcepts];
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What’s going to be on ${escapeHtml(state.goals.join(', ') || state.course)}?</h1>`+
-      `<div class="list" id="conceptList"></div>`+
-      `<button class="text-btn" id="addConceptBtn">+ Add new concept</button>`+
+      `<div class="course-list-card" id="conceptList"></div>`+
+      `<div class="course-list-card" id="addConceptCard">`+
+      `  <div class="course-row" id="addConceptRow">`+
+      `    <div class="course-check add" aria-hidden="true"></div>`+
+      `    <div class="course-text"><div class="course-title">Add new concept</div></div>`+
+      `  </div>`+
+      `</div>`+
       `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
 
     const list = document.getElementById('conceptList');
-    function conceptRow(name){
-      const sel = state.concepts.includes(name);
-      return `<div class="list-item" data-concept="${name}">
-        <span>${escapeHtml(name)}</span>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="material-icons-round caret" data-toggle="${name}">expand_more</span>
-          <span class="material-icons-round">${sel?'check_circle':'add_circle'}</span>
-        </div>
-      </div>
-      <div class="terms" id="terms-${cssId(name)}">${escapeHtml(name)} terms and definitions will appear here…</div>`;
+    function rowHtml(text, attrs){
+      const selected = Array.isArray(state.concepts) && state.concepts.includes(text);
+      return `<div class="course-row ${selected?'selected':''}" ${attrs}>
+        <div class="course-check" aria-hidden="true"></div>
+        <div class="course-text"><div class="course-title">${escapeHtml(text)}</div></div>
+      </div>`;
     }
     function renderList(){
-      list.innerHTML = `<div class="list-item ${state.concepts.length===concepts.length?'selected':''}" data-select-all="1"><span>All</span><span class="material-icons-round">${state.concepts.length===concepts.length?'check_circle':'select_all'}</span></div>` + concepts.map(conceptRow).join('');
+      const allSelected = state.concepts.length === concepts.length && concepts.length>0;
+      const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+        <div class="course-check" aria-hidden="true"></div>
+        <div class="course-text"><div class="course-title">All</div></div>
+      </div>`;
+      const items = concepts.map(c=> rowHtml(c, `data-concept="${c}"`)).join('');
+      list.innerHTML = allRow + items;
       const cta = document.getElementById('conceptsContinue').parentElement;
       const disabled = state.concepts.length===0;
       document.getElementById('conceptsContinue').disabled = disabled;
@@ -249,25 +256,18 @@
     renderList();
 
     list.addEventListener('click', (e)=>{
-      const toggle = e.target.closest('[data-toggle]');
-      if(toggle){
-        const key = toggle.getAttribute('data-toggle');
-        const panel = document.getElementById('terms-'+cssId(key));
-        if(panel){ panel.style.display = panel.style.display==='block'?'none':'block'; }
-        return;
-      }
       const all = e.target.closest('[data-select-all]');
-      if(all){ state.concepts = concepts.slice(); return renderList(); }
-      const item = e.target.closest('.list-item');
-      if(!item) return; const c = item.dataset.concept; if(!c) return;
+      if(all){ state.concepts = concepts.slice(); renderList(); return; }
+      const item = e.target.closest('.course-row');
+      if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
       const i = state.concepts.indexOf(c);
       if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
       renderList();
     });
 
-    document.getElementById('addConceptBtn').addEventListener('click', ()=>{
+    document.getElementById('addConceptRow').addEventListener('click', ()=>{
       const name = prompt('Concept name');
-      if(name && !concepts.includes(name)){ concepts.push(name); }
+      if(name){ const trimmed = name.trim(); if(trimmed && !concepts.includes(trimmed)){ concepts.push(trimmed); }}
       renderList();
     });
 
