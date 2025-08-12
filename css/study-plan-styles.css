@@ -84,16 +84,22 @@ body {
 /* Onboarding Bottom Sheet */
 .onboarding-sheet {
     position: fixed;
-    left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.4);
+    top: 0; left: 0; right: 0; bottom: 0; /* cover full screen */
+    background: rgba(1, 1, 16, 0.56); /* #010110 @ 56% */
     z-index: 1000;
     display: none;
+    display: none; /* toggled to block in JS */
+    display: flex;
+    align-items: flex-end; /* dock content to bottom */
 }
 .onboarding-content {
     background: #fff;
     border-radius: 20px 20px 0 0;
     padding: 24px 20px 28px;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
 }
 .onboarding-header { margin-bottom: 12px; }
 .pill { display:inline-block; padding:6px 12px; border-radius:999px; background:#EDEFFF; color:#4255FF; font-weight:600; font-size:12px; }
