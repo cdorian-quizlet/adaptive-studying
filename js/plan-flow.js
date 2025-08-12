@@ -92,7 +92,7 @@
       `</div>`+
       `<div class="subtle">Your courses</div>`+
       `<div class="course-list-card" id="courseList"></div>`+
-      `<div class="course-cta" id="coursesCta" style="display:none; margin-top:48px;"><button class="primary-btn" id="coursesContinue">Continue</button></div>`;
+      `<div class="course-cta hidden" id="coursesCta" style="margin-top:48px;"><button class="primary-btn" id="coursesContinue">Continue</button></div>`;
 
     const search = document.getElementById('courseSearch');
     const dropdown = document.getElementById('courseDropdown');
@@ -121,7 +121,7 @@
         const sel = list.querySelector(`[data-course="${CSS.escape(state.course)}"]`);
         if(sel){ sel.classList.add('selected'); }
         const cta = document.getElementById('coursesCta');
-        if(cta) cta.style.display = state.course ? '' : 'none';
+        if(cta) cta.classList.toggle('hidden', !state.course);
       }
     }
     populateList(currentCourses);
@@ -143,7 +143,7 @@
       if(!item) return;
       state.course = item.dataset.course;
       const cta = document.getElementById('coursesCta');
-      if(cta) cta.style.display = state.course ? '' : 'none';
+      if(cta) cta.classList.toggle('hidden', !state.course);
       dropdown.style.display = 'none';
     });
 
@@ -154,7 +154,7 @@
       item.classList.add('selected');
       state.course = item.dataset.course;
       const cta = document.getElementById('coursesCta');
-      if(cta) cta.style.display = state.course ? '' : 'none';
+      if(cta) cta.classList.toggle('hidden', !state.course);
     });
 
     document.getElementById('coursesContinue').addEventListener('click', ()=>{
@@ -174,7 +174,7 @@
       `    <div class="course-text"><div class="course-title">Add new goal</div></div>`+
       `  </div>`+
       `</div>`+
-      `<div class="cta-row"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
+      `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
 
     const list = document.getElementById('goalList');
     function rowHtml(text, attrs){
@@ -192,7 +192,10 @@
       </div>`;
       const items = goals.map(g=> rowHtml(g, `data-goal="${g}"`)).join('');
       list.innerHTML = allRow + items;
-      document.getElementById('goalsContinue').disabled = state.goals.length===0;
+      const goalsCta = document.getElementById('goalsContinue').parentElement;
+      const disabled = state.goals.length===0;
+      document.getElementById('goalsContinue').disabled = disabled;
+      goalsCta.classList.toggle('hidden', disabled);
     }
     renderList();
 
@@ -222,7 +225,7 @@
       `<h1 class="flow-title">What’s going to be on ${escapeHtml(state.goals.join(', ') || state.course)}?</h1>`+
       `<div class="list" id="conceptList"></div>`+
       `<button class="text-btn" id="addConceptBtn">+ Add new concept</button>`+
-      `<div class="cta-row"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
+      `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
 
     const list = document.getElementById('conceptList');
     function conceptRow(name){
@@ -238,7 +241,10 @@
     }
     function renderList(){
       list.innerHTML = `<div class="list-item ${state.concepts.length===concepts.length?'selected':''}" data-select-all="1"><span>All</span><span class="material-icons-round">${state.concepts.length===concepts.length?'check_circle':'select_all'}</span></div>` + concepts.map(conceptRow).join('');
-      document.getElementById('conceptsContinue').disabled = state.concepts.length===0;
+      const cta = document.getElementById('conceptsContinue').parentElement;
+      const disabled = state.concepts.length===0;
+      document.getElementById('conceptsContinue').disabled = disabled;
+      cta.classList.toggle('hidden', disabled);
     }
     renderList();
 
@@ -279,7 +285,7 @@
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">How confident are you feeling already?</h1>`+
       `<div class="options-card" id="knowledgeCard"></div>`+
-      `<div class="cta-row"><button class="primary-btn" id="knowledgeContinue" disabled>Continue</button></div>`;
+      `<div class="cta-row hidden"><button class="primary-btn" id="knowledgeContinue" disabled>Continue</button></div>`;
     const card = document.getElementById('knowledgeCard');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
     card.innerHTML = options.map((o, idx)=>`
@@ -295,6 +301,7 @@
       row.classList.add('selected');
       state.knowledge = row.dataset.k;
       knowledgeContinue.disabled = false;
+      knowledgeContinue.parentElement.classList.remove('hidden');
     });
     knowledgeContinue.addEventListener('click', ()=>{ if(!knowledgeContinue.disabled) next(); });
   }
