@@ -93,7 +93,7 @@
 
     const courseSubtitle = {
       'BIOL 210': 'Human anatomy and physiology',
-      'IBUS 330': 'International Business and Multicultural Relations',
+      'IBUS 330': 'International Business and Multicultural...',
       'PSYC 110': 'Introduction to Psychology',
       'CHEM 101': 'General chemistry fundamentals',
       'HIST 205': 'World history since 1500',
