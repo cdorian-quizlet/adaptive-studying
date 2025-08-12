@@ -369,6 +369,11 @@ body {
     display: inline-block;
 }
 
+/* Pre-onboarding: hide sparkle icon inside the Study plan button */
+.help-section:not(.as-section) .study-option.plan .btn-sparkle {
+    display: none;
+}
+
 .study-option:hover {
     background: #E8F0FF;
     transform: translateY(-1px);
