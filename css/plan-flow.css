@@ -30,7 +30,7 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 
 /* Course selection */
 .search-row { display:flex; flex-direction:column; gap:12px; }
-.search-field { display:flex; align-items:center; gap:10px; border:1px solid #E7ECF5; border-radius:999px; padding:14px 18px; background:#F8FAFF; }
+.search-field { display:flex; align-items:center; gap:10px; border:none; border-radius:999px; padding:14px 18px; background:#F6F7FB; }
 .search-icon { color:#5B6B8A; font-size:24px; align-self:center; }
 .search-input { border: none; outline:none; flex:1; font-size:16px; background:transparent; color:#2A324B; align-self:center; line-height:24px; font-weight:600; }
 .search-input::placeholder { color:#282E3E; font-weight:600; opacity:1; }
