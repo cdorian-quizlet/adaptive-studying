@@ -6,7 +6,7 @@
   const progressAvatar = document.querySelector('.progress-avatar');
 
   const TOTAL_STEPS = 5; // Course, Goals, Concepts, Knowledge, Date
-  const START_OFFSET_PCT = 6; // small head-start to make progress feel begun
+  const START_OFFSET_PCT = 12; // small head-start to make progress feel begun
   let stepIndex = 1;
 
   const state = {
