@@ -168,7 +168,11 @@
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What should be included from ${escapeHtml(state.course)}?</h1>`+
       `<div class="course-list-card" id="goalList"></div>`+
-      `<button class="text-btn" id="addGoalBtn">+ Add new goal</button>`+
+      `<div class="course-list-card" id="addGoalCard">`+
+      `  <div class="course-row" id="addGoalRow">`+
+      `    <div class="course-text"><div class="course-title">+ Add new goal</div></div>`+
+      `  </div>`+
+      `</div>`+
       `<div class="cta-row"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
 
     const list = document.getElementById('goalList');
@@ -201,7 +205,7 @@
       renderList();
     });
 
-    document.getElementById('addGoalBtn').addEventListener('click', ()=>{
+    document.getElementById('addGoalRow').addEventListener('click', ()=>{
       const name = prompt('Goal name');
       if(name){ const trimmed = name.trim(); if(trimmed && !goals.includes(trimmed)){ goals.push(trimmed); }}
       renderList();
