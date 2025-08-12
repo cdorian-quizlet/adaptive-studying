@@ -17,8 +17,8 @@
     dueDate: ''
   };
 
-  const sampleCourses = ['BIOL 210', 'CHEM 101', 'HIST 205', 'PSYC 110', 'MATH 221'];
-  const currentCourses = ['BIOL 210', 'PSYC 110'];
+  const sampleCourses = ['BIOL 210', 'CHEM 101', 'HIST 205', 'PSYC 110', 'MATH 221', 'IBUS 330'];
+  const currentCourses = ['BIOL 210', 'IBUS 330'];
   const defaultGoals = ['Exam 1', 'Exam 2', 'Exam 3'];
   const defaultConcepts = ['Anatomy & Physiology', 'Cells & Tissues', 'Integumentary System', 'Muscular System'];
 
@@ -84,14 +84,27 @@
       `  <div id="courseDropdown" class="dropdown"></div>`+
       `</div>`+
       `<div class="subtle">Your courses</div>`+
-      `<div class="list" id="courseList"></div>`;
+      `<div class="course-list-card" id="courseList"></div>`;
 
     const search = document.getElementById('courseSearch');
     const dropdown = document.getElementById('courseDropdown');
     const list = document.getElementById('courseList');
 
+    const courseSubtitle = {
+      'BIOL 210': 'Human anatomy and physiology',
+      'IBUS 330': 'International Business and Multicultural Relations',
+      'PSYC 110': 'Introduction to Psychology',
+      'CHEM 101': 'General chemistry fundamentals',
+      'HIST 205': 'World history since 1500',
+      'MATH 221': 'Calculus I'
+    };
     function populateList(items){
-      list.innerHTML = items.map(c => `<div class="list-item" data-course="${c}">${c}<span class="material-icons-round">chevron_right</span></div>`).join('');
+      list.innerHTML = items.map(c => `
+        <div class="course-row" data-course="${c}">
+          <div class="course-title">${escapeHtml(c)}</div>
+          <div class="course-subtitle">${escapeHtml(courseSubtitle[c] || 'Course description')}</div>
+        </div>
+      `).join('');
     }
     populateList(currentCourses);
 
@@ -115,7 +128,7 @@
     });
 
     list.addEventListener('click', (e)=>{
-      const item = e.target.closest('.list-item');
+      const item = e.target.closest('.course-row');
       if(!item) return;
       state.course = item.dataset.course;
       next();
