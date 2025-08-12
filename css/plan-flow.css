@@ -45,7 +45,7 @@ body { font-family: 'Montserrat', 'Figtree', system-ui, sans-serif; background:#
 /* Your courses card */
 .course-list-card {
   background:#fff;
-  border:1px solid #EEF2F7;
+  border:none;
   border-radius:20px;
   box-shadow: 0 0 32px 0 rgba(40,46,62,0.10);
   overflow:hidden;
