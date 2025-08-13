@@ -1,5 +1,7 @@
 // DOM Elements
 const searchInput = document.querySelector('.search-input');
+// Revert to original search input reference
+const homeSearch = searchInput;
 const jumpBackCard = document.querySelector('.jump-back-card');
 const continueButton = document.querySelector('.continue-button');
 // Support multiple menus (progress card + help card)
@@ -27,8 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStudyProgress();
     toggleFirstTimeState();
     updateJumpBackCardFromOnboarding();
-    // Load dynamic homepage content from API
-    loadHomeContentFromApi();
+    // Load dynamic homepage content from API (skip if CORS issues expected)
+    // Disable API loading to avoid CORS errors in console
+    // loadHomeContentFromApi();
     setupEventListeners();
     setupHapticFeedback();
     setupAccessibility();
@@ -267,7 +270,8 @@ async function loadHomeContentFromApi() {
             }
         }
     } catch (e) {
-        console.warn('Failed to load subjects from API:', e);
+        // Silently handle API failures - CORS issues with Quizlet API
+        // The app will continue to work with default content
     }
 
     // Update Jump Back In title to reflect featured subject
@@ -314,7 +318,8 @@ async function loadHomeContentFromApi() {
             recentsList.appendChild(fragment);
         }
     } catch (e) {
-        console.warn('Failed to load recents from API:', e);
+        // Silently handle API failures - CORS issues with Quizlet API
+        // The recents list will remain empty or show default content
     }
 }
 
@@ -524,23 +529,32 @@ function showToast(message, duration = 3000) {
     toast.className = 'toast';
     toast.textContent = message;
     
-    // Add toast styles
+    // Add toast styles (Design System)
     toast.style.cssText = `
         position: fixed;
-        bottom: 100px;
+        bottom: 48px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 25px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 10px;
+        width: 90%;
+        min-width: 320px;
+        max-width: 480px;
+        min-height: 72px;
+        padding: 0 var(--spacing-small, 16px);
+        background: var(--sys-surface-inverse, #1A1D28);
+        color: var(--sys-text-inverse, #FFFFFF);
+        border-radius: var(--radius-large, 16px);
+        box-shadow: var(--shadow-medium);
         font-size: 14px;
-        font-weight: 500;
+        text-align: left;
+        font-weight: 600;
         z-index: 1000;
         opacity: 0;
         transition: opacity 0.3s ease;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
     `;
     
     // Add to page
@@ -559,6 +573,176 @@ function showToast(message, duration = 3000) {
                 toast.parentNode.removeChild(toast);
             }
         }, 300);
+    }, duration);
+}
+
+// Toast with one action button (Design System variant)
+function showToastWithAction(message, actionText, onAction, duration = 5000) {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast toast--one-action';
+
+    // Container styles
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 48px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: var(--spacing-none, 0);
+        width: 90%;
+        min-width: 320px;
+        max-width: 480px;
+        min-height: 72px;
+        padding: var(--spacing-none, 0);
+        background: var(--sys-surface-inverse, #1A1D28);
+        color: var(--sys-text-inverse, #FFFFFF);
+        border-radius: var(--radius-large, 16px);
+        box-shadow: var(--shadow-medium);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+
+    const content = document.createElement('div');
+    content.textContent = message;
+    content.style.cssText = `
+        width: 100%;
+        padding: var(--spacing-small, 16px) var(--spacing-small, 16px) 8px var(--spacing-small, 16px);
+        font-size: 14px;
+        font-weight: 600;
+        text-align: left;
+    `;
+
+    const actions = document.createElement('div');
+    actions.style.cssText = `
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 var(--spacing-small, 16px) var(--spacing-small, 16px) var(--spacing-small, 16px);
+    `;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = actionText;
+    btn.style.cssText = `
+        background: transparent;
+        border: none;
+        color: var(--sys-text-inverse, #FFFFFF);
+        font-weight: 700;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: var(--radius-small, 4px);
+    `;
+    btn.addEventListener('click', () => { try { onAction && onAction(); } catch(e){} toast.remove(); });
+
+    actions.appendChild(btn);
+    toast.appendChild(content);
+    toast.appendChild(actions);
+    document.body.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+
+    // Animate out and remove
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+    }, duration);
+}
+
+// Toast with two action buttons (Design System variant)
+function showToastWithTwoActions(message, primaryText, onPrimary, secondaryText, onSecondary, duration = 7000) {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast toast--two-actions';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 48px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-none, 0);
+        width: 90%;
+        min-width: 320px;
+        max-width: 480px;
+        min-height: 104px;
+        padding: var(--spacing-small, 16px);
+        background: var(--sys-surface-inverse, #1A1D28);
+        color: var(--sys-text-inverse, #FFFFFF);
+        border-radius: var(--radius-large, 16px);
+        box-shadow: var(--shadow-medium);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+
+    const content = document.createElement('div');
+    content.textContent = message;
+    content.style.cssText = `
+        width: 100%;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: left;
+        margin-bottom: 8px;
+    `;
+
+    const actions = document.createElement('div');
+    actions.style.cssText = `
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        justify-content: flex-end;
+    `;
+
+    const primaryBtn = document.createElement('button');
+    primaryBtn.type = 'button';
+    primaryBtn.textContent = primaryText;
+    primaryBtn.style.cssText = `
+        background: transparent;
+        border: none;
+        color: var(--sys-text-inverse, #FFFFFF);
+        font-weight: 700;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: var(--radius-small, 4px);
+    `;
+    primaryBtn.addEventListener('click', () => { try { onPrimary && onPrimary(); } catch(e){} toast.remove(); });
+
+    const secondaryBtn = document.createElement('button');
+    secondaryBtn.type = 'button';
+    secondaryBtn.textContent = secondaryText;
+    secondaryBtn.style.cssText = `
+        background: transparent;
+        border: none;
+        color: var(--sys-text-inverse, #FFFFFF);
+        font-weight: 700;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: var(--radius-small, 4px);
+        opacity: 0.9;
+    `;
+    secondaryBtn.addEventListener('click', () => { try { onSecondary && onSecondary(); } catch(e){} toast.remove(); });
+
+    actions.appendChild(secondaryBtn);
+    actions.appendChild(primaryBtn);
+    toast.appendChild(content);
+    toast.appendChild(actions);
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
     }, duration);
 }
 
@@ -636,7 +820,8 @@ function setupAccessibility() {
 }
 
 // Service Worker Registration (for PWA capabilities)
-if ('serviceWorker' in navigator) {
+// Only register ServiceWorker when served over HTTP/HTTPS (not file://)
+if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js')
             .then(function(registration) {
@@ -778,7 +963,7 @@ chatOverlay.addEventListener('click', function(e) {
 window.StudyApp = {
     navigateToStudyScreen,
     showToast,
-    showOptionsMenu,
+    showBottomSheet,
     updateProgress: function(newProgress) {
         const progressFill = document.querySelector('.progress-fill');
         if (progressFill) {

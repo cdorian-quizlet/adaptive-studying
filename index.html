@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="home">
     <div class="app-container">
 
 
         <!-- Search Bar -->
         <div class="search-section">
             <div class="search-bar">
-                <span class="material-icons-round search-icon">search</span>
-                <input type="text" placeholder="Search" class="search-input">
+                <img src="images/search.png" alt="Search" class="search-icon">
+                <input type="text" placeholder="Search" class="search-input subheading-3">
             </div>
             <div class="profile-avatar">
                 <img src="images/penguin.png" alt="Profile Avatar" class="avatar-image">
@@ -28,31 +28,31 @@
 
         <!-- First-time Help Section (shown when no study plan/progress yet) -->
         <section class="help-section" style="display: none;">
-            <div class="help-card">
+            <div class="help-card shadow-medium shadow-medium-hover">
                 <div class="help-card-header">
                     <div class="help-left">
                         <img src="images/sparkle.png" class="help-sparkle-img" alt="" />
-                        <h2 class="help-title">How can we help?</h2>
+                        <h2 class="help-title subheading-1 text-primary">How can we help?</h2>
                     </div>
                     <button class="more-options" aria-label="More options">
                         <span class="material-icons-round">more_vert</span>
                     </button>
                 </div>
                 <div class="studying-options">
-                    <button class="study-option plan"><img src="images/sparkle-twilight.png" class="btn-sparkle" alt="" /><span>Study plan</span></button>
-                    <button class="study-option">Cram for a test</button>
-                    <button class="study-option">Memorize terms</button>
-                    <button class="study-option">Something else</button>
+                    <button class="study-option plan"><img src="images/sparkle-twilight.png" class="btn-sparkle" alt="" /><span class="subheading-4">Study plan</span></button>
+                    <button class="study-option subheading-4">Cram for a test</button>
+                    <button class="study-option subheading-4">Memorize terms</button>
+                    <button class="study-option subheading-4">Something else</button>
                 </div>
             </div>
         </section>
 
         <!-- Jump Back In Section -->
         <section class="jump-back-section">
-            <h2 class="section-title">Jump back in</h2>
-            <div class="jump-back-card">
+            <h2 class="section-title subheading-1 text-primary">Jump back in</h2>
+            <div class="jump-back-card shadow-medium shadow-medium-hover">
                 <div class="card-header">
-                    <h3 class="card-title">BIOL 210 Exam 1</h3>
+                    <h3 class="card-title subheading-2 text-primary">BIOL 210 Exam 1</h3>
                     <button class="more-options">
                         <span class="material-icons-round">more_vert</span>
                     </button>
@@ -61,9 +61,9 @@
                     <div class="progress-bar">
                         <div class="progress-fill" style="width: 12%"></div>
                     </div>
-                    <p class="progress-text">12% complete</p>
+                    <p class="progress-text subheading-4 text-secondary">12% complete</p>
                 </div>
-                <button class="continue-button">Continue</button>
+                <button class="continue-button subheading-3 shadow-small shadow-medium-hover">Continue</button>
             </div>
         </section>
 
@@ -71,15 +71,15 @@
 
         <!-- Recents Section -->
         <section class="recents-section">
-            <h2 class="section-title">Recents</h2>
+            <h2 class="section-title subheading-1 text-primary">Recents</h2>
             <div class="recents-list">
                 <div class="recent-item">
                     <div class="item-icon">
                         <img src="images/thumbnails.png" alt="Study Set Thumbnail" class="thumbnail-image">
                     </div>
                     <div class="item-info">
-                        <h4 class="item-title">BIOL 210 Exam 1</h4>
-                        <p class="item-subtitle">50 cards • by username37</p>
+                        <h4 class="item-title subheading-3 text-primary">BIOL 210 Exam 1</h4>
+                        <p class="item-subtitle subheading-5 text-secondary">50 cards • by username37</p>
                     </div>
                 </div>
                 <div class="recent-item">
@@ -87,8 +87,8 @@
                         <img src="images/thumbnails.png" alt="Study Set Thumbnail" class="thumbnail-image">
                     </div>
                     <div class="item-info">
-                        <h4 class="item-title">Countries of North and South America</h4>
-                        <p class="item-subtitle">20 cards • by Mr_Juliani</p>
+                        <h4 class="item-title subheading-3 text-primary">Countries of North and South America</h4>
+                        <p class="item-subtitle subheading-5 text-secondary">20 cards • by Mr_Juliani</p>
                     </div>
                 </div>
             </div>
@@ -99,9 +99,9 @@
 
     <!-- Bottom Sheet -->
     <div class="bottom-sheet" id="bottomSheet">
-        <div class="bottom-sheet-content">
+        <div class="bottom-sheet-content shadow-modal">
             <div class="bottom-sheet-header">
-                <h3>Debug Options</h3>
+                <h3 class="subheading-2 text-primary">Debug Options</h3>
                 <button class="close-bottom-sheet" id="closeBottomSheet">
                     <span class="material-icons-round">close</span>
                 </button>
@@ -109,11 +109,11 @@
             <div class="bottom-sheet-actions">
                 <button class="action-button" id="resetProgress">
                     <span class="material-icons-round">refresh</span>
-                    Reset Study Progress
+                    <span class="subheading-3">Reset Study Progress</span>
                 </button>
                 <button class="action-button" id="resetOnboarding">
                     <span class="material-icons-round">restart_alt</span>
-                    Reset onboarding
+                    <span class="subheading-3">Reset onboarding</span>
                 </button>
             </div>
         </div>
@@ -121,19 +121,19 @@
 
     <!-- Chat Interface -->
     <div class="chat-overlay" id="chatOverlay">
-        <div class="chat-container">
+        <div class="chat-container shadow-modal">
             <div class="chat-header">
                 <button class="close-chat" id="closeChat">
                     <span class="material-icons-round">close</span>
                 </button>
-                <h3>Study Assistant</h3>
+                <h3 class="subheading-2 text-primary">Study Assistant</h3>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <!-- Messages will be dynamically added here -->
             </div>
             <div class="chat-input-container">
-                <input type="text" id="chatInput" placeholder="Type your message..." class="chat-input">
-                <button id="sendMessage" class="send-button">
+                <input type="text" id="chatInput" placeholder="Type your message..." class="chat-input subheading-3">
+                <button id="sendMessage" class="send-button shadow-small shadow-medium-hover">
                     <span class="material-icons-round">send</span>
                 </button>
             </div>

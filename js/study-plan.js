@@ -534,23 +534,32 @@ function showToast(message, duration = 3000) {
     toast.className = 'toast';
     toast.textContent = message;
     
-    // Add toast styles
+    // Add toast styles (Design System)
     toast.style.cssText = `
         position: fixed;
         bottom: 100px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 25px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 10px;
+        width: 90%;
+        min-width: 320px;
+        max-width: 480px;
+        min-height: 72px;
+        padding: 0 var(--spacing-small, 16px);
+        background: var(--sys-surface-inverse, #1A1D28);
+        color: var(--sys-text-inverse, #FFFFFF);
+        border-radius: var(--radius-large, 16px);
+        box-shadow: var(--shadow-medium);
         font-size: 14px;
-        font-weight: 500;
+        text-align: left;
+        font-weight: 600;
         z-index: 1000;
         opacity: 0;
         transition: opacity 0.3s ease;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
     `;
     
     // Add to page

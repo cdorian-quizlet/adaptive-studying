@@ -9,9 +9,9 @@
 }
 
 body {
-    font-family: 'Montserrat', 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: #ffffff;
-    color: #333;
+    font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--sys-surface-base);
+    color: var(--sys-text-primary);
     line-height: 1.6;
     font-weight: 600;
     -webkit-font-smoothing: antialiased;
@@ -25,14 +25,14 @@ body {
     flex-direction: column;
     max-width: 414px;
     margin: 0 auto;
-    background: #ffffff;
+    background: var(--sys-surface-base);
 }
 
 /* Header */
 .study-header {
     display: flex;
     flex-direction: column;
-    background: white;
+    background: var(--sys-surface-base);
     padding: 16px 0;
 }
 
@@ -47,7 +47,7 @@ body {
 .close-btn {
     background: none;
     border: none;
-    color: #586380;
+    color: var(--sys-text-secondary);
     font-size: 20px;
     padding: 8px;
     border-radius: 50%;
@@ -122,7 +122,7 @@ body {
 .question-text {
     font-size: 28px;
     font-weight: 600;
-    color: #282E3E;
+    color: var(--sys-text-primary);
     margin: 0 0 24px 0;
     line-height: 1.3;
     text-align: left;
@@ -130,7 +130,7 @@ body {
 
 .question-prompt {
     font-size: 16px;
-    color: #586380;
+    color: var(--sys-text-secondary);
     font-weight: 500;
     margin: 0 0 12px 0;
     text-align: left;
@@ -138,13 +138,13 @@ body {
 }
 
 .question-prompt.feedback {
-    color: #12815A;
+    color: var(--color-mint-600);
     font-weight: 600;
     margin-bottom: 12px;
 }
 
 .question-prompt.feedback.incorrect {
-    color: #FF6B6B;
+    color: var(--color-cherry-400);
     font-weight: 600;
 }
 
@@ -158,13 +158,13 @@ body {
 }
 
 .option-btn {
-    background: white;
-    border: 1px solid #EDEFF4;
+    background: var(--sys-surface-base);
+    border: 1px solid var(--sys-border-primary);
     border-radius: 12px;
     padding: 20px 24px;
     font-size: 16px;
     font-weight: 600;
-    color: #282E3E;
+    color: var(--sys-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
     text-align: left;
@@ -172,21 +172,21 @@ body {
 }
 
 .option-btn:hover {
-    border-color: #4255FF;
-    background: #F6F7FB;
+    border-color: var(--color-twilight-500);
+    background: var(--color-gray-200);
     transform: translateY(-1px);
 }
 
 .option-btn.selected {
-    border-color: #4255FF;
-    background: #4255FF;
+    border-color: var(--color-twilight-500);
+    background: var(--sys-interactive-bg-primary-default);
     color: white;
 }
 
 .option-btn.correct {
-    border: 2px dashed #12815A;
-    background: #FFFFFF;
-    color: #282E3E;
+    border: 2px dashed var(--color-mint-600);
+    background: var(--sys-surface-base);
+    color: var(--sys-text-primary);
     position: relative;
     border-radius: 12px;
 }
@@ -194,7 +194,7 @@ body {
 .option-btn.correct::before {
     content: "check";
     font-family: 'Material Icons Round';
-    color: #12815A;
+    color: var(--color-mint-600);
     font-weight: bold;
     margin-right: 8px;
     font-size: 20px;
@@ -206,9 +206,9 @@ body {
 }
 
 .option-btn.incorrect {
-    border: 2px solid #FFC38C;
-    background: white;
-    color: #282E3E;
+    border: 2px solid var(--color-sherbert-300);
+    background: var(--sys-surface-base);
+    color: var(--sys-text-primary);
     position: relative;
     border-radius: 12px;
 }
@@ -216,7 +216,7 @@ body {
 .option-btn.incorrect::before {
     content: "close";
     font-family: 'Material Icons Round';
-    color: #FFC38C;
+    color: var(--color-sherbert-300);
     font-weight: bold;
     margin-right: 8px;
     font-size: 20px;
@@ -235,29 +235,29 @@ body {
 }
 
 .text-input {
-    border: 2px solid #EDEFF4;
+    border: 2px solid var(--sys-border-primary);
     border-radius: 12px;
     padding: 16px 20px;
     font-size: 16px;
     font-weight: 600;
-    color: #282E3E;
-    background: white;
+    color: var(--sys-text-primary);
+    background: var(--sys-surface-base);
     outline: none;
     transition: all 0.2s ease;
 }
 
 .text-input:focus {
-    border-color: #4255FF;
+    border-color: var(--color-twilight-500);
     outline: none;
 }
 
 .text-input::placeholder {
-    color: #999;
+    color: var(--color-gray-500);
     font-weight: 500;
 }
 
 .submit-btn {
-    background: #4255FF;
+    background: var(--sys-interactive-bg-primary-default);
     color: white;
     border: none;
     border-radius: 12px;
@@ -269,7 +269,7 @@ body {
 }
 
 .submit-btn:hover {
-    background: #3a4be6;
+    background: var(--sys-interactive-bg-primary-hover);
     transform: translateY(-1px);
 }
 
@@ -288,7 +288,7 @@ body {
 
 /* Continue Button */
 .continue-btn {
-    background: #4255FF;
+    background: var(--sys-interactive-bg-primary-default);
     color: white;
     border: none;
     border-radius: 25px;
@@ -305,7 +305,7 @@ body {
 }
 
 .continue-btn:hover {
-    background: #3a4be6;
+    background: var(--sys-interactive-bg-primary-hover);
     transform: translateY(-1px);
 }
 
@@ -322,8 +322,8 @@ body {
 }
 
 .flashcard {
-    background: white;
-    border: 2px solid #EDEFF4;
+    background: var(--sys-surface-base);
+    border: 2px solid var(--sys-border-primary);
     border-radius: 16px;
     padding: 32px 24px;
     cursor: pointer;
@@ -337,9 +337,9 @@ body {
 }
 
 .flashcard:hover {
-    border-color: #4255FF;
+    border-color: var(--color-twilight-500);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(66, 85, 255, 0.1);
+    box-shadow: var(--shadow-interactive);
 }
 
 .flashcard.flipped {
@@ -367,14 +367,14 @@ body {
 .flashcard-definition {
     font-size: 24px;
     font-weight: 600;
-    color: #282E3E;
+    color: var(--sys-text-primary);
     margin-bottom: 12px;
 }
 
 .flashcard-hint,
 .flashcard-explanation {
     font-size: 16px;
-    color: #586380;
+    color: var(--sys-text-secondary);
     font-weight: 500;
 }
 
@@ -386,7 +386,7 @@ body {
 
 .flashcard-btn {
     flex: 1;
-    background: #4255FF;
+    background: var(--sys-interactive-bg-primary-default);
     color: white;
     border: none;
     border-radius: 25px;
@@ -398,7 +398,7 @@ body {
 }
 
 .flashcard-btn:hover {
-    background: #3a4be6;
+    background: var(--sys-interactive-bg-primary-hover);
     transform: translateY(-1px);
 }
 
@@ -407,11 +407,11 @@ body {
 }
 
 .study-again-btn {
-    background: #6B7280;
+    background: var(--color-gray-600);
 }
 
 .study-again-btn:hover {
-    background: #4B5563;
+    background: var(--color-gray-700);
 }
 
 /* Responsive Design */
@@ -437,7 +437,7 @@ body {
 
 /* Focus states for accessibility */
 .back-btn:focus, .close-btn:focus, .option-btn:focus, .submit-btn:focus, .next-btn:focus {
-    outline: 2px solid #4255FF;
+    outline: 2px solid var(--color-twilight-500);
     outline-offset: 2px;
 }
 

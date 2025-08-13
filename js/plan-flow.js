@@ -19,11 +19,171 @@
 
   const state = {
     course: '',
+    school: '',
+    schoolId: '',
     goals: [],
     concepts: [],
     knowledge: '',
     dueDate: ''
   };
+
+  // Debounce helper for typeahead
+  function debounce(fn, wait){
+    let timeout; return function(...args){ clearTimeout(timeout); timeout = setTimeout(()=>fn.apply(this,args), wait); };
+  }
+
+  // Simple in-memory caches
+  const apiCache = { schools: null, courses: null, coursesBySchool: new Map() };
+  
+  // Clear cache on page load to ensure fresh data
+  apiCache.schools = null;
+  apiCache.courses = null;
+  apiCache.coursesBySchool.clear();
+
+  async function fetchSchools(){
+    if (apiCache.schools) return apiCache.schools;
+    try {
+      console.log('Fetching schools from API...');
+      const res = await fetch('https://getschools-p3vlbtsdwa-uc.a.run.app/?country=us');
+      console.log('Schools API response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('Schools API raw response:', data);
+      
+      // API returns {schools: [...]} not an array directly
+      const schoolsArray = data.schools || data;
+      console.log('Schools API data received:', schoolsArray?.length || 0, 'schools');
+      
+      if (Array.isArray(schoolsArray) && schoolsArray.length > 0) {
+        // API returned valid data
+        apiCache.schools = schoolsArray;
+        console.log('Using real API data for schools');
+      } else {
+        // API returned empty or invalid data
+        console.log('API returned empty/invalid data, using fallback schools');
+        apiCache.schools = [
+          { id: '1', name: 'Harvard University' },
+          { id: '2', name: 'Stanford University' },
+          { id: '3', name: 'MIT' },
+          { id: '4', name: 'University of California, Berkeley' },
+          { id: '5', name: 'Yale University' },
+          { id: '6', name: 'Princeton University' },
+          { id: '7', name: 'Columbia University' },
+          { id: '8', name: 'University of Chicago' },
+          { id: '9', name: 'University of Pennsylvania' },
+          { id: '10', name: 'Cornell University' }
+        ];
+      }
+    } catch(e) { 
+      console.error('Error fetching schools:', e);
+      // Fallback data if API fails
+      console.log('API failed, using fallback schools');
+      apiCache.schools = [
+        { id: '1', name: 'Harvard University' },
+        { id: '2', name: 'Stanford University' },
+        { id: '3', name: 'MIT' },
+        { id: '4', name: 'University of California, Berkeley' },
+        { id: '5', name: 'Yale University' },
+        { id: '6', name: 'Princeton University' },
+        { id: '7', name: 'Columbia University' },
+        { id: '8', name: 'University of Chicago' },
+        { id: '9', name: 'University of Pennsylvania' },
+        { id: '10', name: 'Cornell University' }
+      ];
+    }
+    return apiCache.schools;
+  }
+
+  async function fetchCourses(){
+    if (apiCache.courses) return apiCache.courses;
+    try {
+      console.log('Fetching courses from API...');
+      const res = await fetch('https://getcourses-p3vlbtsdwa-uc.a.run.app/?country=us');
+      console.log('Courses API response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('Courses API raw response:', data);
+      
+      // API returns {courses: [...]} not an array directly
+      const coursesArray = data.courses || data;
+      console.log('Courses API data received:', coursesArray?.length || 0, 'courses');
+      
+      if (Array.isArray(coursesArray) && coursesArray.length > 0) {
+        // API returned valid data
+        apiCache.courses = coursesArray;
+        console.log('Using real API data for courses');
+      } else {
+        // API returned empty or invalid data
+        console.log('API returned empty/invalid data, using fallback courses');
+        apiCache.courses = [
+          { id: '1', name: 'BIOL 110 - Introduction to Biology' },
+          { id: '2', name: 'CHEM 101 - General Chemistry' },
+          { id: '3', name: 'PHYS 201 - Physics I' },
+          { id: '4', name: 'MATH 221 - Calculus I' },
+          { id: '5', name: 'PSYC 110 - Introduction to Psychology' },
+          { id: '6', name: 'HIST 205 - World History' },
+          { id: '7', name: 'ENGL 101 - English Composition' },
+          { id: '8', name: 'ECON 201 - Microeconomics' },
+          { id: '9', name: 'COMP 101 - Computer Science Fundamentals' },
+          { id: '10', name: 'IBUS 330 - International Business' }
+        ];
+      }
+    } catch(e) { 
+      console.error('Error fetching courses:', e);
+      // Fallback data if API fails
+      console.log('API failed, using fallback courses');
+      apiCache.courses = [
+        { id: '1', name: 'BIOL 110 - Introduction to Biology' },
+        { id: '2', name: 'CHEM 101 - General Chemistry' },
+        { id: '3', name: 'PHYS 201 - Physics I' },
+        { id: '4', name: 'MATH 221 - Calculus I' },
+        { id: '5', name: 'PSYC 110 - Introduction to Psychology' },
+        { id: '6', name: 'HIST 205 - World History' },
+        { id: '7', name: 'ENGL 101 - English Composition' },
+        { id: '8', name: 'ECON 201 - Microeconomics' },
+        { id: '9', name: 'COMP 101 - Computer Science Fundamentals' },
+        { id: '10', name: 'IBUS 330 - International Business' }
+      ];
+    }
+    return apiCache.courses;
+  }
+
+  async function fetchCoursesBySchool(schoolId){
+    if (!schoolId) return [];
+    if (apiCache.coursesBySchool.has(schoolId)) return apiCache.coursesBySchool.get(schoolId);
+    try {
+      console.log('Fetching courses for school:', schoolId);
+      const res = await fetch(`https://getcoursesbyschool-p3vlbtsdwa-uc.a.run.app/?schoolId=${encodeURIComponent(schoolId)}`);
+      console.log('Courses by school API response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('Courses by school API raw response:', data);
+      
+      // API returns {courses: [...]} not an array directly
+      const coursesArray = data.courses || data;
+      console.log('Courses by school API data received:', coursesArray?.length || 0, 'courses for school', schoolId);
+      
+      const list = Array.isArray(coursesArray) ? coursesArray : [];
+      apiCache.coursesBySchool.set(schoolId, list);
+      return list;
+    } catch(e){ 
+      console.error('Error fetching courses by school:', e);
+      apiCache.coursesBySchool.set(schoolId, []); 
+      return []; 
+    }
+  }
 
   const sampleCourses = ['BIOL 210', 'CHEM 101', 'HIST 205', 'PSYC 110', 'MATH 221', 'IBUS 330'];
   const currentCourses = ['BIOL 210', 'IBUS 330'];
@@ -88,6 +248,7 @@
     updateProgress();
     switch(stepIndex){
       case 1: return renderCourse();
+      case 'addCourse': return renderAddCourse();
       case 2: return renderGoals();
       case 3: return renderConcepts();
       case 4: return renderKnowledge();
@@ -105,7 +266,7 @@
       `<h1 class="flow-title">Let’s make a plan. What are you studying?</h1>`+
       `<div class="search-row">`+
       `  <div class="search-field">`+
-      `    <span class="material-icons-round search-icon" aria-hidden="true">search</span>`+
+      `    <img class="search-icon" src="../images/search.png" alt="Search" aria-hidden="true" />`+
       `    <input id="courseSearch" class="search-input" placeholder="Find a course (e.g. BIO 110)" aria-label="Find a course" />`+
       `  </div>`+
       `  <div id="courseDropdown" class="dropdown"></div>`+
@@ -146,6 +307,15 @@
     }
     populateList(currentCourses);
 
+    // Redirect to add-course screen when the field is focused or clicked
+    const openAddCourse = (e)=>{
+      e.preventDefault();
+      stepIndex = 'addCourse';
+      render();
+    };
+    search.addEventListener('focus', openAddCourse);
+    search.addEventListener('click', openAddCourse);
+
     search.addEventListener('input', () => {
       const q = search.value.toLowerCase();
       const matches = sampleCourses.filter(c => c.toLowerCase().includes(q));
@@ -170,16 +340,166 @@
     list.addEventListener('click', (e)=>{
       const item = e.target.closest('.course-row');
       if(!item) return;
-      list.querySelectorAll('.course-row').forEach(r=>r.classList.remove('selected'));
-      item.classList.add('selected');
-      state.course = item.dataset.course;
       const cta = document.getElementById('coursesCta');
-      if(cta) cta.classList.toggle('hidden', !state.course);
+      const wasSelected = item.classList.contains('selected');
+      list.querySelectorAll('.course-row').forEach(r=>r.classList.remove('selected'));
+      if (wasSelected) {
+        // Deselect if clicking an already selected course
+        state.course = '';
+        if (cta) cta.classList.add('hidden');
+      } else {
+        item.classList.add('selected');
+        state.course = item.dataset.course;
+        if (cta) cta.classList.remove('hidden');
+      }
     });
 
     document.getElementById('coursesContinue').addEventListener('click', ()=>{
       if(state.course) next();
     });
+  }
+
+  // Add Course screen
+  function renderAddCourse(){
+    flowContent.innerHTML = ''+
+      `<h1 class="flow-title">Add course</h1>`+
+      `<div class="input-stack">`+
+      `  <div class="input-field" id="schoolField">`+
+      `    <input id="schoolName" class="text-input" placeholder="School name" aria-label="School name" autocomplete="off" />`+
+      `    <div class="suggest-popover" id="schoolPopover" role="listbox"></div>`+
+      `  </div>`+
+      `  <div class="input-field" id="courseField">`+
+      `    <input id="newCourseName" class="text-input" placeholder="Course name (e.g. BIO 110)" aria-label="Course name" autocomplete="off" />`+
+      `    <div class="suggest-popover" id="coursePopover" role="listbox"></div>`+
+      `  </div>`+
+      `</div>`;
+
+    const schoolName = document.getElementById('schoolName');
+    const newCourseName = document.getElementById('newCourseName');
+    const schoolPopover = document.getElementById('schoolPopover');
+    const coursePopover = document.getElementById('coursePopover');
+    schoolName.value = state.school || '';
+    newCourseName.value = state.course || '';
+
+    const persist = ()=>{
+      state.school = schoolName.value.trim();
+      state.course = newCourseName.value.trim();
+    };
+    schoolName.addEventListener('input', persist);
+    newCourseName.addEventListener('input', persist);
+
+    function renderList(pop, items, nameKey, onSelect){
+      console.log('renderList called with:', items.length, 'items');
+      if (!items || items.length === 0){ 
+        console.log('No items to display, hiding popover');
+        pop.style.display = 'none'; 
+        pop.innerHTML = ''; 
+        return; 
+      }
+      pop.innerHTML = items.slice(0, 8).map(it=>{
+        const id = it.id || it.schoolId || it.courseId || '';
+        const name = it[nameKey] || it.name || '';
+        return `<div class="suggest-item" data-id="${String(id)}" data-name="${name.replace(/"/g,'&quot;')}">${name}</div>`;
+      }).join('');
+      console.log('Showing popover with', items.slice(0, 8).length, 'items');
+      pop.style.display = 'block';
+      pop.onclick = (e)=>{
+        const item = e.target.closest('.suggest-item');
+        if(!item) return;
+        onSelect({ 
+          id: item.getAttribute('data-id'), 
+          name: item.getAttribute('data-name'),
+          displayName: item.getAttribute('data-name') // For backward compatibility
+        });
+      };
+    }
+
+    const filterByQuery = (arr, q, prop)=>{
+      const s = (q||'').trim().toLowerCase();
+      if (!s) return arr.slice(0, 20); // Show first 20 items when no query
+      return arr.filter(x=> String(x[prop]||x.name||'').toLowerCase().includes(s));
+    };
+
+    // Special filter for courses that searches both code and name
+    const filterCoursesByQuery = (courses, q)=>{
+      const s = (q||'').trim().toLowerCase();
+      
+      // Prepare courses with display names (code + name)
+      const coursesWithDisplay = courses.map(course => ({
+        ...course,
+        displayName: `${course.code || ''} - ${course.name || ''}`.trim()
+      }));
+      
+      if (!s) return coursesWithDisplay.slice(0, 20); // Show first 20 items when no query
+      
+      // Filter by either code or name
+      return coursesWithDisplay.filter(course => {
+        const code = String(course.code || '').toLowerCase();
+        const name = String(course.name || '').toLowerCase();
+        const subject = String(course.subject || '').toLowerCase();
+        return code.includes(s) || name.includes(s) || subject.includes(s);
+      });
+    };
+
+    // Schools
+    const updateSchool = debounce(async ()=>{
+      try {
+        const all = await fetchSchools();
+        console.log('Schools loaded:', all.length, 'schools');
+        const items = filterByQuery(all, schoolName.value, 'name');
+        console.log('Filtered schools:', items.length, 'matches for:', schoolName.value);
+        renderList(schoolPopover, items, 'name', (sel)=>{
+          state.schoolId = sel.id || '';
+          state.school = sel.name;
+          schoolName.value = sel.name;
+          schoolPopover.style.display = 'none';
+          // warm courses by school
+          fetchCoursesBySchool(state.schoolId).then(()=>{});
+        });
+      } catch (e) {
+        console.error('Error in updateSchool:', e);
+      }
+    }, 250);
+    schoolName.addEventListener('input', ()=>{ state.schoolId = ''; updateSchool(); });
+    schoolName.addEventListener('focus', updateSchool);
+
+    // Courses - always load all courses
+    const updateCourse = debounce(async ()=>{
+      try {
+        const list = await fetchCourses();
+        console.log('All courses loaded:', list.length, 'courses');
+        
+        // Filter courses that match the query in either code or name
+        const items = filterCoursesByQuery(list, newCourseName.value);
+        console.log('Filtered courses:', items.length, 'matches for:', newCourseName.value);
+        
+        renderList(coursePopover, items, 'displayName', (sel)=>{
+          // Store the full course code and name
+          state.course = sel.displayName;
+          newCourseName.value = sel.displayName;
+          coursePopover.style.display = 'none';
+        });
+      } catch (e) {
+        console.error('Error in updateCourse:', e);
+      }
+    }, 250);
+    newCourseName.addEventListener('input', updateCourse);
+    newCourseName.addEventListener('focus', updateCourse);
+
+    // Close popovers when clicking outside
+    const handleDocClick = (e) => {
+      if (!e.target.closest('#schoolField')) schoolPopover.style.display = 'none';
+      if (!e.target.closest('#courseField')) coursePopover.style.display = 'none';
+    };
+    document.addEventListener('click', handleDocClick);
+    
+    // Back navigation uses the existing back button
+    backBtn.onclick = ()=>{ 
+      document.removeEventListener('click', handleDocClick);
+      persist(); 
+      stepIndex = 1; 
+      render(); 
+    };
   }
 
   // Step 2: Goal selection (multi, Continue visible when >=1)
@@ -221,7 +541,16 @@
 
     list.addEventListener('click', (e)=>{
       const all = e.target.closest('[data-select-all]');
-      if(all){ state.goals = goals.slice(); renderList(); return; }
+      if(all){
+        // Toggle all: if everything is selected, clear; otherwise select all
+        if (Array.isArray(state.goals) && state.goals.length === goals.length) {
+          state.goals = [];
+        } else {
+          state.goals = goals.slice();
+        }
+        renderList();
+        return;
+      }
       const item = e.target.closest('.course-row');
       if(!item) return; const g = item.getAttribute('data-goal'); if(!g) return;
       const i = state.goals.indexOf(g);
@@ -277,7 +606,15 @@
 
     list.addEventListener('click', (e)=>{
       const all = e.target.closest('[data-select-all]');
-      if(all){ state.concepts = concepts.slice(); renderList(); return; }
+      if(all){
+        if (Array.isArray(state.concepts) && state.concepts.length === concepts.length) {
+          state.concepts = [];
+        } else {
+          state.concepts = concepts.slice();
+        }
+        renderList();
+        return;
+      }
       const item = e.target.closest('.course-row');
       if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
       const i = state.concepts.indexOf(c);
@@ -319,10 +656,19 @@
     list.addEventListener('click', (e)=>{
       const row = e.target.closest('.course-row');
       if(!row) return;
-      state.knowledge = row.getAttribute('data-k');
-      renderRows();
-      knowledgeContinue.disabled = false;
-      knowledgeContinue.parentElement.classList.remove('hidden');
+      const selected = row.getAttribute('data-k');
+      if (state.knowledge === selected) {
+        // Deselect current selection
+        state.knowledge = '';
+        renderRows();
+        knowledgeContinue.disabled = true;
+        knowledgeContinue.parentElement.classList.add('hidden');
+      } else {
+        state.knowledge = selected;
+        renderRows();
+        knowledgeContinue.disabled = false;
+        knowledgeContinue.parentElement.classList.remove('hidden');
+      }
     });
     knowledgeContinue.addEventListener('click', ()=>{ if(!knowledgeContinue.disabled) next(); });
   }
