@@ -21,6 +21,7 @@
     course: '',
     school: '',
     schoolId: '',
+    courseSelected: false, // Track if course was selected from results vs just typed
     goals: [],
     concepts: [],
     knowledge: '',
@@ -35,10 +36,38 @@
   // Simple in-memory caches
   const apiCache = { schools: null, courses: null, coursesBySchool: new Map() };
   
-  // Clear cache on page load to ensure fresh data
-  apiCache.schools = null;
-  apiCache.courses = null;
-  apiCache.coursesBySchool.clear();
+  // Cache will be populated on first API call
+
+  // Helper function to process schools and improve location display
+  function expandSchoolLocations(schools) {
+    const processedSchools = [];
+    
+    schools.forEach((school, index) => {
+      // Handle location display
+      let location;
+      if (school.city === "Multiple Locations") {
+        // For schools with multiple locations, show a cleaner message
+        location = school.state ? `Multiple locations in ${school.state.toUpperCase()}` : 'Multiple campus locations';
+      } else {
+        // For schools with specific locations, apply title case to city and uppercase to state
+        const city = school.city ? toTitleCase(school.city) : '';
+        const state = school.state ? school.state.toUpperCase() : '';
+        const fallbackLocation = school.location ? toTitleCase(school.location) : 'Location not specified';
+        
+        location = city && state ? `${city}, ${state}` :
+                  city || state || fallbackLocation;
+      }
+      
+      processedSchools.push({
+        ...school,
+        name: school.name || school.fullName || 'Unknown School',
+        location: location
+      });
+    });
+    
+    console.log(`Processing complete: ${processedSchools.length} schools processed`);
+    return processedSchools;
+  }
 
   async function fetchSchools(){
     if (apiCache.schools) return apiCache.schools;
@@ -59,23 +88,29 @@
       console.log('Schools API data received:', schoolsArray?.length || 0, 'schools');
       
       if (Array.isArray(schoolsArray) && schoolsArray.length > 0) {
-        // API returned valid data
-        apiCache.schools = schoolsArray;
-        console.log('Using real API data for schools');
+        // API returned valid data - process schools for better display
+        const processedSchools = expandSchoolLocations(schoolsArray);
+        apiCache.schools = processedSchools;
+        console.log('Using real API data for schools, processed to', processedSchools.length, 'entries');
       } else {
         // API returned empty or invalid data
         console.log('API returned empty/invalid data, using fallback schools');
         apiCache.schools = [
-          { id: '1', name: 'Harvard University' },
-          { id: '2', name: 'Stanford University' },
-          { id: '3', name: 'MIT' },
-          { id: '4', name: 'University of California, Berkeley' },
-          { id: '5', name: 'Yale University' },
-          { id: '6', name: 'Princeton University' },
-          { id: '7', name: 'Columbia University' },
-          { id: '8', name: 'University of Chicago' },
-          { id: '9', name: 'University of Pennsylvania' },
-          { id: '10', name: 'Cornell University' }
+          { id: '1', name: 'Harvard University', location: 'Cambridge, MA' },
+          { id: '2', name: 'Stanford University', location: 'Stanford, CA' },
+          { id: '3', name: 'MIT', location: 'Cambridge, MA' },
+          { id: '4', name: 'University of California, Berkeley', location: 'Berkeley, CA' },
+          { id: '5', name: 'Yale University', location: 'New Haven, CT' },
+          { id: '6', name: 'Princeton University', location: 'Princeton, NJ' },
+          { id: '7', name: 'Columbia University', location: 'New York, NY' },
+          { id: '8', name: 'University of Chicago', location: 'Chicago, IL' },
+          { id: '9', name: 'University of Pennsylvania', location: 'Philadelphia, PA' },
+          { id: '10', name: 'Cornell University', location: 'Ithaca, NY' },
+          { id: '11', name: 'Arizona State University - Tempe', location: 'Tempe, AZ' },
+          { id: '12', name: 'Arizona State University - Downtown Phoenix', location: 'Phoenix, AZ' },
+          { id: '13', name: 'Arizona State University - West', location: 'Glendale, AZ' },
+          { id: '14', name: 'University of California - Los Angeles', location: 'Los Angeles, CA' },
+          { id: '15', name: 'University of California - San Diego', location: 'San Diego, CA' }
         ];
       }
     } catch(e) { 
@@ -83,16 +118,21 @@
       // Fallback data if API fails
       console.log('API failed, using fallback schools');
       apiCache.schools = [
-        { id: '1', name: 'Harvard University' },
-        { id: '2', name: 'Stanford University' },
-        { id: '3', name: 'MIT' },
-        { id: '4', name: 'University of California, Berkeley' },
-        { id: '5', name: 'Yale University' },
-        { id: '6', name: 'Princeton University' },
-        { id: '7', name: 'Columbia University' },
-        { id: '8', name: 'University of Chicago' },
-        { id: '9', name: 'University of Pennsylvania' },
-        { id: '10', name: 'Cornell University' }
+        { id: '1', name: 'Harvard University', location: 'Cambridge, MA' },
+        { id: '2', name: 'Stanford University', location: 'Stanford, CA' },
+        { id: '3', name: 'MIT', location: 'Cambridge, MA' },
+        { id: '4', name: 'University of California, Berkeley', location: 'Berkeley, CA' },
+        { id: '5', name: 'Yale University', location: 'New Haven, CT' },
+        { id: '6', name: 'Princeton University', location: 'Princeton, NJ' },
+        { id: '7', name: 'Columbia University', location: 'New York, NY' },
+        { id: '8', name: 'University of Chicago', location: 'Chicago, IL' },
+        { id: '9', name: 'University of Pennsylvania', location: 'Philadelphia, PA' },
+        { id: '10', name: 'Cornell University', location: 'Ithaca, NY' },
+        { id: '11', name: 'Arizona State University - Tempe', location: 'Tempe, AZ' },
+        { id: '12', name: 'Arizona State University - Downtown Phoenix', location: 'Phoenix, AZ' },
+        { id: '13', name: 'Arizona State University - West', location: 'Glendale, AZ' },
+        { id: '14', name: 'University of California - Los Angeles', location: 'Los Angeles, CA' },
+        { id: '15', name: 'University of California - San Diego', location: 'San Diego, CA' }
       ];
     }
     return apiCache.schools;
@@ -310,8 +350,23 @@
     // Redirect to add-course screen when the field is focused or clicked
     const openAddCourse = (e)=>{
       e.preventDefault();
-      stepIndex = 'addCourse';
-      render();
+      
+      // Start transition out
+      flowContent.classList.add('transitioning-out');
+      
+      // Wait for transition to complete, then render new content
+      setTimeout(() => {
+        stepIndex = 'addCourse';
+        render();
+        
+        // Start transition in
+        flowContent.classList.add('transitioning-in');
+        
+        // Remove transition classes after animation
+        requestAnimationFrame(() => {
+          flowContent.classList.remove('transitioning-out', 'transitioning-in');
+        });
+      }, 300); // Match CSS transition duration
     };
     search.addEventListener('focus', openAddCourse);
     search.addEventListener('click', openAddCourse);
@@ -361,57 +416,518 @@
 
   // Add Course screen
   function renderAddCourse(){
+    // Hide the main header with progress bar
+    const header = document.querySelector('.flow-header');
+    if (header) header.style.display = 'none';
+    
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">Add course</h1>`+
+      `<div class="add-course-header">`+
+      `  <button class="close-btn" id="addCourseClose" aria-label="Close">`+
+      `    <span class="material-icons-round">close</span>`+
+      `  </button>`+
+      `  <h1 class="add-course-title">Add course</h1>`+
+      `</div>`+
       `<div class="input-stack">`+
       `  <div class="input-field" id="schoolField">`+
       `    <input id="schoolName" class="text-input" placeholder="School name" aria-label="School name" autocomplete="off" />`+
-      `    <div class="suggest-popover" id="schoolPopover" role="listbox"></div>`+
+      `    <button id="schoolClearBtn" class="input-clear-btn" style="display: none;" aria-label="Clear school name">`+
+      `      <img src="../images/clear.png" alt="Clear" />`+
+      `    </button>`+
       `  </div>`+
-      `  <div class="input-field" id="courseField">`+
+      `  <div id="schoolSuggestions" class="location-section" style="display: none; margin-top: 8px;"></div>`+
+      `  <div class="input-field" id="courseField" style="display: none;">`+
       `    <input id="newCourseName" class="text-input" placeholder="Course name (e.g. BIO 110)" aria-label="Course name" autocomplete="off" />`+
-      `    <div class="suggest-popover" id="coursePopover" role="listbox"></div>`+
+      `    <button id="courseClearBtn" class="input-clear-btn" style="display: none;" aria-label="Clear course name">`+
+      `      <img src="../images/clear.png" alt="Clear" />`+
+      `    </button>`+
       `  </div>`+
+      `  <div id="courseSuggestions" class="location-section" style="display: none; margin-top: 8px;"></div>`+
+      `  <div id="locationSection" class="location-section" style="margin-top: 8px;"></div>`+
+      `</div>`+
+      `<div class="add-course-cta hidden" id="addCourseCta">`+
+      `  <button class="primary-btn" id="addCourseBtn">Add course</button>`+
       `</div>`;
 
     const schoolName = document.getElementById('schoolName');
     const newCourseName = document.getElementById('newCourseName');
-    const schoolPopover = document.getElementById('schoolPopover');
-    const coursePopover = document.getElementById('coursePopover');
+    const schoolSuggestions = document.getElementById('schoolSuggestions');
+    const schoolClearBtn = document.getElementById('schoolClearBtn');
+    const courseClearBtn = document.getElementById('courseClearBtn');
+    const courseSuggestions = document.getElementById('courseSuggestions');
+    const courseField = document.getElementById('courseField');
+    const locationSection = document.getElementById('locationSection');
+    
     schoolName.value = state.school || '';
     newCourseName.value = state.course || '';
+    
+    // Initialize clear button states
+    if (state.school && state.schoolId) {
+      schoolClearBtn.style.display = 'flex';
+    }
+    if (state.course) {
+      courseClearBtn.style.display = 'flex';
+    }
+    
+    // Mock location-based schools (Arizona State campuses from the design)
+    const locationSchools = [
+      {
+        id: 'asu-tempe',
+        name: 'Arizona State University - Tempe',
+        address: 'Tempe, AZ'
+      },
+      {
+        id: 'asu-downtown',
+        name: 'Arizona State University - Downtown Phoenix',
+        address: 'Phoenix, AZ'
+      },
+      {
+        id: 'asu-west',
+        name: 'Arizona State University - West',
+        address: 'Glendale, AZ'
+      }
+    ];
+
+    // Mock popular courses data with descriptions
+    const popularCourses = [
+      { name: 'BIO 201 - Human Anatomy & Physiology', description: 'Study of human body structure and function' },
+      { name: 'CHEM 101 - General Chemistry I', description: 'Introduction to chemical principles and reactions' },
+      { name: 'MATH 210 - Calculus I', description: 'Differential and integral calculus fundamentals' },
+      { name: 'PSYC 101 - Introduction to Psychology', description: 'Basic principles of human behavior and cognition' },
+      { name: 'ENG 101 - English Composition', description: 'Academic writing and communication skills' },
+      { name: 'HIST 102 - World History', description: 'Global historical developments and civilizations' },
+      { name: 'PHYS 121 - University Physics I', description: 'Mechanics, waves, and thermodynamics' },
+      { name: 'ECON 211 - Microeconomics', description: 'Individual and firm economic decision-making' }
+    ];
+
+    // State to track if we've requested location yet
+    let locationRequested = false;
+    let userLocation = null;
+    
+    // Function to calculate distance between two coordinates in miles
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 3959; // Earth's radius in miles
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    
+    // Function to get nearby schools based on user location
+    async function getNearbySchools(latitude, longitude, maxDistance = 50) {
+      try {
+        const allSchools = await fetchSchools();
+        const nearbySchools = [];
+        
+        for (const school of allSchools) {
+          // Try to extract coordinates from school data
+          let schoolLat, schoolLon;
+          
+          if (school.latitude && school.longitude) {
+            schoolLat = parseFloat(school.latitude);
+            schoolLon = parseFloat(school.longitude);
+          } else if (school.coords && school.coords.latitude && school.coords.longitude) {
+            schoolLat = parseFloat(school.coords.latitude);
+            schoolLon = parseFloat(school.coords.longitude);
+          } else if (school.location_coordinates) {
+            const coords = school.location_coordinates.split(',');
+            if (coords.length === 2) {
+              schoolLat = parseFloat(coords[0].trim());
+              schoolLon = parseFloat(coords[1].trim());
+            }
+          }
+          
+          if (schoolLat && schoolLon && !isNaN(schoolLat) && !isNaN(schoolLon)) {
+            const distance = calculateDistance(latitude, longitude, schoolLat, schoolLon);
+            if (distance <= maxDistance) {
+              nearbySchools.push({
+                ...school,
+                distance: distance,
+                distanceText: `${Math.round(distance)} miles`
+              });
+            }
+          }
+        }
+        
+        // Sort by distance and return top 6
+        nearbySchools.sort((a, b) => a.distance - b.distance);
+        return nearbySchools.slice(0, 6);
+        
+      } catch (error) {
+        console.error('Error fetching nearby schools:', error);
+        return [];
+      }
+    }
+    
+    // Initialize location section - show shimmer placeholders initially
+    function renderLocationSection() {
+      // Show shimmer placeholders for location schools
+      locationSection.innerHTML = `
+        <div class="location-header">
+          <img class="location-icon" src="../images/location.png" alt="Location" aria-hidden="true" />
+          <span>Based on your location</span>
+        </div>
+        <div class="location-schools">
+          ${Array(3).fill(0).map((_, index) => `
+            <div class="location-school-item shimmer" data-shimmer-index="${index}">
+              <div class="location-school-name"></div>
+              <div class="location-school-address"></div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    
+    // Initialize the location section with shimmer placeholders
+    renderLocationSection();
+    
+    // Immediately request location access when screen loads
+    requestLocationAccess();
+    
+    function requestLocationAccess() {
+      if (locationRequested) return;
+      locationRequested = true;
+      
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            console.log('Location access granted:', position);
+            userLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            };
+            
+            // Fetch nearby schools based on user location
+            const nearbySchools = await getNearbySchools(
+              position.coords.latitude, 
+              position.coords.longitude
+            );
+            
+            showLocationSchools(nearbySchools);
+          },
+          (error) => {
+            console.log('Location access denied or failed:', error);
+            showLocationSchools(); // Show fallback schools if location fails
+          },
+          { 
+            timeout: 10000,
+            enableHighAccuracy: false,
+            maximumAge: 300000 // 5 minutes
+          }
+        );
+      } else {
+        showLocationSchools(); // Show fallback schools without location context
+      }
+    }
+    
+    function showLocationSchools(nearbySchools = null) {
+      // Use API data if available, otherwise fallback to mock data
+      const schoolsToShow = nearbySchools && nearbySchools.length > 0 ? nearbySchools : locationSchools;
+      
+      // Replace shimmer placeholders with actual school data
+      const schoolsContainer = locationSection.querySelector('.location-schools');
+      if (schoolsContainer) {
+        // Replace shimmer items with actual schools
+        schoolsContainer.innerHTML = schoolsToShow.map(school => {
+          const schoolId = school.id || school.schoolId || '';
+          const schoolName = school.name || school.fullName || '';
+          
+          // For nearby schools, show location if < 1 mile, otherwise show distance
+          let displayLocation;
+          if (nearbySchools && school.distance !== undefined) {
+            if (school.distance < 1) {
+              // Show actual location for very close schools
+              const cityState = school.city && school.state ? `${toTitleCase(school.city)}, ${school.state.toUpperCase()}` : '';
+              displayLocation = cityState || school.location || school.address || 'Nearby location';
+            } else {
+              // Show distance for schools that are 1+ miles away
+              displayLocation = `${school.distanceText} away`;
+            }
+          } else {
+            // Fallback for non-location-based schools
+            displayLocation = school.address || school.location || school.city || 'Location not available';
+          }
+          
+          return `
+            <div class="location-school-item" data-school-id="${schoolId}" data-school-name="${schoolName}">
+              <div class="location-school-name">${toTitleCase(schoolName)}</div>
+              <div class="location-school-address">${displayLocation}</div>
+            </div>
+          `;
+        }).join('');
+        
+        // Add click handlers for location schools
+        schoolsContainer.querySelectorAll('.location-school-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const schoolId = item.getAttribute('data-school-id');
+            const schoolName = item.getAttribute('data-school-name');
+            selectSchool(schoolId, schoolName);
+          });
+        });
+      } else {
+        // Fallback: render the entire section if shimmer wasn't properly initialized
+        const headerText = nearbySchools && nearbySchools.length > 0 ? 
+          'Based on your location' : 
+          'Popular schools';
+          
+        locationSection.innerHTML = `
+          <div class="location-header">
+            <img class="location-icon" src="../images/location.png" alt="Location" aria-hidden="true" />
+            <span>${headerText}</span>
+          </div>
+          <div class="location-schools">
+            ${schoolsToShow.map(school => {
+              const schoolId = school.id || school.schoolId || '';
+              const schoolName = school.name || school.fullName || '';
+              
+              // For nearby schools, show location if < 1 mile, otherwise show distance
+              let displayLocation;
+              if (nearbySchools && school.distance !== undefined) {
+                if (school.distance < 1) {
+                  // Show actual location for very close schools
+                  const cityState = school.city && school.state ? `${toTitleCase(school.city)}, ${school.state.toUpperCase()}` : '';
+                  displayLocation = cityState || school.location || school.address || 'Nearby location';
+                } else {
+                  // Show distance for schools that are 1+ miles away
+                  displayLocation = `${school.distanceText} away`;
+                }
+              } else {
+                // Fallback for non-location-based schools
+                displayLocation = school.address || school.location || school.city || 'Location not available';
+              }
+              
+              return `
+                <div class="location-school-item" data-school-id="${schoolId}" data-school-name="${schoolName}">
+                  <div class="location-school-name">${toTitleCase(schoolName)}</div>
+                  <div class="location-school-address">${displayLocation}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        
+        // Add click handlers for location schools
+        locationSection.querySelectorAll('.location-school-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const schoolId = item.getAttribute('data-school-id');
+            const schoolName = item.getAttribute('data-school-name');
+            selectSchool(schoolId, schoolName);
+          });
+        });
+      }
+    }
+    
+    function showPopularCourses(schoolName) {
+      const displayName = toTitleCase(schoolName);
+      locationSection.innerHTML = `
+        <div class="location-header">
+          <img class="location-icon" src="../images/upward-graph.png" alt="Popular" aria-hidden="true" />
+          <span>Popular at ${displayName}</span>
+        </div>
+        <div class="location-schools">
+          ${popularCourses.slice(0, 6).map(course => `
+            <div class="location-school-item" data-course="${course.name}">
+              <div class="location-school-name">${course.name}</div>
+              <div class="location-school-address">${course.description}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      
+      // Show the location section and hide course suggestions
+      locationSection.style.display = 'block';
+      courseSuggestions.style.display = 'none';
+      
+      // Add click handlers for popular courses
+      locationSection.querySelectorAll('.location-school-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const courseName = item.getAttribute('data-course');
+          newCourseName.value = courseName;
+          state.course = courseName;
+          state.courseSelected = true; // Mark course as selected from results
+          
+          // Show clear button after selection
+          courseClearBtn.style.display = 'flex';
+          
+          updateAddCourseButton();
+          
+          // Hide popular courses after selection
+          locationSection.style.display = 'none';
+          courseSuggestions.style.display = 'none';
+        });
+      });
+    }
+    
+    function showCourseResults(courses) {
+      courseSuggestions.innerHTML = `
+        <div class="location-schools">
+          ${courses.slice(0, 8).map(course => {
+            const courseName = course.displayName || course.name || '';
+            const courseDescription = course.description || course.subject || 'Course description';
+            return `
+              <div class="location-school-item" data-course="${courseName}">
+                <div class="location-school-name">${courseName}</div>
+                <div class="location-school-address">${courseDescription}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+      
+      // Show course suggestions and hide popular courses
+      courseSuggestions.style.display = 'block';
+      locationSection.style.display = 'none';
+      
+      // Add click handlers for course results
+      courseSuggestions.querySelectorAll('.location-school-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const courseName = item.getAttribute('data-course');
+          newCourseName.value = courseName;
+          state.course = courseName;
+          state.courseSelected = true; // Mark course as selected from results
+          
+          // Show clear button after selection
+          courseClearBtn.style.display = 'flex';
+          
+          updateAddCourseButton();
+          
+          // Hide course suggestions after selection
+          courseSuggestions.style.display = 'none';
+        });
+      });
+    }
+
+    function selectSchool(schoolId, schoolName) {
+      state.schoolId = schoolId;
+      state.school = schoolName;
+      
+      // Use title case for the input display
+      const titleCaseSchoolName = toTitleCase(schoolName);
+      document.getElementById('schoolName').value = titleCaseSchoolName;
+      
+      // Immediately hide school suggestions and prevent them from showing again
+      schoolSuggestions.style.display = 'none';
+      
+      // Show clear button
+      schoolClearBtn.style.display = 'flex';
+      
+      // Replace location section with popular courses
+      showPopularCourses(titleCaseSchoolName);
+      
+      // Show course input when school is selected
+      courseField.style.display = 'flex';
+      updateAddCourseButton();
+      
+      // Focus on course input
+      setTimeout(() => {
+        newCourseName.focus();
+      }, 100);
+    }
 
     const persist = ()=>{
-      state.school = schoolName.value.trim();
       state.course = newCourseName.value.trim();
+      // Show/hide the Add course button based on whether both fields are filled
+      updateAddCourseButton();
     };
-    schoolName.addEventListener('input', persist);
+    
+    const updateAddCourseButton = ()=>{
+      const addCourseCta = document.getElementById('addCourseCta');
+      const courseInput = document.getElementById('newCourseName');
+      const courseField = document.getElementById('courseField');
+      const hasSelectedSchool = state.schoolId && state.schoolId.trim().length > 0;
+      const hasCourseSelected = state.courseSelected; // Only show button when course is actually selected
+      
+      // Show/hide course input based on actual school selection (not just typing)
+      if (courseField) {
+        if (hasSelectedSchool) {
+          courseField.style.display = 'flex';
+          if (courseInput) {
+            courseInput.disabled = false;
+            courseInput.placeholder = 'Course name (e.g. BIO 110)';
+          }
+        } else {
+          courseField.style.display = 'none';
+          if (courseInput) {
+            courseInput.value = '';
+            state.course = '';
+            state.courseSelected = false;
+          }
+        }
+      }
+      
+      // Show/hide Add course button - only when course is actually selected from results
+      if (addCourseCta) {
+        if (hasSelectedSchool && hasCourseSelected) {
+          addCourseCta.classList.remove('hidden');
+        } else {
+          addCourseCta.classList.add('hidden');
+        }
+      }
+    };
+    
     newCourseName.addEventListener('input', persist);
 
-    function renderList(pop, items, nameKey, onSelect){
+    function renderList(container, items, nameKey, onSelect, useCardLayout = false){
       console.log('renderList called with:', items.length, 'items');
       if (!items || items.length === 0){ 
-        console.log('No items to display, hiding popover');
-        pop.style.display = 'none'; 
-        pop.innerHTML = ''; 
+        console.log('No items to display, hiding container');
+        container.style.display = 'none'; 
+        container.innerHTML = ''; 
         return; 
       }
-      pop.innerHTML = items.slice(0, 8).map(it=>{
-        const id = it.id || it.schoolId || it.courseId || '';
-        const name = it[nameKey] || it.name || '';
-        return `<div class="suggest-item" data-id="${String(id)}" data-name="${name.replace(/"/g,'&quot;')}">${name}</div>`;
-      }).join('');
-      console.log('Showing popover with', items.slice(0, 8).length, 'items');
-      pop.style.display = 'block';
-      pop.onclick = (e)=>{
-        const item = e.target.closest('.suggest-item');
-        if(!item) return;
-        onSelect({ 
-          id: item.getAttribute('data-id'), 
-          name: item.getAttribute('data-name'),
-          displayName: item.getAttribute('data-name') // For backward compatibility
-        });
-      };
+      
+      if (useCardLayout) {
+        // Use card layout for schools (like location schools)
+        container.innerHTML = `
+          <div class="location-schools">
+            ${items.slice(0, 8).map(it=>{
+              const id = it.id || it.schoolId || it.courseId || '';
+              const name = it[nameKey] || it.name || '';
+              const location = it.location || 'School location'; // Use processed location from expandSchoolLocations
+              const titleCaseName = toTitleCase(name);
+              return `
+                <div class="location-school-item" data-id="${String(id)}" data-name="${name.replace(/"/g,'&quot;')}">
+                  <div class="location-school-name">${titleCaseName}</div>
+                  <div class="location-school-address">${location}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        
+        console.log('Showing card layout with', items.slice(0, 8).length, 'items');
+        container.style.display = 'block';
+        
+        container.onclick = (e)=>{
+          const item = e.target.closest('.location-school-item');
+          if(!item) return;
+          onSelect({ 
+            id: item.getAttribute('data-id'), 
+            name: item.getAttribute('data-name'),
+            displayName: item.getAttribute('data-name')
+          });
+        };
+      } else {
+        // Legacy popover support (not used anymore, but keeping for compatibility)
+        container.innerHTML = items.slice(0, 8).map(it=>{
+          const id = it.id || it.schoolId || it.courseId || '';
+          const name = it[nameKey] || it.name || '';
+          return `<div class="suggest-item" data-id="${String(id)}" data-name="${name.replace(/"/g,'&quot;')}">${name}</div>`;
+        }).join('');
+        console.log('Showing popover with', items.slice(0, 8).length, 'items');
+        container.style.display = 'block';
+        container.onclick = (e)=>{
+          const item = e.target.closest('.suggest-item');
+          if(!item) return;
+          onSelect({ 
+            id: item.getAttribute('data-id'), 
+            name: item.getAttribute('data-name'),
+            displayName: item.getAttribute('data-name')
+          });
+        };
+      }
     }
 
     const filterByQuery = (arr, q, prop)=>{
@@ -444,62 +960,231 @@
     // Schools
     const updateSchool = debounce(async ()=>{
       try {
+        // Don't show suggestions if a school is already selected
+        if (state.schoolId) {
+          schoolSuggestions.style.display = 'none';
+          return;
+        }
+        
+        // Only show suggestions if user has typed something
+        const query = schoolName.value.trim();
+        if (!query) {
+          schoolSuggestions.style.display = 'none';
+          // Show location section when input is empty
+          locationSection.style.display = 'block';
+          return;
+        }
+        
+        // Hide location section when user is typing
+        locationSection.style.display = 'none';
+        
         const all = await fetchSchools();
         console.log('Schools loaded:', all.length, 'schools');
-        const items = filterByQuery(all, schoolName.value, 'name');
-        console.log('Filtered schools:', items.length, 'matches for:', schoolName.value);
-        renderList(schoolPopover, items, 'name', (sel)=>{
-          state.schoolId = sel.id || '';
-          state.school = sel.name;
-          schoolName.value = sel.name;
-          schoolPopover.style.display = 'none';
+        const items = filterByQuery(all, query, 'name');
+        console.log('Filtered schools:', items.length, 'matches for:', query);
+        renderList(schoolSuggestions, items, 'name', (sel)=>{
+          selectSchool(sel.id || '', sel.name);
           // warm courses by school
           fetchCoursesBySchool(state.schoolId).then(()=>{});
-        });
+        }, true); // Use card layout for schools
       } catch (e) {
         console.error('Error in updateSchool:', e);
       }
     }, 250);
-    schoolName.addEventListener('input', ()=>{ state.schoolId = ''; updateSchool(); });
-    schoolName.addEventListener('focus', updateSchool);
+    // Clear button functionality
+    schoolClearBtn.addEventListener('click', () => {
+      schoolName.value = '';
+      state.schoolId = '';
+      state.school = '';
+      schoolClearBtn.style.display = 'none';
+      schoolSuggestions.style.display = 'none';
+      courseSuggestions.style.display = 'none';
+      
+      // Clear course input and hide course field
+      newCourseName.value = '';
+      state.course = '';
+      courseClearBtn.style.display = 'none';
+      courseField.style.display = 'none';
+      
+      // Show location section again
+      locationSection.style.display = 'block';
+      
+      // Restore location schools instead of popular courses
+      renderLocationSection();
+      // Re-request location to get fresh nearby schools if available
+      if (userLocation) {
+        getNearbySchools(userLocation.latitude, userLocation.longitude)
+          .then(nearbySchools => showLocationSchools(nearbySchools));
+      } else {
+        requestLocationAccess();
+      }
+      
+      updateAddCourseButton();
+      schoolName.focus();
+    });
+
+    schoolName.addEventListener('input', ()=>{ 
+      state.schoolId = ''; // Clear selected school when user types
+      state.school = schoolName.value.trim();
+      
+      // Hide clear button when typing (will show again when school is selected)
+      schoolClearBtn.style.display = 'none';
+      
+      updateAddCourseButton(); // Hide course field when school selection is cleared
+      updateSchool();
+      
+      // Show/hide location section based on input
+      if (schoolName.value.trim()) {
+        locationSection.style.display = 'none';
+      } else {
+        locationSection.style.display = 'block';
+      }
+    });
+    schoolName.addEventListener('focus', () => {
+      // Don't show typeahead results until user starts typing
+    });
 
     // Courses - always load all courses
     const updateCourse = debounce(async ()=>{
       try {
-        const list = await fetchCourses();
-        console.log('All courses loaded:', list.length, 'courses');
+        const query = newCourseName.value.trim();
         
-        // Filter courses that match the query in either code or name
-        const items = filterCoursesByQuery(list, newCourseName.value);
-        console.log('Filtered courses:', items.length, 'matches for:', newCourseName.value);
+        // If course input is empty and school is selected, show popular courses
+        if (!query && state.schoolId) {
+          showPopularCourses(state.school);
+          return;
+        }
         
-        renderList(coursePopover, items, 'displayName', (sel)=>{
-          // Store the full course code and name
-          state.course = sel.displayName;
-          newCourseName.value = sel.displayName;
-          coursePopover.style.display = 'none';
-        });
+        // If there's a query, show course search results
+        if (query) {
+          const list = await fetchCourses();
+          console.log('All courses loaded:', list.length, 'courses');
+          
+          // Filter courses that match the query in either code or name
+          const items = filterCoursesByQuery(list, query);
+          console.log('Filtered courses:', items.length, 'matches for:', query);
+          
+          if (items.length > 0) {
+            showCourseResults(items);
+          } else {
+            // Hide both sections if no results
+            courseSuggestions.style.display = 'none';
+            locationSection.style.display = 'none';
+          }
+        } else {
+          // Hide course suggestions if no query
+          courseSuggestions.style.display = 'none';
+          if (state.schoolId) {
+            showPopularCourses(state.school);
+          }
+        }
       } catch (e) {
         console.error('Error in updateCourse:', e);
       }
     }, 250);
-    newCourseName.addEventListener('input', updateCourse);
-    newCourseName.addEventListener('focus', updateCourse);
+    
+    // Course clear button functionality
+    courseClearBtn.addEventListener('click', () => {
+      newCourseName.value = '';
+      state.course = '';
+      state.courseSelected = false; // Reset selection state when cleared
+      courseClearBtn.style.display = 'none';
+      courseSuggestions.style.display = 'none';
+      
+      // Show popular courses if school is selected
+      if (state.schoolId) {
+        showPopularCourses(state.school);
+      }
+      
+      updateAddCourseButton();
+      newCourseName.focus();
+    });
 
-    // Close popovers when clicking outside
+    newCourseName.addEventListener('input', ()=>{
+      state.course = newCourseName.value.trim();
+      state.courseSelected = false; // Reset selection state when user types
+      
+      // Show/hide clear button based on content
+      if (newCourseName.value.trim()) {
+        courseClearBtn.style.display = 'flex';
+      } else {
+        courseClearBtn.style.display = 'none';
+      }
+      
+      updateAddCourseButton();
+      updateCourse();
+    });
+    
+    newCourseName.addEventListener('focus', ()=>{
+      // Show popular courses when focusing on empty input with selected school
+      if (!newCourseName.value.trim() && state.schoolId) {
+        showPopularCourses(state.school);
+      } else if (newCourseName.value.trim()) {
+        updateCourse();
+      }
+    });
+
+    // Close suggestions when clicking outside
     const handleDocClick = (e) => {
-      if (!e.target.closest('#schoolField')) schoolPopover.style.display = 'none';
-      if (!e.target.closest('#courseField')) coursePopover.style.display = 'none';
+      if (!e.target.closest('#schoolField') && 
+          !e.target.closest('#schoolSuggestions') && 
+          !e.target.closest('#schoolClearBtn')) {
+        schoolSuggestions.style.display = 'none';
+      }
+      if (!e.target.closest('#courseField') && 
+          !e.target.closest('#courseSuggestions') &&
+          !e.target.closest('#locationSection') &&
+          !e.target.closest('#courseClearBtn')) {
+        courseSuggestions.style.display = 'none';
+        // Don't hide locationSection here since it might contain popular courses
+      }
     };
     document.addEventListener('click', handleDocClick);
     
-    // Back navigation uses the existing back button
-    backBtn.onclick = ()=>{ 
-      document.removeEventListener('click', handleDocClick);
-      persist(); 
-      stepIndex = 1; 
-      render(); 
+    // Close button functionality
+    const closeBtn = document.getElementById('addCourseClose');
+    const goBack = ()=>{ 
+      // Start transition out
+      flowContent.classList.add('transitioning-out');
+      
+      // Wait for transition to complete, then render new content
+      setTimeout(() => {
+        // Restore the main header
+        const header = document.querySelector('.flow-header');
+        if (header) header.style.display = 'flex';
+        
+        document.removeEventListener('click', handleDocClick);
+        persist(); 
+        stepIndex = 1; 
+        render();
+        
+        // Start transition in
+        flowContent.classList.add('transitioning-in');
+        
+        // Remove transition classes after animation
+        requestAnimationFrame(() => {
+          flowContent.classList.remove('transitioning-out', 'transitioning-in');
+        });
+      }, 300); // Match CSS transition duration
     };
+    
+    if (closeBtn) {
+      closeBtn.addEventListener('click', goBack);
+    }
+    
+    // Add course button functionality
+    const addCourseBtn = document.getElementById('addCourseBtn');
+    if (addCourseBtn) {
+      addCourseBtn.addEventListener('click', ()=>{
+        if (state.school && state.course) {
+          // Course added successfully, go back to main flow
+          goBack();
+        }
+      });
+    }
+    
+    // Initialize button visibility
+    updateAddCourseButton();
   }
 
   // Step 2: Goal selection (multi, Continue visible when >=1)
@@ -719,6 +1404,9 @@
   // Helpers
   function escapeHtml(str){ return String(str||'').replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s])); }
   function cssId(str){ return String(str||'').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9_-]/g,''); }
+  function toTitleCase(str){ 
+    return String(str||'').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  }
 
   // Events
   backBtn.addEventListener('click', prev);

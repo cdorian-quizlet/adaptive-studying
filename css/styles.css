@@ -163,6 +163,8 @@
 
     /* Shared Input Tokens */
     --shared-input-border-focus: var(--color-twilight-300);
+  --shared-input-text-disabled: var(--color-gray-500);
+  --shared-input-bg-default: var(--color-gray-200);
     
     /* Interactive Background Colors */
     --sys-interactive-bg-primary-default: var(--color-twilight-500);
