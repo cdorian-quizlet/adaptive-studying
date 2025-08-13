@@ -313,7 +313,7 @@
       `</div>`+
       `<div class="subtle">Your courses</div>`+
       `<div class="course-list-card" id="courseList"></div>`+
-      `<div class="course-cta hidden" id="coursesCta" style="margin-top:48px;"><button class="primary-btn" id="coursesContinue">Continue</button></div>`;
+      `<div class="course-cta hidden" id="coursesCta"><button class="primary-btn" id="coursesContinue">Continue</button></div>`;
 
     const search = document.getElementById('courseSearch');
     const dropdown = document.getElementById('courseDropdown');
@@ -1177,6 +1177,12 @@
     if (addCourseBtn) {
       addCourseBtn.addEventListener('click', ()=>{
         if (state.school && state.course) {
+          // Add the new course to the currentCourses list if not already present
+          if (!currentCourses.includes(state.course)) {
+            currentCourses.push(state.course);
+          }
+          
+          // The course is already set in state.course, so it will be selected when we go back
           // Course added successfully, go back to main flow
           goBack();
         }
