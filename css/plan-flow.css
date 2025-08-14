@@ -379,7 +379,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   align-items: center; 
   justify-content: center; 
   min-height: 64px;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .primary-btn:hover {
@@ -390,6 +390,17 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   background: var(--color-twilight-300); 
   cursor: not-allowed; 
   opacity: 1; 
+}
+
+.primary-btn.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.primary-btn.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 .text-btn { 
   display: flex;
@@ -403,11 +414,11 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   border: none;
   color: var(--color-twilight-500);
   font-family: var(--typography-fontFamily);
-  font-size: var(--typography-size-body-two);
-  line-height: var(--typography-lineHeight-body-two);
+  font-size: var(--typography-size-subheading-three);
+  line-height: var(--typography-lineHeight-subheading-three);
   font-weight: 600;
   cursor: pointer;
-  min-height: 48px;
+  min-height: 64px;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -543,11 +554,9 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 /* Loading */
 .loading-screen {
   min-height: 100vh;
-  padding: 0;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
   position: relative;
 }
 
@@ -559,51 +568,116 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .loading-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 32px;
+  align-items: flex-start;
   flex: 1;
   justify-content: center;
-  padding: 160px 20px 80px;
+  padding: 80px 0;
+  position: relative;
 }
 
 .loading-signature {
-  width: 260px;
-  height: 151px;
-  background-image: url('../images/signature.svg');
+  width: 312px; /* 20% larger: 260 * 1.2 */
+  height: 187px; /* 20% larger: 156 * 1.2 */
+  background-image: url('../images/scribble.png');
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  animation: float 2s ease-in-out infinite;
+  position: absolute;
+  bottom: 228px; /* 172px (text position) + 56px (gap above text) */
+  left: 0px; /* Moved 4px more to the left from 4px */
+  overflow: hidden;
+}
+
+.loading-signature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    transparent 50%, 
+    transparent 50%),
+    linear-gradient(90deg, var(--color-other-rosewater, #FDD2CA) 0%, var(--color-twilight-600, #423ED8) 68.4%, var(--color-twilight-400, #7583FF) 100%);
+  background-size: 200% 100%, 100% 100%;
+  background-position: 100% 0, 0% 0; /* Start from right side for mask gradient, center for color gradient */
+  mask-image: url('../images/scribble.png');
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url('../images/scribble.png');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  animation: fillGradient 1.5s ease-in-out forwards;
+}
+
+.loading-spark {
+  position: absolute;
+  bottom: 388px; /* Moved up 40px more from 348px */
+  left: 328px; /* Moved 16px to the right from 312px */
+  width: 64px;
+  height: 56px;
+  background-image: url('../images/spark.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0;
+  animation: sparkFadeIn 0.5s ease-in-out 1.5s forwards;
 }
 
 .loading-text {
-  font-size: 24px;
+  font-family: var(--typography-fontFamily);
+  font-size: var(--typography-size-header-three);
+  line-height: var(--typography-lineHeight-header-three);
   font-weight: 700;
-  line-height: 32px;
   color: var(--sys-text-primary);
-  text-align: center;
+  text-align: left;
   margin: 0;
+  max-width: 100%;
+  position: absolute;
+  bottom: 172px; /* 140px (progress bar from bottom) + 32px (gap above bar) */
+  left: 20px; /* Align with screen margin */
+  right: 20px;
 }
 
 .loading-bar {
-  width: 160px;
-  height: 4px;
+  height: 6px;
   background: var(--sys-border-primary);
   border-radius: 8px;
   overflow: hidden;
-  margin: 0 20px 40px;
+  position: absolute;
+  bottom: 140px;
+  left: 20px; /* Align with screen margin */
+  right: 20px;
 }
 
 .loading-bar .fill {
   width: 0%;
   height: 100%;
-  background: var(--sys-interactive-bg-primary-default);
-  animation: load 3.2s ease-in-out forwards;
-  border-radius: 8px;
+  border-radius: var(--radius-full, 200px);
+  background: linear-gradient(90deg, var(--color-other-rosewater, #FDD2CA) 0%, var(--color-twilight-600, #423ED8) 68.4%, var(--color-twilight-400, #7583FF) 100%);
+  background-size: 200% 100%;
+  background-position: -50% 0;
+  animation: load 6s ease-in-out forwards, progressGradientMove 2s ease-in-out infinite;
 }
 
 @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
 @keyframes load { from{ width:0%; } to{ width:100%; } }
+@keyframes fillGradient { 
+  from { background-position: 100% 0, 0% 0; } 
+  to { background-position: 0% 0, 0% 0; } 
+}
+@keyframes sparkFadeIn { 
+  from { opacity: 0; transform: scale(0.8); } 
+  to { opacity: 1; transform: scale(1); } 
+}
+@keyframes progressGradientMove {
+  0% { background-position: -50% 0; }
+  50% { background-position: 0% 0; }
+  100% { background-position: 50% 0; }
+}
 
 /* Shimmer loading effect */
 @keyframes shimmer {

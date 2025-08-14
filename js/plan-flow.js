@@ -1305,8 +1305,26 @@
     const concepts = [...defaultConcepts];
     // Extract course code part (before " - " if present) as fallback
     const courseCode = state.course.split(' - ')[0];
+    
+    // Format goals with proper grammar
+    let goalsText = '';
+    if (state.goals && state.goals.length > 0) {
+      if (state.goals.length === 1) {
+        goalsText = state.goals[0];
+      } else if (state.goals.length === 2) {
+        goalsText = `${state.goals[0]} and ${state.goals[1]}`;
+      } else {
+        // 3+ goals: "Exam 1, Exam 2 and Exam 3"
+        const lastGoal = state.goals[state.goals.length - 1];
+        const otherGoals = state.goals.slice(0, -1);
+        goalsText = `${otherGoals.join(', ')} and ${lastGoal}`;
+      }
+    } else {
+      goalsText = courseCode;
+    }
+    
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">What's going to be on ${escapeHtml(state.goals.join(', ') || courseCode)}?</h1>`+
+      `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
       `<div class="course-list-card" id="conceptList"></div>`+
       `<div class="course-list-card" id="addConceptCard">`+
       `  <div class="course-row" id="addConceptRow">`+
@@ -1433,7 +1451,7 @@
       `  <input id="dueDate" class="date-input-hidden" type="date" />`+
       `</div>`+
       `<div class="cta-row" style="display:flex; flex-direction:column; gap:16px;">
-        <button class="primary-btn" id="startBtn" disabled>Start studying</button>
+        <button class="primary-btn hidden" id="startBtn">Start studying</button>
         <button class="text-btn" id="skipBtn">Skip for now</button>
       </div>`;
     
@@ -1498,12 +1516,18 @@
         datePickerText.textContent = formatDateDisplay(state.dueDate);
         datePickerBtn.classList.add('selected');
         updateTitle(state.dueDate);
-        startBtn.disabled = false;
+        
+        // Animate in the start button
+        startBtn.classList.remove('hidden');
+        startBtn.classList.add('show');
       } else {
         datePickerText.textContent = 'Select date';
         datePickerBtn.classList.remove('selected');
         updateTitle();
-        startBtn.disabled = true;
+        
+        // Hide the start button
+        startBtn.classList.add('hidden');
+        startBtn.classList.remove('show');
       }
     });
     
@@ -1513,7 +1537,10 @@
       datePickerText.textContent = formatDateDisplay(state.dueDate);
       datePickerBtn.classList.add('selected');
       updateTitle(state.dueDate);
-      startBtn.disabled = false;
+      
+      // Show the start button if date already exists
+      startBtn.classList.remove('hidden');
+      startBtn.classList.add('show');
     }
     
     document.getElementById('skipBtn').addEventListener('click', goLoading);
@@ -1528,8 +1555,9 @@
       `<div class="loading-screen">
          <div class="loading-content">
            <div class="loading-signature"></div>
-           <div class="loading-text">Generating study plan.</div>
          </div>
+         <div class="loading-spark"></div>
+         <div class="loading-text">Generating study plan.</div>
          <div class="loading-bar"><div class="fill"></div></div>
        </div>`;
 
@@ -1546,7 +1574,7 @@
       if(state.dueDate) localStorage.setItem('plan_due_date', state.dueDate);
     } catch(_){}
 
-    setTimeout(()=>{ window.location.href = '../html/study-plan.html'; }, 3500);
+    setTimeout(()=>{ window.location.href = '../html/study-plan.html'; }, 6000);
   }
 
   // Helpers
