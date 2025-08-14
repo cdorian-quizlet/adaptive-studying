@@ -42,8 +42,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 
 /* Course selection */
 .search-row { display:flex; flex-direction:column; gap:12px; }
-.search-field { display:flex; align-items:center; gap:8px; border:0; border-radius:999px; padding:14px 18px; background:var(--color-gray-200); box-shadow: none; }
-.search-icon { color:var(--sys-text-secondary); font-size:24px; align-self:center; }
+.search-field { display:flex; align-items:center; gap:12px; border:0; border-radius:999px; padding:14px 18px; background:var(--color-gray-200); box-shadow: none; }
+.search-icon { color:var(--sys-text-secondary); font-size:24px; align-self:center; margin: 0; }
 .search-input {
   border: none;
   outline: none;
@@ -69,7 +69,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .add-course-header {
   display: flex;
   align-items: center;
-  padding: 36px 20px 0;
+  padding: 0 20px 0;
   position: relative;
   margin-top: 0;
 }
@@ -102,13 +102,13 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   color: var(--sys-text-primary);
 }
 
-/* Add course CTA specific width override */
 
-.input-stack { display:flex; flex-direction:column; gap:16px; padding: 0 20px 140px; }
+
+.input-stack { display:flex; flex-direction:column; gap:16px; padding: 16px 0 140px; }
 
 /* Location-based suggestions */
 .location-section {
-  margin-top: 24px;
+  margin-top: 48px;
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -164,7 +164,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   font-family: var(--typography-fontFamily);
   font-size: var(--typography-size-subheading-four);
   line-height: var(--typography-lineHeight-subheading-four);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--sys-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -173,7 +173,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 
 
 .input-field { 
-  background: var(--color-gray-200); 
+  background: var(--color-gray-200) url('../images/search.png') no-repeat 16px center;
+  background-size: 24px 24px;
   border-radius: 12px; 
   height: 56px; 
   display: flex; 
@@ -182,7 +183,16 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   position: relative; 
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
-.input-field .text-input { border:0; background:transparent; outline:none; width:100%; color: var(--sys-text-primary); font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-three); line-height: var(--typography-lineHeight-subheading-three); font-weight:600; }
+
+/* Hide search icon when input has content */
+.input-field:has(.text-input:not(:placeholder-shown)) {
+  background-image: none;
+}
+
+.input-field:has(.text-input:not(:placeholder-shown)) .text-input {
+  padding-left: 8px;
+}
+.input-field .text-input { border:0; background:transparent; outline:none; width:100%; color: var(--sys-text-primary); font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-three); line-height: var(--typography-lineHeight-subheading-three); font-weight:600; padding-left: 32px; }
 .input-field .text-input::placeholder { color: var(--sys-text-secondary); opacity:1; }
 .input-field .text-input:disabled { color: var(--shared-input-text-disabled); cursor: not-allowed; }
 .input-field .text-input:disabled::placeholder { color: var(--shared-input-text-disabled); }
@@ -203,9 +213,9 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 
 /* Clear button for school input */
 .input-clear-btn {
-  background: none;
+  background: url('../images/clear.png') no-repeat center/contain;
   border: none;
-  padding: 8px;
+  padding: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -213,14 +223,20 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   border-radius: 50%;
   margin-left: 8px;
   color: var(--sys-text-secondary);
+  width: 24px;
+  height: 24px;
 }
 
 .input-clear-btn:hover {
-  background: rgba(88,99,128,0.1);
+  background-color: rgba(88,99,128,0.1);
+  background-image: url('../images/clear.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .input-clear-btn .material-symbols-rounded {
-  font-size: 20px;
+  display: none;
 }
 
 /* Suggestion popovers */
@@ -289,8 +305,10 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .course-row + .course-row { border-top:1px solid var(--sys-border-primary); }
 .course-text { display:flex; flex-direction:column; gap:0; min-width:0; }
 .course-title { font-size:16px; line-height:24px; color:var(--sys-text-primary); font-weight:600; margin:0; }
-.course-subtitle { font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-four); line-height: var(--typography-lineHeight-subheading-four); font-weight: 500; color:var(--sys-text-secondary); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.course-subtitle { font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-four); line-height: var(--typography-lineHeight-subheading-four); font-weight: 600; color:var(--sys-text-secondary); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-row:hover { background:var(--color-gray-200); }
+.course-row.selected,
+.course-row.selected:hover { background: transparent; }
 
 /* Checkbox indicator using images */
 .course-check {
@@ -322,10 +340,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   transition: opacity .25s ease, transform .25s ease;
 }
 
-.add-course-cta {
-  width: calc(min(100%, 480px) - 80px);
-  max-width: 400px;
-}
+
 
 /* Chips and controls */
 .chip { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; background:var(--sys-interactive-bg-secondary-default); color:var(--color-twilight-500); border-radius:999px; font-weight:600; font-size:14px; cursor:pointer; }
@@ -445,7 +460,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .location-school-item.shimmer .location-school-name {
   width: 100%;
   margin-bottom: 4px;
-  height: var(--typography-lineHeight-subheading-three);
+  height: var(--typography-lineHeight-subheading-four);
   border-radius: var(--radius-xLarge, 24px);
   background: rgba(88, 99, 128, 0.08);
   position: relative;

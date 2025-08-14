@@ -19,6 +19,7 @@
 
   const state = {
     course: '',
+    courseDescription: '',
     school: '',
     schoolId: '',
     courseSelected: false, // Track if course was selected from results vs just typed
@@ -229,6 +230,16 @@
   const currentCourses = ['BIOL 210', 'IBUS 330'];
   const defaultGoals = ['Exam 1', 'Exam 2', 'Exam 3'];
   const defaultConcepts = ['Anatomy & Physiology', 'Cells & Tissues', 'Integumentary System', 'Muscular System'];
+  
+  // Store course descriptions by course name
+  const courseDescriptions = {
+    'BIOL 210': 'Human anatomy and physiology',
+    'IBUS 330': 'International Business and Multicultural...',
+    'PSYC 110': 'Introduction to Psychology',
+    'CHEM 101': 'General chemistry fundamentals',
+    'HIST 205': 'World history since 1500',
+    'MATH 221': 'Calculus I'
+  };
 
   const knowledgeToPill = {
     'Not at all': 'Not at all confident',
@@ -319,21 +330,13 @@
     const dropdown = document.getElementById('courseDropdown');
     const list = document.getElementById('courseList');
 
-    const courseSubtitle = {
-      'BIOL 210': 'Human anatomy and physiology',
-      'IBUS 330': 'International Business and Multicultural...',
-      'PSYC 110': 'Introduction to Psychology',
-      'CHEM 101': 'General chemistry fundamentals',
-      'HIST 205': 'World history since 1500',
-      'MATH 221': 'Calculus I'
-    };
     function populateList(items){
       list.innerHTML = items.map(c => `
         <div class="course-row" data-course="${c}">
           <div class="course-check" aria-hidden="true"></div>
           <div class="course-text">
             <div class="course-title">${escapeHtml(c)}</div>
-            <div class="course-subtitle">${escapeHtml(courseSubtitle[c] || 'Course description')}</div>
+            <div class="course-subtitle">${escapeHtml(courseDescriptions[c] || 'Course description')}</div>
           </div>
         </div>
       `).join('');
@@ -431,14 +434,14 @@
       `  <div class="input-field" id="schoolField">`+
       `    <input id="schoolName" class="text-input" placeholder="School name" aria-label="School name" autocomplete="off" />`+
       `    <button id="schoolClearBtn" class="input-clear-btn" style="display: none;" aria-label="Clear school name">`+
-      `      <img src="../images/clear.png" alt="Clear" />`+
+      `      <span class="material-symbols-rounded">cancel</span>`+
       `    </button>`+
       `  </div>`+
       `  <div id="schoolSuggestions" class="location-section" style="display: none; margin-top: 8px;"></div>`+
       `  <div class="input-field" id="courseField" style="display: none;">`+
       `    <input id="newCourseName" class="text-input" placeholder="Course name (e.g. BIO 110)" aria-label="Course name" autocomplete="off" />`+
       `    <button id="courseClearBtn" class="input-clear-btn" style="display: none;" aria-label="Clear course name">`+
-      `      <img src="../images/clear.png" alt="Clear" />`+
+      `      <span class="material-symbols-rounded">cancel</span>`+
       `    </button>`+
       `  </div>`+
       `  <div id="courseSuggestions" class="location-section" style="display: none; margin-top: 8px;"></div>`+
@@ -464,7 +467,7 @@
     if (state.school && state.schoolId) {
       schoolClearBtn.style.display = 'flex';
     }
-    if (state.course) {
+    if (state.course && state.courseSelected) {
       courseClearBtn.style.display = 'flex';
     }
     
@@ -634,17 +637,12 @@
           const schoolId = school.id || school.schoolId || '';
           const schoolName = school.name || school.fullName || '';
           
-          // For nearby schools, show location if < 1 mile, otherwise show distance
+          // Always show city/location for nearby schools, never distance
           let displayLocation;
           if (nearbySchools && school.distance !== undefined) {
-            if (school.distance < 1) {
-              // Show actual location for very close schools
-              const cityState = school.city && school.state ? `${toTitleCase(school.city)}, ${school.state.toUpperCase()}` : '';
-              displayLocation = cityState || school.location || school.address || 'Nearby location';
-            } else {
-              // Show distance for schools that are 1+ miles away
-              displayLocation = `${school.distanceText} away`;
-            }
+            // Always show actual location for nearby schools
+            const cityState = school.city && school.state ? `${toTitleCase(school.city)}, ${school.state.toUpperCase()}` : '';
+            displayLocation = cityState || school.location || school.address || 'Nearby location';
           } else {
             // Fallback for non-location-based schools
             displayLocation = school.address || school.location || school.city || 'Location not available';
@@ -682,17 +680,12 @@
               const schoolId = school.id || school.schoolId || '';
               const schoolName = school.name || school.fullName || '';
               
-              // For nearby schools, show location if < 1 mile, otherwise show distance
+              // Always show city/location for nearby schools, never distance
               let displayLocation;
               if (nearbySchools && school.distance !== undefined) {
-                if (school.distance < 1) {
-                  // Show actual location for very close schools
-                  const cityState = school.city && school.state ? `${toTitleCase(school.city)}, ${school.state.toUpperCase()}` : '';
-                  displayLocation = cityState || school.location || school.address || 'Nearby location';
-                } else {
-                  // Show distance for schools that are 1+ miles away
-                  displayLocation = `${school.distanceText} away`;
-                }
+                // Always show actual location for nearby schools
+                const cityState = school.city && school.state ? `${toTitleCase(school.city)}, ${school.state.toUpperCase()}` : '';
+                displayLocation = cityState || school.location || school.address || 'Nearby location';
               } else {
                 // Fallback for non-location-based schools
                 displayLocation = school.address || school.location || school.city || 'Location not available';
@@ -807,23 +800,42 @@
       const titleCaseSchoolName = toTitleCase(schoolName);
       document.getElementById('schoolName').value = titleCaseSchoolName;
       
-      // Immediately hide school suggestions and prevent them from showing again
+      // Smooth transition sequence
+      // 1. Hide school suggestions immediately
       schoolSuggestions.style.display = 'none';
       
-      // Show clear button
+      // 2. Start transition out for location section
+      locationSection.classList.add('transitioning-out');
+      
+      // 3. Show clear button
       schoolClearBtn.style.display = 'flex';
       
-      // Replace location section with popular courses
-      showPopularCourses(titleCaseSchoolName);
-      
-      // Show course input when school is selected
-      courseField.style.display = 'flex';
-      updateAddCourseButton();
-      
-      // Focus on course input
+      // 4. After transition out completes, replace content and transition in
       setTimeout(() => {
-        newCourseName.focus();
-      }, 100);
+        // Replace location section with popular courses
+        showPopularCourses(titleCaseSchoolName);
+        
+        // Start transition in for location section (now with popular courses)
+        locationSection.classList.add('transitioning-in');
+        
+        // 5. Show course input with transition
+        if (courseField.style.display === 'none') {
+          courseField.classList.add('transitioning-in');
+          courseField.style.display = 'flex';
+        }
+        
+        // 6. Clean up transition classes and update UI
+        requestAnimationFrame(() => {
+          locationSection.classList.remove('transitioning-out', 'transitioning-in');
+          courseField.classList.remove('transitioning-in');
+          updateAddCourseButton();
+          
+          // Focus on course input after animations complete
+          setTimeout(() => {
+            newCourseName.focus();
+          }, 50);
+        });
+      }, 300); // Match CSS transition duration
     }
 
     const persist = ()=>{
@@ -993,6 +1005,11 @@
     }, 250);
     // Clear button functionality
     schoolClearBtn.addEventListener('click', () => {
+      // Start smooth transition out
+      locationSection.classList.add('transitioning-out');
+      courseField.classList.add('transitioning-out');
+      
+      // Clear state immediately
       schoolName.value = '';
       state.schoolId = '';
       state.school = '';
@@ -1000,27 +1017,39 @@
       schoolSuggestions.style.display = 'none';
       courseSuggestions.style.display = 'none';
       
-      // Clear course input and hide course field
+      // Clear course input
       newCourseName.value = '';
       state.course = '';
       courseClearBtn.style.display = 'none';
-      courseField.style.display = 'none';
       
-      // Show location section again
-      locationSection.style.display = 'block';
-      
-      // Restore location schools instead of popular courses
-      renderLocationSection();
-      // Re-request location to get fresh nearby schools if available
-      if (userLocation) {
-        getNearbySchools(userLocation.latitude, userLocation.longitude)
-          .then(nearbySchools => showLocationSchools(nearbySchools));
-      } else {
-        requestLocationAccess();
-      }
-      
-      updateAddCourseButton();
-      schoolName.focus();
+      // After transition out completes, restore original state
+      setTimeout(() => {
+        // Hide course field and restore location section
+        courseField.style.display = 'none';
+        locationSection.style.display = 'block';
+        
+        // Restore location schools instead of popular courses
+        renderLocationSection();
+        
+        // Start transition in for location section
+        locationSection.classList.add('transitioning-in');
+        
+        // Re-request location to get fresh nearby schools if available
+        if (userLocation) {
+          getNearbySchools(userLocation.latitude, userLocation.longitude)
+            .then(nearbySchools => showLocationSchools(nearbySchools));
+        } else {
+          requestLocationAccess();
+        }
+        
+        // Clean up transition classes
+        requestAnimationFrame(() => {
+          locationSection.classList.remove('transitioning-out', 'transitioning-in');
+          courseField.classList.remove('transitioning-out');
+          updateAddCourseButton();
+          schoolName.focus();
+        });
+      }, 300); // Match CSS transition duration
     });
 
     schoolName.addEventListener('input', ()=>{ 
@@ -1104,12 +1133,8 @@
       state.course = newCourseName.value.trim();
       state.courseSelected = false; // Reset selection state when user types
       
-      // Show/hide clear button based on content
-      if (newCourseName.value.trim()) {
-        courseClearBtn.style.display = 'flex';
-      } else {
-        courseClearBtn.style.display = 'none';
-      }
+      // Hide clear button when user types (only show when course is selected from results)
+      courseClearBtn.style.display = 'none';
       
       updateAddCourseButton();
       updateCourse();
@@ -1179,7 +1204,7 @@
         if (state.school && state.course) {
           // Add the new course to the currentCourses list if not already present
           if (!currentCourses.includes(state.course)) {
-            currentCourses.push(state.course);
+            currentCourses.unshift(state.course); // Add to beginning so newest appears first
           }
           
           // The course is already set in state.course, so it will be selected when we go back
@@ -1196,8 +1221,10 @@
   // Step 2: Goal selection (multi, Continue visible when >=1)
   function renderGoals(){
     const goals = [...defaultGoals];
+    // Extract course code part (before " - " if present)
+    const courseCode = state.course.split(' - ')[0];
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">What should be included from ${escapeHtml(state.course)}?</h1>`+
+      `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
       `<div class="course-list-card" id="goalList"></div>`+
       `<div class="course-list-card" id="addGoalCard">`+
       `  <div class="course-row" id="addGoalRow">`+
@@ -1261,8 +1288,10 @@
   // Step 3: Concept selection (multi with expandable terms)
   function renderConcepts(){
     const concepts = [...defaultConcepts];
+    // Extract course code part (before " - " if present) as fallback
+    const courseCode = state.course.split(' - ')[0];
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">What’s going to be on ${escapeHtml(state.goals.join(', ') || state.course)}?</h1>`+
+      `<h1 class="flow-title">What's going to be on ${escapeHtml(state.goals.join(', ') || courseCode)}?</h1>`+
       `<div class="course-list-card" id="conceptList"></div>`+
       `<div class="course-list-card" id="addConceptCard">`+
       `  <div class="course-row" id="addConceptRow">`+
@@ -1366,8 +1395,10 @@
 
   // Step 5: Date selection
   function renderDate(){
+    // Extract course code part (before " - " if present) as fallback
+    const courseCode = state.course.split(' - ')[0];
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">When do you need to be ready for ${escapeHtml(state.goals[0] || state.course)}?</h1>`+
+      `<h1 class="flow-title">When do you need to be ready for ${escapeHtml(state.goals[0] || courseCode)}?</h1>`+
       `<input id="dueDate" class="date-input" type="date" />`+
       `<div class="cta-row" style="display:flex; flex-direction:column; gap:8px;">
         <button class="primary-btn" id="startBtn" disabled>Start studying</button>
