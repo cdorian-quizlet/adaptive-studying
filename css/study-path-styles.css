@@ -98,7 +98,35 @@ body {
 .pill { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--sys-interactive-bg-secondary-default); color:var(--color-twilight-500); font-weight:600; font-size:12px; }
 .onboarding-title { font-size:18px; font-weight:600; color:var(--sys-text-primary); margin: 8px 0 16px; }
 .onboarding-actions { display:flex; flex-direction:column; gap:8px; }
-.onboarding-actions .primary-btn { width:100%; background:var(--sys-interactive-bg-primary-default); color:var(--sys-surface-base); border:none; border-radius:25px; padding:14px 20px; font-size:16px; font-weight:600; }
+.onboarding-actions .primary-btn { 
+  width: 100%; 
+  background: var(--sys-interactive-bg-primary-default); 
+  color: var(--sys-surface-base); 
+  border: none; 
+  border-radius: 999px; 
+  padding: 14px 20px; 
+  font-family: var(--typography-fontFamily); 
+  font-size: var(--typography-size-subheading-three); 
+  line-height: var(--typography-lineHeight-subheading-three); 
+  font-weight: 600; 
+  cursor: pointer; 
+  opacity: 0.95; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  min-height: 64px;
+  transition: opacity 0.2s ease;
+}
+.onboarding-actions .primary-btn:hover {
+  opacity: 1;
+}
+
+.onboarding-actions .primary-btn:disabled { 
+  background: var(--color-twilight-300); 
+  cursor: not-allowed; 
+  opacity: 1; 
+}
+
 .onboarding-actions .text-btn { background:none; border:none; color:var(--color-twilight-500); font-weight:600; font-size:14px; }
 
 /* FSRS Statistics */

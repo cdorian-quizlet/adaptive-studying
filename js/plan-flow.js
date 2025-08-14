@@ -737,8 +737,11 @@
       locationSection.querySelectorAll('.location-school-item').forEach(item => {
         item.addEventListener('click', () => {
           const courseName = item.getAttribute('data-course');
+          const courseDescription = item.querySelector('.location-school-address').textContent;
+          
           newCourseName.value = courseName;
           state.course = courseName;
+          state.courseDescription = courseDescription; // Store the description
           state.courseSelected = true; // Mark course as selected from results
           
           // Show clear button after selection
@@ -777,8 +780,11 @@
       courseSuggestions.querySelectorAll('.location-school-item').forEach(item => {
         item.addEventListener('click', () => {
           const courseName = item.getAttribute('data-course');
+          const courseDescription = item.querySelector('.location-school-address').textContent;
+          
           newCourseName.value = courseName;
           state.course = courseName;
+          state.courseDescription = courseDescription; // Store the description
           state.courseSelected = true; // Mark course as selected from results
           
           // Show clear button after selection
@@ -864,6 +870,7 @@
           if (courseInput) {
             courseInput.value = '';
             state.course = '';
+            state.courseDescription = ''; // Clear description too
             state.courseSelected = false;
           }
         }
@@ -1020,6 +1027,7 @@
       // Clear course input
       newCourseName.value = '';
       state.course = '';
+      state.courseDescription = ''; // Clear description too
       courseClearBtn.style.display = 'none';
       
       // After transition out completes, restore original state
@@ -1116,6 +1124,7 @@
     courseClearBtn.addEventListener('click', () => {
       newCourseName.value = '';
       state.course = '';
+      state.courseDescription = ''; // Clear description too
       state.courseSelected = false; // Reset selection state when cleared
       courseClearBtn.style.display = 'none';
       courseSuggestions.style.display = 'none';
@@ -1131,6 +1140,7 @@
 
     newCourseName.addEventListener('input', ()=>{
       state.course = newCourseName.value.trim();
+      state.courseDescription = ''; // Clear description when user types manually
       state.courseSelected = false; // Reset selection state when user types
       
       // Hide clear button when user types (only show when course is selected from results)
@@ -1205,6 +1215,11 @@
           // Add the new course to the currentCourses list if not already present
           if (!currentCourses.includes(state.course)) {
             currentCourses.unshift(state.course); // Add to beginning so newest appears first
+            
+            // Store the course description from API data
+            if (state.courseDescription) {
+              courseDescriptions[state.course] = state.courseDescription;
+            }
           }
           
           // The course is already set in state.course, so it will be selected when we go back
@@ -1397,16 +1412,110 @@
   function renderDate(){
     // Extract course code part (before " - " if present) as fallback
     const courseCode = state.course.split(' - ')[0];
+    const goalText = state.goals[0] || courseCode;
+    
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">When do you need to be ready for ${escapeHtml(state.goals[0] || courseCode)}?</h1>`+
-      `<input id="dueDate" class="date-input" type="date" />`+
-      `<div class="cta-row" style="display:flex; flex-direction:column; gap:8px;">
+      `<h1 class="flow-title" id="dateTitle">When do you need to be ready for ${escapeHtml(goalText)}?</h1>`+
+      `<div class="custom-date-picker">`+
+      `  <button class="date-picker-btn" id="datePickerBtn">`+
+      `    <div class="date-picker-content">`+
+      `      <div class="date-picker-icon">`+
+      `        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">`+
+      `          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>`+
+      `          <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>`+
+      `          <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>`+
+      `          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>`+
+      `        </svg>`+
+      `      </div>`+
+      `      <div class="date-picker-text" id="datePickerText">Select date</div>`+
+      `    </div>`+
+      `  </button>`+
+      `  <input id="dueDate" class="date-input-hidden" type="date" />`+
+      `</div>`+
+      `<div class="cta-row" style="display:flex; flex-direction:column; gap:16px;">
         <button class="primary-btn" id="startBtn" disabled>Start studying</button>
         <button class="text-btn" id="skipBtn">Skip for now</button>
       </div>`;
-    const input = document.getElementById('dueDate');
+    
+    const hiddenInput = document.getElementById('dueDate');
+    const datePickerBtn = document.getElementById('datePickerBtn');
+    const datePickerText = document.getElementById('datePickerText');
+    const dateTitle = document.getElementById('dateTitle');
     const startBtn = document.getElementById('startBtn');
-    input.addEventListener('input', ()=>{ state.dueDate = input.value; startBtn.disabled = !state.dueDate; });
+    
+    // Function to format date for display (without days away text)
+    function formatDateDisplay(dateString) {
+      const date = new Date(dateString + 'T00:00:00');
+      const options = { month: 'long', day: 'numeric', year: 'numeric' };
+      return date.toLocaleDateString('en-US', options);
+    }
+    
+    // Function to calculate days away
+    function calculateDaysAway(dateString) {
+      const date = new Date(dateString + 'T00:00:00');
+      const today = new Date();
+      const diffTime = date - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    
+    // Function to update title with days away text
+    function updateTitle(dateString = null) {
+      const newText = dateString ? (() => {
+        const daysAway = calculateDaysAway(dateString);
+        let timeText = '';
+        
+        if (daysAway === 0) timeText = 'today';
+        else if (daysAway === 1) timeText = 'tomorrow';
+        else if (daysAway > 1) timeText = `in ${daysAway} days`;
+        else if (daysAway === -1) timeText = 'yesterday';
+        else if (daysAway < -1) timeText = `${Math.abs(daysAway)} days ago`;
+        
+        return `You need to be ready for ${goalText} ${timeText}. Let's get started!`;
+      })() : `When do you need to be ready for ${goalText}?`;
+      
+      // Only animate if the text is actually changing
+      if (dateTitle.textContent !== newText) {
+        // Start fade out
+        dateTitle.classList.add('updating');
+        
+        // Wait for fade out, then change text and fade in
+        setTimeout(() => {
+          dateTitle.textContent = newText;
+          dateTitle.classList.remove('updating');
+        }, 150); // Half of the transition duration for smooth crossfade
+      }
+    }
+    
+    // Click handler to open native date picker
+    datePickerBtn.addEventListener('click', () => {
+      hiddenInput.showPicker();
+    });
+    
+    // Handle date selection
+    hiddenInput.addEventListener('input', () => {
+      state.dueDate = hiddenInput.value;
+      if (state.dueDate) {
+        datePickerText.textContent = formatDateDisplay(state.dueDate);
+        datePickerBtn.classList.add('selected');
+        updateTitle(state.dueDate);
+        startBtn.disabled = false;
+      } else {
+        datePickerText.textContent = 'Select date';
+        datePickerBtn.classList.remove('selected');
+        updateTitle();
+        startBtn.disabled = true;
+      }
+    });
+    
+    // Initialize with existing date if any
+    if (state.dueDate) {
+      hiddenInput.value = state.dueDate;
+      datePickerText.textContent = formatDateDisplay(state.dueDate);
+      datePickerBtn.classList.add('selected');
+      updateTitle(state.dueDate);
+      startBtn.disabled = false;
+    }
+    
     document.getElementById('skipBtn').addEventListener('click', goLoading);
     startBtn.addEventListener('click', goLoading);
   }
@@ -1416,9 +1525,11 @@
   // Step 6: Loading
   function renderLoading(){
     flowContent.innerHTML = ''+
-      `<div class="loading-wrap">
-         <div class="loading-illustration"></div>
-         <div class="flow-title" style="text-align:center;">Generating study plan.</div>
+      `<div class="loading-screen">
+         <div class="loading-content">
+           <div class="loading-signature"></div>
+           <div class="loading-text">Generating study plan.</div>
+         </div>
          <div class="loading-bar"><div class="fill"></div></div>
        </div>`;
 

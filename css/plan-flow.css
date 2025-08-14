@@ -36,6 +36,11 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   line-clamp: 2;
   overflow: hidden;
   word-break: break-word;
+  transition: opacity 0.3s ease;
+}
+
+.flow-title.updating {
+  opacity: 0;
 }
 .subtle { color:var(--sys-text-secondary); font-size:14px; font-weight:600; }
 .search-row + .subtle { margin-top: 48px; }
@@ -386,7 +391,34 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   cursor: not-allowed; 
   opacity: 1; 
 }
-.text-btn { background:none; border:none; color:var(--color-twilight-500); font-weight:600; font-size:14px; cursor:pointer; padding:10px 6px; }
+.text-btn { 
+  display: flex;
+  padding: var(--spacing-none, 0);
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-none, 0);
+  align-self: stretch;
+  border-radius: var(--radius-full, 200px);
+  background: var(--color-surface, #FFF);
+  border: none;
+  color: var(--color-twilight-500);
+  font-family: var(--typography-fontFamily);
+  font-size: var(--typography-size-body-two);
+  line-height: var(--typography-lineHeight-body-two);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 48px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.text-btn:hover {
+  background: var(--color-gray-200);
+}
+
+.text-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 62, 216, 0.1);
+}
 
 /* Expandable concepts */
 .caret { font-size:20px; color:var(--sys-text-secondary); }
@@ -428,12 +460,149 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 /* Date */
 .date-input { border:1px solid var(--sys-border-primary); border-radius:12px; padding:12px 14px; font-size:16px; width:100%; }
 
+/* Custom Date Picker */
+.custom-date-picker {
+  width: 100%;
+  position: relative;
+}
+
+.date-input-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+.date-picker-btn {
+  height: 76px;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  background: var(--sys-surface-base);
+  border: 1px solid var(--sys-border-primary);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.date-picker-btn:hover {
+  background: var(--color-gray-200);
+}
+
+.date-picker-btn:focus {
+  outline: none;
+  border: 2px solid var(--color-twilight-500);
+  padding: 13px 23px; /* Adjust padding to compensate for thicker border */
+}
+
+.date-picker-btn.selected {
+  box-shadow: var(--shadow-interactive);
+  background: var(--sys-surface-base);
+}
+
+.date-picker-btn.selected:hover {
+  background: var(--color-gray-200);
+}
+
+.date-picker-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.date-picker-icon {
+  color: var(--sys-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.date-picker-btn.selected .date-picker-icon {
+  color: var(--color-twilight-500);
+}
+
+.date-picker-text {
+  font-family: var(--typography-fontFamily);
+  font-size: var(--typography-size-subheading-three);
+  line-height: var(--typography-lineHeight-subheading-three);
+  font-weight: 600;
+  color: var(--sys-text-secondary);
+  flex: 1;
+  text-align: left;
+}
+
+.date-picker-btn.selected .date-picker-text {
+  color: var(--sys-text-primary);
+}
+
 /* Loading */
-.loading-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; padding-top:48px; }
-.loading-illustration { width:220px; height:140px; background: var(--sys-surface-base); border-radius:16px; animation: float 2s ease-in-out infinite; }
+.loading-screen {
+  min-height: 100vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+/* Hide header when loading screen is active */
+.app-container:has(.loading-screen) .flow-header {
+  display: none;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  flex: 1;
+  justify-content: center;
+  padding: 160px 20px 80px;
+}
+
+.loading-signature {
+  width: 260px;
+  height: 151px;
+  background-image: url('../images/signature.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  animation: float 2s ease-in-out infinite;
+}
+
+.loading-text {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  color: var(--sys-text-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.loading-bar {
+  width: 160px;
+  height: 4px;
+  background: var(--sys-border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0 20px 40px;
+}
+
+.loading-bar .fill {
+  width: 0%;
+  height: 100%;
+  background: var(--sys-interactive-bg-primary-default);
+  animation: load 3.2s ease-in-out forwards;
+  border-radius: 8px;
+}
+
 @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
-.loading-bar { width:100%; height:8px; background:var(--sys-border-primary); border-radius:8px; overflow:hidden; }
-.loading-bar .fill { width:0%; height:100%; background:var(--sys-interactive-bg-primary-default); animation: load 3.2s ease-in-out forwards; }
 @keyframes load { from{ width:0%; } to{ width:100%; } }
 
 /* Shimmer loading effect */
