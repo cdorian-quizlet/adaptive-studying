@@ -69,7 +69,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .add-course-header {
   display: flex;
   align-items: center;
-  padding: 0;
+  padding: 36px 20px 0;
   position: relative;
   margin-top: 0;
 }
@@ -85,7 +85,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   align-items: center;
   justify-content: center;
   position: absolute;
-  left: 20px;
+  left: 0px;
 }
 
 .close-btn:hover {
@@ -102,29 +102,14 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   color: var(--sys-text-primary);
 }
 
-.add-course-cta {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 40px;
-  width: calc(min(100%, 440px));
-  max-width: 440px;
-  z-index: 5;
-  opacity: 1;
-  transition: opacity .25s ease, transform .25s ease;
-}
+/* Add course CTA specific width override */
 
-.add-course-cta.hidden {
-  opacity: 0;
-  transform: translate(-50%, 8px);
-  pointer-events: none;
-}
-
-.input-stack { display:flex; flex-direction:column; gap:16px; padding: 16px 20px 140px; }
+.input-stack { display:flex; flex-direction:column; gap:16px; padding: 0 20px 140px; }
 
 /* Location-based suggestions */
 .location-section {
   margin-top: 24px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .location-header {
@@ -147,6 +132,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .location-school-item {
@@ -176,8 +162,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 
 .location-school-address {
   font-family: var(--typography-fontFamily);
-  font-size: var(--typography-size-body-three);
-  line-height: var(--typography-lineHeight-body-three);
+  font-size: var(--typography-size-subheading-four);
+  line-height: var(--typography-lineHeight-subheading-four);
   font-weight: 500;
   color: var(--sys-text-secondary);
   white-space: nowrap;
@@ -186,12 +172,34 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 }
 
 
-.input-field { background: var(--color-gray-200); border-radius: 12px; height: 56px; display:flex; align-items:center; padding: 0 16px; position: relative; }
+.input-field { 
+  background: var(--color-gray-200); 
+  border-radius: 12px; 
+  height: 56px; 
+  display: flex; 
+  align-items: center; 
+  padding: 0 16px; 
+  position: relative; 
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
 .input-field .text-input { border:0; background:transparent; outline:none; width:100%; color: var(--sys-text-primary); font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-three); line-height: var(--typography-lineHeight-subheading-three); font-weight:600; }
 .input-field .text-input::placeholder { color: var(--sys-text-secondary); opacity:1; }
 .input-field .text-input:disabled { color: var(--shared-input-text-disabled); cursor: not-allowed; }
 .input-field .text-input:disabled::placeholder { color: var(--shared-input-text-disabled); }
 .input-field:has(.text-input:disabled) { background: var(--shared-input-bg-default); }
+
+/* Transition states for smooth animations */
+.location-section.transitioning-out,
+.input-field.transitioning-out {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.location-section.transitioning-in,
+.input-field.transitioning-in {
+  opacity: 0;
+  transform: translateY(10px);
+}
 
 /* Clear button for school input */
 .input-clear-btn {
@@ -204,15 +212,15 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   justify-content: center;
   border-radius: 50%;
   margin-left: 8px;
+  color: var(--sys-text-secondary);
 }
 
 .input-clear-btn:hover {
   background: rgba(88,99,128,0.1);
 }
 
-.input-clear-btn img {
-  width: 24px;
-  height: 24px;
+.input-clear-btn .material-symbols-rounded {
+  font-size: 20px;
 }
 
 /* Suggestion popovers */
@@ -281,7 +289,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .course-row + .course-row { border-top:1px solid var(--sys-border-primary); }
 .course-text { display:flex; flex-direction:column; gap:0; min-width:0; }
 .course-title { font-size:16px; line-height:24px; color:var(--sys-text-primary); font-weight:600; margin:0; }
-.course-subtitle { font-size:16px; line-height:24px; color:var(--sys-text-secondary); font-weight:600; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.course-subtitle { font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-four); line-height: var(--typography-lineHeight-subheading-four); font-weight: 500; color:var(--sys-text-secondary); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-row:hover { background:var(--color-gray-200); }
 
 /* Checkbox indicator using images */
@@ -298,21 +306,71 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 #goalList .course-title,
 #addGoalCard .course-title { font-weight:600; }
 
-/* CTA spacing */
-.course-cta { position: fixed; left:50%; transform: translateX(-50%); bottom:40px; width: calc(min(100%, 480px) - 40px); max-width: 480px; z-index: 5; }
+/* Fixed bottom CTA containers - unified styling */
+.bottom-cta, 
+.add-course-cta,
+.course-cta, 
+.cta-row { 
+  position: fixed; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  bottom: 40px; 
+  width: calc(min(100%, 480px) - 40px); 
+  max-width: 480px; 
+  z-index: 5; 
+  opacity: 1; 
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.add-course-cta {
+  width: calc(min(100%, 480px) - 80px);
+  max-width: 400px;
+}
 
 /* Chips and controls */
 .chip { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; background:var(--sys-interactive-bg-secondary-default); color:var(--color-twilight-500); border-radius:999px; font-weight:600; font-size:14px; cursor:pointer; }
 .chip.selected { background:var(--sys-interactive-bg-primary-default); color:var(--sys-surface-base); }
 .chip .remove { font-size:16px; }
 
-.cta-row { position: fixed; left:50%; transform: translateX(-50%); bottom:40px; width: calc(min(100%, 480px) - 40px); max-width: 480px; padding-top: 0; z-index: 5; }
+/* Hidden state for bottom CTAs */
+.bottom-cta.hidden,
+.add-course-cta.hidden,
+.course-cta.hidden, 
+.cta-row.hidden { 
+  opacity: 0; 
+  transform: translate(-50%, 8px); 
+  pointer-events: none; 
+}
+/* Primary button - standardized across all pages */
+.primary-btn { 
+  width: 100%; 
+  background: var(--sys-interactive-bg-primary-default); 
+  color: var(--sys-surface-base); 
+  border: none; 
+  border-radius: 999px; 
+  padding: 14px 20px; 
+  font-family: var(--typography-fontFamily); 
+  font-size: var(--typography-size-subheading-three); 
+  line-height: var(--typography-lineHeight-subheading-three); 
+  font-weight: 600; 
+  cursor: pointer; 
+  opacity: 0.95; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  min-height: 64px;
+  transition: opacity 0.2s ease;
+}
 
-/* Reveal animation for bottom CTA */
-.cta-row, .course-cta { opacity: 1; transition: opacity .25s ease, transform .25s ease; }
-.cta-row.hidden, .course-cta.hidden { opacity: 0; transform: translate(-50%, 8px); pointer-events: none; }
-.primary-btn { width:100%; background:var(--sys-interactive-bg-primary-default); color:var(--sys-surface-base); border:none; border-radius:999px; padding:14px 20px; font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-three); line-height: var(--typography-lineHeight-subheading-three); font-weight:600; cursor:pointer; opacity:0.95; display:flex; align-items:center; justify-content:center; min-height:64px; }
-.primary-btn:disabled { background:var(--color-twilight-300); cursor:not-allowed; opacity:1; }
+.primary-btn:hover {
+  opacity: 1;
+}
+
+.primary-btn:disabled { 
+  background: var(--color-twilight-300); 
+  cursor: not-allowed; 
+  opacity: 1; 
+}
 .text-btn { background:none; border:none; color:var(--color-twilight-500); font-weight:600; font-size:14px; cursor:pointer; padding:10px 6px; }
 
 /* Expandable concepts */
@@ -384,40 +442,44 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   overflow: hidden;
 }
 
-.location-school-item.shimmer::before {
+.location-school-item.shimmer .location-school-name {
+  width: 100%;
+  margin-bottom: 4px;
+  height: var(--typography-lineHeight-subheading-three);
+  border-radius: var(--radius-xLarge, 24px);
+  background: rgba(88, 99, 128, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.location-school-item.shimmer .location-school-name::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.2) 20%,
-    rgba(255, 255, 255, 0.5) 50%,
-    rgba(255, 255, 255, 0.2) 80%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
   animation: shimmer 2s ease-in-out infinite;
-  z-index: 1;
 }
 
-.location-school-item.shimmer .location-school-name,
 .location-school-item.shimmer .location-school-address {
-  height: 20px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.3);
+  width: 60%;
+  height: var(--typography-lineHeight-subheading-four);
+  border-radius: var(--radius-xLarge, 24px);
+  background: rgba(88, 99, 128, 0.08);
   position: relative;
+  overflow: hidden;
 }
 
-.location-school-item.shimmer .location-school-name {
-  width: 75%;
-  margin-bottom: 4px;
-}
-
-.location-school-item.shimmer .location-school-address {
-  width: 55%;
-  height: 16px;
+.location-school-item.shimmer .location-school-address::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
+  animation: shimmer 2s ease-in-out infinite;
 }
 
