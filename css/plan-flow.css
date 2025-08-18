@@ -483,6 +483,15 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   pointer-events: none;
   width: 1px;
   height: 1px;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  /* Ensure the input is accessible for mobile date pickers */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: none;
+  background: transparent;
 }
 
 .date-picker-btn {

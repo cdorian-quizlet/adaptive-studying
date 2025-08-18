@@ -1506,8 +1506,49 @@
     
     // Click handler to open native date picker
     datePickerBtn.addEventListener('click', () => {
-      hiddenInput.showPicker();
+      // Try modern showPicker() first, fallback to focus/click for mobile compatibility
+      if (typeof hiddenInput.showPicker === 'function') {
+        try {
+          hiddenInput.showPicker();
+        } catch (error) {
+          // showPicker() failed, use fallback
+          console.log('showPicker() failed, using fallback:', error);
+          mobileDatePickerFallback();
+        }
+      } else {
+        // showPicker() not supported, use fallback
+        mobileDatePickerFallback();
+      }
     });
+    
+    // Fallback method for mobile browsers that don't support showPicker()
+    function mobileDatePickerFallback() {
+      // Remove hidden styling temporarily to allow focus
+      hiddenInput.style.position = 'absolute';
+      hiddenInput.style.opacity = '0';
+      hiddenInput.style.pointerEvents = 'auto';
+      hiddenInput.style.width = '1px';
+      hiddenInput.style.height = '1px';
+      hiddenInput.style.left = '0';
+      hiddenInput.style.top = '0';
+      
+      // Focus and click the input to trigger mobile date picker
+      hiddenInput.focus();
+      
+      // Trigger click event for better mobile compatibility
+      setTimeout(() => {
+        hiddenInput.click();
+      }, 10);
+      
+      // Restore hidden styling after a brief delay
+      setTimeout(() => {
+        hiddenInput.style.position = 'absolute';
+        hiddenInput.style.opacity = '0';
+        hiddenInput.style.pointerEvents = 'none';
+        hiddenInput.style.width = '1px';
+        hiddenInput.style.height = '1px';
+      }, 100);
+    }
     
     // Handle date selection
     hiddenInput.addEventListener('input', () => {

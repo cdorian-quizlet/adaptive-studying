@@ -14,12 +14,7 @@ const closeBottomSheet = document.getElementById('closeBottomSheet');
 const resetProgressBtn = document.getElementById('resetProgress');
 const resetOnboardingBtn = document.getElementById('resetOnboarding');
 
-// Chat Elements
-const chatOverlay = document.getElementById('chatOverlay');
-const chatMessages = document.getElementById('chatMessages');
-const chatInput = document.getElementById('chatInput');
-const sendMessageBtn = document.getElementById('sendMessage');
-const closeChatBtn = document.getElementById('closeChat');
+
 
 // Configuration
 let PROGRESS_VALUE = 0; // Dynamic progress value
@@ -111,7 +106,21 @@ function setupEventListeners() {
                 smoothNavigate('html/plan-flow.html');
                 return;
             }
-            openChatWithSelection(action);
+            // Show toast for specific buttons
+            if (/^cram for a test$/i.test(action)) {
+                showToast('Cram for a test flow opened');
+                return;
+            }
+            if (/^memorize terms$/i.test(action)) {
+                showToast('Memorize terms flow opened');
+                return;
+            }
+            if (/^something else$/i.test(action)) {
+                showToast('Something else flow opened');
+                return;
+            }
+            // Fallback for any other buttons
+            showToast(`${action} flow opened`);
         });
     });
 
@@ -833,131 +842,9 @@ if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.p
     });
 }
 
-// Chat Functions
-function openChatWithSelection(selection) {
-    showChat();
-    addUserMessage(selection);
-    
-    // Generate AI response based on selection
-    setTimeout(() => {
-        const aiResponse = generateAIResponse(selection);
-        addAssistantMessage(aiResponse);
-    }, 1000);
-}
 
-function showChat() {
-    chatOverlay.classList.add('show');
-    document.body.style.overflow = 'hidden';
-    chatInput.focus();
-}
 
-function hideChat() {
-    chatOverlay.classList.remove('show');
-    document.body.style.overflow = '';
-    chatInput.value = '';
-}
 
-function addUserMessage(text) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message user';
-    messageDiv.innerHTML = `
-        <div class="message-avatar">U</div>
-        <div class="message-content">${text}</div>
-    `;
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-}
-
-function addAssistantMessage(text) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message assistant';
-    messageDiv.innerHTML = `
-        <div class="message-avatar">AI</div>
-        <div class="message-content">${text}</div>
-    `;
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-}
-
-function scrollToBottom() {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function generateAIResponse(selection) {
-    const responses = {
-        'Make a study plan': `Great choice! Let's create a personalized study plan for you. 
-
-I can help you:
-• Set specific learning goals
-• Break down topics into manageable chunks
-• Create a realistic timeline
-• Suggest study techniques
-
-What subject are you studying, and when is your target date?`,
-        
-        'Cram for a test': `I understand you need to study quickly! Let's make the most of your time.
-
-For effective cramming, I recommend:
-• Focus on key concepts and definitions
-• Use active recall techniques
-• Create quick flashcards
-• Take practice tests
-
-What subject is your test on, and how much time do you have?`,
-        
-        'Quickly review': `Perfect! Let's do a quick review to refresh your memory.
-
-I can help you:
-• Identify knowledge gaps
-• Focus on weak areas
-• Use spaced repetition
-• Test your recall
-
-What topic would you like to review?`,
-        
-        'Memorize terms': `Excellent! Memorization is a key study skill.
-
-Let's use proven techniques:
-• Mnemonics and memory tricks
-• Flashcards with spaced repetition
-• Association methods
-• Active recall practice
-
-What terms or concepts do you need to memorize?`
-    };
-    
-    return responses[selection] || `I'd be happy to help you with "${selection}"! What specific topic or subject would you like to focus on?`;
-}
-
-function sendMessage() {
-    const message = chatInput.value.trim();
-    if (message) {
-        addUserMessage(message);
-        chatInput.value = '';
-        
-        // Simulate AI response
-        setTimeout(() => {
-            const aiResponse = `I understand you're asking about "${message}". Let me help you with that. Could you provide more specific details about what you'd like to learn or practice?`;
-            addAssistantMessage(aiResponse);
-        }, 1000);
-    }
-}
-
-// Chat Event Listeners
-closeChatBtn.addEventListener('click', hideChat);
-sendMessageBtn.addEventListener('click', sendMessage);
-
-chatInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        sendMessage();
-    }
-});
-
-chatOverlay.addEventListener('click', function(e) {
-    if (e.target === chatOverlay) {
-        hideChat();
-    }
-});
 
 // Export functions for potential external use
 window.StudyApp = {
@@ -969,6 +856,5 @@ window.StudyApp = {
         if (progressFill) {
             progressFill.style.width = `${newProgress}%`;
         }
-    },
-    openChat: openChatWithSelection
+    }
 }; 
