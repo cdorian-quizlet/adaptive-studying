@@ -39,6 +39,15 @@ document.addEventListener('DOMContentLoaded', function() {
     maybeShowOnboardingSheet();
 });
 
+// Refresh progress when returning from study screen
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        console.log('Page became visible, refreshing progress data');
+        loadStudyPathData();
+        updateUI();
+    }
+});
+
 // Load study plan data from localStorage
 function loadStudyPathData() {
     const savedData = localStorage.getItem('studyPathData');
@@ -59,6 +68,9 @@ function loadStudyPathData() {
     // Try to get FSRS progress first
     const fsrsStats = localStorage.getItem('fsrs_stats');
     let totalProgress = 0;
+    
+    // Check for regular study progress and update roundProgress
+    updateRoundProgressFromStudyData();
     
     if (fsrsStats) {
         try {
@@ -435,6 +447,66 @@ function startRound(roundNumber) {
         ? `../html/study.html?subject=${encodeURIComponent(preferredSubject)}`
         : '../html/study.html';
     window.location.href = url;
+}
+
+// Update roundProgress from regular study session data
+function updateRoundProgressFromStudyData() {
+    // Get regular study progress
+    const studyProgress = localStorage.getItem('studyProgress');
+    const currentQuestionIndex = localStorage.getItem('currentQuestionIndex');
+    const roundProgressData = localStorage.getItem('roundProgressData');
+    
+    if (studyProgress || currentQuestionIndex || roundProgressData) {
+        console.log('Updating roundProgress from study data');
+        
+        // Initialize roundProgress if it doesn't exist
+        if (!studyPathData.roundProgress) {
+            studyPathData.roundProgress = {};
+        }
+        
+        // Method 1: Use roundProgressData if available (most accurate)
+        if (roundProgressData) {
+            try {
+                const roundData = JSON.parse(roundProgressData);
+                Object.keys(roundData).forEach(roundNumber => {
+                    const round = parseInt(roundNumber);
+                    const progress = roundData[round].progress || 0;
+                    if (progress > 0) {
+                        studyPathData.roundProgress[round] = progress;
+                        console.log(`Updated round ${round} progress to ${progress} from roundProgressData`);
+                    }
+                });
+            } catch (error) {
+                console.error('Error parsing roundProgressData:', error);
+            }
+        }
+        
+        // Method 2: Fallback to currentQuestionIndex calculation
+        if (currentQuestionIndex) {
+            const totalQuestionsCompleted = parseInt(currentQuestionIndex);
+            const questionsPerRound = studyPathData.questionsPerRound || 7;
+            
+            // Calculate which rounds have progress
+            for (let round = 1; round <= studyPathData.totalRounds; round++) {
+                const roundStartQuestion = (round - 1) * questionsPerRound;
+                const roundEndQuestion = round * questionsPerRound;
+                
+                if (totalQuestionsCompleted > roundStartQuestion) {
+                    const questionsInRound = Math.min(totalQuestionsCompleted - roundStartQuestion, questionsPerRound);
+                    if (questionsInRound > 0) {
+                        // Only update if we don't already have data for this round
+                        if (!studyPathData.roundProgress[round]) {
+                            studyPathData.roundProgress[round] = questionsInRound;
+                            console.log(`Updated round ${round} progress to ${questionsInRound} from currentQuestionIndex`);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Save the updated data
+        saveStudyPathData();
+    }
 }
 
 // Save study plan data to localStorage
