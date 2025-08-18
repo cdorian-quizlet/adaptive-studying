@@ -96,7 +96,14 @@ body {
 }
 .onboarding-header { margin-bottom: 16px; }
 .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:var(--color-skyblue-200); color:var(--sys-text-primary); font-weight:600; font-size:12px; }
-.onboarding-title { font-size:18px; font-weight:600; color:var(--sys-text-primary); margin: 8px 0 40px; }
+.onboarding-title { 
+  font-family: var(--typography-fontFamily);
+  font-size: var(--typography-size-subheading-two);
+  line-height: var(--typography-lineHeight-subheading-two);
+  font-weight: 600; 
+  color: var(--sys-text-primary); 
+  margin: 8px 0 40px; 
+}
 .onboarding-actions { display:flex; flex-direction:column; gap:8px; }
 .onboarding-actions .primary-btn { 
   width: 100%; 
