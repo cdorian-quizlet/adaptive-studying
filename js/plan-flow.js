@@ -1505,49 +1505,85 @@
     }
     
     // Click handler to open native date picker
-    datePickerBtn.addEventListener('click', () => {
-      // Try modern showPicker() first, fallback to focus/click for mobile compatibility
+    datePickerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('Date picker button clicked');
+      
+      // Try showPicker first for modern browsers
       if (typeof hiddenInput.showPicker === 'function') {
         try {
           hiddenInput.showPicker();
+          console.log('showPicker() succeeded');
+          return;
         } catch (error) {
-          // showPicker() failed, use fallback
-          console.log('showPicker() failed, using fallback:', error);
-          mobileDatePickerFallback();
+          console.log('showPicker() failed:', error);
         }
-      } else {
-        // showPicker() not supported, use fallback
-        mobileDatePickerFallback();
       }
+      
+      // Fallback for mobile/unsupported browsers
+      console.log('Using mobile overlay fallback');
+      createMobileOverlay();
     });
     
-    // Fallback method for mobile browsers that don't support showPicker()
-    function mobileDatePickerFallback() {
-      // Remove hidden styling temporarily to allow focus
-      hiddenInput.style.position = 'absolute';
-      hiddenInput.style.opacity = '0';
-      hiddenInput.style.pointerEvents = 'auto';
-      hiddenInput.style.width = '1px';
-      hiddenInput.style.height = '1px';
-      hiddenInput.style.left = '0';
-      hiddenInput.style.top = '0';
+    // Create a temporary overlay input for mobile browsers
+    function createMobileOverlay() {
+      // Create overlay input element
+      const overlayInput = document.createElement('input');
+      overlayInput.type = 'date';
+      overlayInput.value = hiddenInput.value;
       
-      // Focus and click the input to trigger mobile date picker
-      hiddenInput.focus();
+      // Get button position
+      const btnRect = datePickerBtn.getBoundingClientRect();
       
-      // Trigger click event for better mobile compatibility
-      setTimeout(() => {
-        hiddenInput.click();
-      }, 10);
+      // Style the overlay to cover the button exactly
+      overlayInput.style.position = 'fixed';
+      overlayInput.style.left = btnRect.left + 'px';
+      overlayInput.style.top = btnRect.top + 'px';
+      overlayInput.style.width = btnRect.width + 'px';
+      overlayInput.style.height = btnRect.height + 'px';
+      overlayInput.style.opacity = '0';
+      overlayInput.style.zIndex = '10000';
+      overlayInput.style.fontSize = '16px'; // Prevents zoom on iOS
+      overlayInput.style.border = 'none';
+      overlayInput.style.background = 'transparent';
+      overlayInput.style.borderRadius = '20px';
       
-      // Restore hidden styling after a brief delay
-      setTimeout(() => {
-        hiddenInput.style.position = 'absolute';
-        hiddenInput.style.opacity = '0';
-        hiddenInput.style.pointerEvents = 'none';
-        hiddenInput.style.width = '1px';
-        hiddenInput.style.height = '1px';
-      }, 100);
+      // Add to document
+      document.body.appendChild(overlayInput);
+      
+      // Focus and click to trigger date picker
+      overlayInput.focus();
+      overlayInput.click();
+      
+      console.log('Overlay input created and clicked');
+      
+      // Handle date selection
+      overlayInput.addEventListener('change', () => {
+        console.log('Date selected:', overlayInput.value);
+        hiddenInput.value = overlayInput.value;
+        // Trigger the input event on the hidden input
+        hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        removeOverlay();
+      });
+      
+      // Handle blur (user cancels)
+      overlayInput.addEventListener('blur', () => {
+        console.log('Overlay input blurred');
+        setTimeout(removeOverlay, 100); // Small delay to allow change event
+      });
+      
+      // Remove overlay function
+      function removeOverlay() {
+        if (overlayInput.parentNode) {
+          overlayInput.parentNode.removeChild(overlayInput);
+          console.log('Overlay input removed');
+        }
+      }
+      
+      // Auto-remove after 10 seconds as failsafe
+      setTimeout(removeOverlay, 10000);
     }
     
     // Handle date selection
