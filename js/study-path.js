@@ -104,9 +104,10 @@ function generateDynamicStudyPlan() {
             headerTitle.textContent = studyPathData.courseName;
         }
         
-        // Calculate total rounds based on concepts (add 1 for diagnostic)
+        // Calculate total rounds based on concepts plus diagnostic tests
         const conceptCount = studyPathData.concepts.length;
-        studyPathData.totalRounds = conceptCount + 1; // +1 for diagnostic
+        const diagnosticCount = 1 + Math.floor((conceptCount - 1) / 2); // Initial + diagnostics every 2 rounds
+        studyPathData.totalRounds = conceptCount + diagnosticCount;
         
         // Generate dynamic HTML for path steps
         const pathContainer = document.querySelector('.path-container');
@@ -126,40 +127,40 @@ function generateDynamicStudyPlan() {
 // Generate HTML for path steps based on concepts
 function generatePathStepsHTML() {
     let html = '';
+    let stepCount = 0;
     
-    // Diagnostic Test
-    html += `
-        <div class="path-step diagnostic" data-round="diagnostic">
-            <div class="step-indicator">
-                <div class="step-circle">
-                    <span class="material-symbols-rounded step-icon">checklist</span>
-                </div>
-                <div class="step-line"></div>
-            </div>
-            <div class="step-content">
-                <div class="step-header">
-                    <h3 class="step-title">Diagnostic Test</h3>
-                    <div class="step-status" id="diagnosticStatus">
-                        <span class="status-text">Take Test</span>
+    // Helper function to generate diagnostic test HTML
+    function generateDiagnosticHTML(type, title, description) {
+        return `
+            <div class="path-step diagnostic" data-round="diagnostic-${type}">
+                <div class="step-indicator">
+                    <div class="step-circle">
+                        <span class="material-symbols-rounded step-icon">checklist</span>
                     </div>
+                    <div class="step-line"></div>
                 </div>
-                <p class="step-description">Test your knowledge to skip ahead</p>
+                <div class="step-content">
+                    <div class="step-header">
+                        <h3 class="step-title">${title}</h3>
+                        <div class="step-status" id="diagnostic${type.charAt(0).toUpperCase() + type.slice(1)}Status">
+                            <span class="status-text">Take Test</span>
+                        </div>
+                    </div>
+                    <p class="step-description">${description}</p>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
     
-    // Generate rounds for each concept
-    studyPathData.concepts.forEach((concept, index) => {
-        const roundNumber = index + 1;
-        const isLastRound = index === studyPathData.concepts.length - 1;
-        
-        html += `
+    // Helper function to generate round HTML
+    function generateRoundHTML(concept, roundNumber, hasNextStep) {
+        return `
             <div class="path-step" data-round="${roundNumber}">
                 <div class="step-indicator">
                     <div class="step-circle">
                         <span class="material-icons-round step-icon">star</span>
                     </div>
-                    ${!isLastRound ? '<div class="step-line"></div>' : ''}
+                    ${hasNextStep ? '<div class="step-line"></div>' : ''}
                 </div>
                 <div class="step-content">
                     <div class="step-header">
@@ -178,6 +179,49 @@ function generatePathStepsHTML() {
                 </div>
             </div>
         `;
+    }
+    
+    // Initial Diagnostic Test
+    html += generateDiagnosticHTML('initial', 'Diagnostic Test', 'Test your knowledge to skip ahead');
+    stepCount++;
+    
+    // Generate rounds with diagnostic tests every 2 rounds
+    studyPathData.concepts.forEach((concept, index) => {
+        const roundNumber = index + 1;
+        const isLastConcept = index === studyPathData.concepts.length - 1;
+        
+        // Add the round
+        const hasNextStep = !isLastConcept || (roundNumber % 2 === 0 && !isLastConcept);
+        html += generateRoundHTML(concept, roundNumber, hasNextStep);
+        stepCount++;
+        
+        // Add diagnostic test every 2 rounds (but not after the last concept)
+        if (roundNumber % 2 === 0 && !isLastConcept) {
+            const diagnosticNumber = Math.floor(roundNumber / 2) + 1;
+            let diagnosticType, diagnosticTitle, diagnosticDescription;
+            
+            if (diagnosticNumber === 2) {
+                diagnosticType = 'mid';
+                diagnosticTitle = 'Mid-Progress Diagnostic';
+                diagnosticDescription = 'Check your progress and identify areas to focus on';
+            } else {
+                diagnosticType = `checkpoint${diagnosticNumber}`;
+                diagnosticTitle = `Checkpoint Diagnostic ${diagnosticNumber - 1}`;
+                diagnosticDescription = 'Assess your learning and adjust your study path';
+            }
+            
+            const hasNextStepAfterDiagnostic = index < studyPathData.concepts.length - 1;
+            html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, diagnosticDescription);
+            
+            // Update the step line for the diagnostic
+            if (hasNextStepAfterDiagnostic) {
+                html = html.replace(/(<div class="step-line"><\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*)$/, '$1');
+            } else {
+                html = html.replace(/(<div class="step-line"><\/div>)(?=\s*<\/div>\s*<\/div>\s*<\/div>\s*$)/, '');
+            }
+            
+            stepCount++;
+        }
     });
     
     return html;
@@ -320,15 +364,20 @@ function updatePathSteps() {
         const stepProgressFill = step.querySelector('.step-progress-fill');
         const stepProgressText = step.querySelector('.step-progress-text');
         
-        if (roundType === 'diagnostic') {
-            // Initial diagnostic test
+        if (roundType === 'diagnostic-initial' || roundType === 'diagnostic') {
+            // Initial diagnostic test (support legacy 'diagnostic' format)
             updateDiagnosticStep(step, stepCircle, stepStatus, 'diagnostic');
         } else if (roundType === 'diagnostic-mid') {
             // Mid diagnostic test
             updateDiagnosticStep(step, stepCircle, stepStatus, 'diagnosticMid');
-        } else if (roundType === 'diagnostic-final') {
-            // Final diagnostic test
-            updateDiagnosticStep(step, stepCircle, stepStatus, 'diagnosticFinal');
+        } else if (roundType.startsWith('diagnostic-checkpoint')) {
+            // Checkpoint diagnostic tests
+            const checkpointNum = roundType.replace('diagnostic-checkpoint', '');
+            updateDiagnosticStep(step, stepCircle, stepStatus, `diagnosticCheckpoint${checkpointNum}`);
+        } else if (roundType.startsWith('diagnostic-')) {
+            // Any other diagnostic type
+            const diagnosticType = roundType.replace('diagnostic-', '');
+            updateDiagnosticStep(step, stepCircle, stepStatus, `diagnostic${diagnosticType.charAt(0).toUpperCase() + diagnosticType.slice(1)}`);
         } else {
             // Regular round
             const roundNumber = parseInt(roundType);
@@ -496,15 +545,19 @@ function setupEventListeners() {
         step.addEventListener('click', function() {
             const roundType = step.dataset.round;
             
-            if (roundType === 'diagnostic') {
+                        if (roundType === 'diagnostic-initial') {
                 startDiagnosticTest('initial');
             } else if (roundType === 'diagnostic-mid') {
                 startDiagnosticTest('mid');
-            } else if (roundType === 'diagnostic-final') {
-                startDiagnosticTest('final');
+            } else if (roundType.startsWith('diagnostic-checkpoint')) {
+                const checkpointNum = roundType.replace('diagnostic-checkpoint', '');
+                startDiagnosticTest(`checkpoint${checkpointNum}`);
+            } else if (roundType === 'diagnostic') {
+                // Legacy support for old diagnostic format
+                startDiagnosticTest('initial');
             } else {
                 const roundNumber = parseInt(roundType);
-            startRound(roundNumber);
+                startRound(roundNumber);
             }
         });
     });
@@ -566,7 +619,15 @@ function startDiagnosticTest(type) {
             window.location.href = '../html/diagnostic-3.html';
             break;
         default:
-            showToast(`Starting ${type} diagnostic test...`);
+            // For checkpoint diagnostics and other types, use diagnostic-1.html as default
+            // You can create additional diagnostic HTML files as needed
+            if (type.startsWith('checkpoint')) {
+                showToast(`Starting checkpoint diagnostic test...`);
+                window.location.href = '../html/diagnostic-1.html';
+            } else {
+                showToast(`Starting ${type} diagnostic test...`);
+                window.location.href = '../html/diagnostic-1.html';
+            }
     }
 }
 
