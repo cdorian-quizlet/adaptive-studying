@@ -138,8 +138,22 @@ body {
   background: var(--color-surface, #FFF);
   border: none;
   color: var(--color-twilight-500);
+  font-family: var(--typography-fontFamily);
+  font-size: var(--typography-size-subheading-three);
+  line-height: var(--typography-lineHeight-subheading-three);
   font-weight: 600;
-  font-size: 14px;
+  cursor: pointer;
+  min-height: 64px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.onboarding-actions .text-btn:hover {
+  background: var(--color-gray-200);
+}
+
+.onboarding-actions .text-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 62, 216, 0.1);
 }
 
 /* FSRS Statistics */
