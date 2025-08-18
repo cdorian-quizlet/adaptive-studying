@@ -1504,86 +1504,120 @@
       }
     }
     
-    // Click handler to open native date picker
-    datePickerBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      console.log('Date picker button clicked');
-      
-      // Try showPicker first for modern browsers
-      if (typeof hiddenInput.showPicker === 'function') {
-        try {
-          hiddenInput.showPicker();
-          console.log('showPicker() succeeded');
-          return;
-        } catch (error) {
-          console.log('showPicker() failed:', error);
-        }
-      }
-      
-      // Fallback for mobile/unsupported browsers
-      console.log('Using mobile overlay fallback');
-      createMobileOverlay();
-    });
+    // Detect mobile browsers
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent);
     
-    // Create a temporary overlay input for mobile browsers
-    function createMobileOverlay() {
-      // Create overlay input element
-      const overlayInput = document.createElement('input');
-      overlayInput.type = 'date';
-      overlayInput.value = hiddenInput.value;
-      
-      // Get button position
-      const btnRect = datePickerBtn.getBoundingClientRect();
-      
-      // Style the overlay to cover the button exactly
-      overlayInput.style.position = 'fixed';
-      overlayInput.style.left = btnRect.left + 'px';
-      overlayInput.style.top = btnRect.top + 'px';
-      overlayInput.style.width = btnRect.width + 'px';
-      overlayInput.style.height = btnRect.height + 'px';
-      overlayInput.style.opacity = '0';
-      overlayInput.style.zIndex = '10000';
-      overlayInput.style.fontSize = '16px'; // Prevents zoom on iOS
-      overlayInput.style.border = 'none';
-      overlayInput.style.background = 'transparent';
-      overlayInput.style.borderRadius = '20px';
-      
-      // Add to document
-      document.body.appendChild(overlayInput);
-      
-      // Focus and click to trigger date picker
-      overlayInput.focus();
-      overlayInput.click();
-      
-      console.log('Overlay input created and clicked');
-      
-      // Handle date selection
-      overlayInput.addEventListener('change', () => {
-        console.log('Date selected:', overlayInput.value);
-        hiddenInput.value = overlayInput.value;
-        // Trigger the input event on the hidden input
-        hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
-        removeOverlay();
-      });
-      
-      // Handle blur (user cancels)
-      overlayInput.addEventListener('blur', () => {
-        console.log('Overlay input blurred');
-        setTimeout(removeOverlay, 100); // Small delay to allow change event
-      });
-      
-      // Remove overlay function
-      function removeOverlay() {
-        if (overlayInput.parentNode) {
-          overlayInput.parentNode.removeChild(overlayInput);
-          console.log('Overlay input removed');
+    // For mobile browsers, replace the button with a styled date input
+    if (isMobile) {
+      console.log('Mobile detected, using direct date input approach');
+      replaceBtnWithDateInput();
+    } else {
+      // Desktop: Click handler to open native date picker
+      datePickerBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Date picker button clicked (desktop)');
+        
+        // Try showPicker for desktop browsers
+        if (typeof hiddenInput.showPicker === 'function') {
+          try {
+            hiddenInput.showPicker();
+            console.log('showPicker() succeeded');
+            return;
+          } catch (error) {
+            console.log('showPicker() failed:', error);
+          }
         }
+        
+        // Desktop fallback
+        hiddenInput.focus();
+        hiddenInput.click();
+      });
+    }
+    
+    // Replace button with styled date input for mobile
+    function replaceBtnWithDateInput() {
+      // Create a date input that looks exactly like the button
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.value = hiddenInput.value;
+      dateInput.className = 'mobile-date-input';
+      
+      // Copy all styles from the button
+      const buttonStyles = window.getComputedStyle(datePickerBtn);
+      
+      // Apply styles to make it look like the button
+      dateInput.style.height = '76px';
+      dateInput.style.padding = '14px 24px';
+      dateInput.style.display = 'flex';
+      dateInput.style.alignItems = 'center';
+      dateInput.style.cursor = 'pointer';
+      dateInput.style.background = 'var(--sys-surface-base)';
+      dateInput.style.border = '1px solid var(--sys-border-primary)';
+      dateInput.style.borderRadius = '20px';
+      dateInput.style.boxShadow = 'var(--shadow-card)';
+      dateInput.style.width = '100%';
+      dateInput.style.fontSize = '16px';
+      dateInput.style.fontFamily = 'var(--typography-fontFamily)';
+      dateInput.style.fontWeight = '600';
+      dateInput.style.color = 'var(--sys-text-primary)';
+      dateInput.style.transition = 'all 0.2s ease';
+      
+      // Style for when date is selected
+      if (dateInput.value) {
+        dateInput.style.boxShadow = 'var(--shadow-interactive)';
+        dateInput.style.color = 'var(--sys-text-primary)';
+      } else {
+        dateInput.style.color = 'var(--sys-text-secondary)';
       }
       
-      // Auto-remove after 10 seconds as failsafe
-      setTimeout(removeOverlay, 10000);
+      // Replace the button with the input
+      datePickerBtn.style.display = 'none';
+      datePickerBtn.parentNode.insertBefore(dateInput, datePickerBtn.nextSibling);
+      
+      console.log('Button replaced with mobile date input');
+      
+      // Handle date changes
+      dateInput.addEventListener('change', () => {
+        console.log('Mobile date selected:', dateInput.value);
+        hiddenInput.value = dateInput.value;
+        state.dueDate = dateInput.value;
+        
+        // Update styling when date is selected
+        if (dateInput.value) {
+          dateInput.style.boxShadow = 'var(--shadow-interactive)';
+          dateInput.style.color = 'var(--sys-text-primary)';
+        }
+        
+        // Update the title and show start button
+        if (state.dueDate) {
+          datePickerText.textContent = formatDateDisplay(state.dueDate);
+          updateTitle(state.dueDate);
+          
+          // Show the start button
+          startBtn.classList.remove('hidden');
+          startBtn.classList.add('show');
+        } else {
+          datePickerText.textContent = 'Select date';
+          updateTitle();
+          
+          // Hide the start button
+          startBtn.classList.add('hidden');
+          startBtn.classList.remove('show');
+        }
+      });
+      
+      // Handle focus/blur for styling
+      dateInput.addEventListener('focus', () => {
+        dateInput.style.border = '2px solid var(--color-twilight-500)';
+        dateInput.style.padding = '13px 23px'; // Adjust for thicker border
+      });
+      
+      dateInput.addEventListener('blur', () => {
+        dateInput.style.border = '1px solid var(--sys-border-primary)';
+        dateInput.style.padding = '14px 24px';
+      });
     }
     
     // Handle date selection
