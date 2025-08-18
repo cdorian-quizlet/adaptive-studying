@@ -94,9 +94,9 @@ body {
     padding: 24px 20px 28px;
     box-shadow: var(--shadow-modal);
 }
-.onboarding-header { margin-bottom: 12px; }
-.pill { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--sys-interactive-bg-secondary-default); color:var(--color-twilight-500); font-weight:600; font-size:12px; }
-.onboarding-title { font-size:18px; font-weight:600; color:var(--sys-text-primary); margin: 8px 0 16px; }
+.onboarding-header { margin-bottom: 16px; }
+.pill { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--color-skyblue-200); color:var(--sys-text-primary); font-weight:600; font-size:12px; }
+.onboarding-title { font-size:18px; font-weight:600; color:var(--sys-text-primary); margin: 8px 0 40px; }
 .onboarding-actions { display:flex; flex-direction:column; gap:8px; }
 .onboarding-actions .primary-btn { 
   width: 100%; 
