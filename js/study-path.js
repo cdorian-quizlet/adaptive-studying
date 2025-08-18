@@ -2,16 +2,24 @@
 const backBtn = document.getElementById('backBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 
-const pathSteps = document.querySelectorAll('.path-step');
+let pathSteps = document.querySelectorAll('.path-step'); // Will be updated when we generate dynamic content
 
 // Progress Elements
 const overallProgress = document.getElementById('overallProgress');
 const cardProgress = document.getElementById('cardProgress');
 const progressRingFill = document.querySelector('.progress-ring-fill');
 
-// Study Path Data
+// Onboarding data from plan flow
+let onboardingData = {
+    course: '',
+    goals: [],
+    concepts: [],
+    dueDate: ''
+};
+
+// Study Path Data (will be updated based on onboarding)
 const studyPathData = {
-    totalRounds: 8,
+    totalRounds: 8, // Will be updated based on concepts
     questionsPerRound: 7,
     currentRound: 1,
     completedRounds: 0,
@@ -20,11 +28,15 @@ const studyPathData = {
     accuracy: 0,
     diagnosticTaken: false,
     diagnosticMidTaken: false,
-    diagnosticFinalTaken: false
+    diagnosticFinalTaken: false,
+    concepts: [], // Array of concept names that become rounds
+    courseName: '' // Course name for header
 };
 
 // Initialize the study path
 document.addEventListener('DOMContentLoaded', function() {
+    loadOnboardingData();
+    generateDynamicStudyPlan();
     loadStudyPathData();
     updateUI();
     setupEventListeners();
@@ -45,6 +57,131 @@ document.addEventListener('visibilitychange', function() {
         updateUI();
     }
 });
+
+// Load onboarding data from localStorage
+function loadOnboardingData() {
+    try {
+        // Load course name
+        const course = localStorage.getItem('onboarding_course');
+        if (course) {
+            onboardingData.course = course;
+            studyPathData.courseName = course;
+        }
+        
+        // Load goals
+        const goals = localStorage.getItem('onboarding_goals');
+        if (goals) {
+            onboardingData.goals = JSON.parse(goals);
+        }
+        
+        // Load concepts
+        const concepts = localStorage.getItem('onboarding_concepts');
+        if (concepts) {
+            onboardingData.concepts = JSON.parse(concepts);
+            studyPathData.concepts = JSON.parse(concepts);
+        }
+        
+        // Load due date
+        const dueDate = localStorage.getItem('plan_due_date');
+        if (dueDate) {
+            onboardingData.dueDate = dueDate;
+        }
+        
+        console.log('Loaded onboarding data:', onboardingData);
+    } catch (error) {
+        console.error('Error loading onboarding data:', error);
+        // Fallback to default concepts if loading fails
+        studyPathData.concepts = ['Cell Biology', 'Genetics', 'Evolution', 'Ecology'];
+    }
+}
+
+// Generate dynamic study plan based on onboarding selections
+function generateDynamicStudyPlan() {
+    try {
+        // Update header title with course name
+        const headerTitle = document.querySelector('.header-title');
+        if (headerTitle && studyPathData.courseName) {
+            headerTitle.textContent = studyPathData.courseName;
+        }
+        
+        // Calculate total rounds based on concepts (add 1 for diagnostic)
+        const conceptCount = studyPathData.concepts.length;
+        studyPathData.totalRounds = conceptCount + 1; // +1 for diagnostic
+        
+        // Generate dynamic HTML for path steps
+        const pathContainer = document.querySelector('.path-container');
+        if (pathContainer) {
+            pathContainer.innerHTML = generatePathStepsHTML();
+            
+            // Update pathSteps reference after generating new content
+            pathSteps = document.querySelectorAll('.path-step');
+        }
+        
+        console.log(`Generated study plan with ${conceptCount} concept rounds + 1 diagnostic`);
+    } catch (error) {
+        console.error('Error generating dynamic study plan:', error);
+    }
+}
+
+// Generate HTML for path steps based on concepts
+function generatePathStepsHTML() {
+    let html = '';
+    
+    // Diagnostic Test
+    html += `
+        <div class="path-step diagnostic" data-round="diagnostic">
+            <div class="step-indicator">
+                <div class="step-circle">
+                    <span class="material-symbols-rounded step-icon">checklist</span>
+                </div>
+                <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+                <div class="step-header">
+                    <h3 class="step-title">Diagnostic Test</h3>
+                    <div class="step-status" id="diagnosticStatus">
+                        <span class="status-text">Take Test</span>
+                    </div>
+                </div>
+                <p class="step-description">Test your knowledge to skip ahead</p>
+            </div>
+        </div>
+    `;
+    
+    // Generate rounds for each concept
+    studyPathData.concepts.forEach((concept, index) => {
+        const roundNumber = index + 1;
+        const isLastRound = index === studyPathData.concepts.length - 1;
+        
+        html += `
+            <div class="path-step" data-round="${roundNumber}">
+                <div class="step-indicator">
+                    <div class="step-circle">
+                        <span class="material-icons-round step-icon">star</span>
+                    </div>
+                    ${!isLastRound ? '<div class="step-line"></div>' : ''}
+                </div>
+                <div class="step-content">
+                    <div class="step-header">
+                        <h3 class="step-title">Round ${roundNumber}</h3>
+                        <div class="step-status" id="round${roundNumber}Status">
+                            <span class="status-text">Start</span>
+                        </div>
+                    </div>
+                    <p class="step-description">${concept}</p>
+                    <div class="step-progress">
+                        <div class="step-progress-bar">
+                            <div class="step-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="step-progress-text">0/${studyPathData.questionsPerRound}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
 
 // Load study path data from localStorage
 function loadStudyPathData() {
@@ -486,8 +623,9 @@ function updateRoundProgressFromStudyData() {
             const totalQuestionsCompleted = parseInt(currentQuestionIndex);
             const questionsPerRound = studyPathData.questionsPerRound || 7;
             
-            // Calculate which rounds have progress
-            for (let round = 1; round <= studyPathData.totalRounds; round++) {
+            // Calculate which rounds have progress (excluding diagnostic round)
+            const conceptRounds = studyPathData.concepts.length || 7; // Fallback to 7 rounds if no concepts
+            for (let round = 1; round <= conceptRounds; round++) {
                 const roundStartQuestion = (round - 1) * questionsPerRound;
                 const roundEndQuestion = round * questionsPerRound;
                 
@@ -516,7 +654,9 @@ function saveStudyPathData() {
 
 // Function to mark a round as completed (called from study screen)
 function markRoundCompleted(roundNumber) {
-    if (roundNumber <= studyPathData.totalRounds) {
+    // Dynamic total rounds based on concepts (excluding diagnostic)
+    const conceptRounds = studyPathData.concepts.length || 7;
+    if (roundNumber <= conceptRounds) {
         studyPathData.completedRounds = Math.max(studyPathData.completedRounds, roundNumber - 1);
         studyPathData.currentRound = roundNumber + 1;
         studyPathData.currentRoundProgress = 0;
@@ -758,25 +898,19 @@ function updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRa
     // Round 6: Cards 36-42
     // Round 7: Cards 43-50
     
-    const roundProgress = {
-        1: 0, // Cards 1-7
-        2: 0, // Cards 8-14
-        3: 0, // Cards 15-21
-        4: 0, // Cards 22-28
-        5: 0, // Cards 29-35
-        6: 0, // Cards 36-42
-        7: 0  // Cards 43-50
-    };
+    // Map learned cards into rounds (dynamic based on concepts)
+    const totalConcepts = studyPathData.concepts.length || 7; // Fallback to 7 if no concepts
+    const roundProgress = {};
+    for (let i = 1; i <= totalConcepts; i++) {
+        roundProgress[i] = 0;
+    }
     
-    // Count learned cards in each round
     learnedCards.forEach(cardNumber => {
-        if (cardNumber >= 1 && cardNumber <= 7) roundProgress[1]++;
-        else if (cardNumber >= 8 && cardNumber <= 14) roundProgress[2]++;
-        else if (cardNumber >= 15 && cardNumber <= 21) roundProgress[3]++;
-        else if (cardNumber >= 22 && cardNumber <= 28) roundProgress[4]++;
-        else if (cardNumber >= 29 && cardNumber <= 35) roundProgress[5]++;
-        else if (cardNumber >= 36 && cardNumber <= 42) roundProgress[6]++;
-        else if (cardNumber >= 43 && cardNumber <= 50) roundProgress[7]++;
+        // Dynamic mapping based on questionsPerRound
+        const roundNumber = Math.ceil(cardNumber / studyPathData.questionsPerRound);
+        if (roundNumber >= 1 && roundNumber <= totalConcepts) {
+            roundProgress[roundNumber]++;
+        }
     });
     
     console.log('Round progress calculated:', roundProgress);
