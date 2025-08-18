@@ -127,7 +127,20 @@ body {
   opacity: 1; 
 }
 
-.onboarding-actions .text-btn { background:none; border:none; color:var(--color-twilight-500); font-weight:600; font-size:14px; }
+.onboarding-actions .text-btn { 
+  display: flex;
+  padding: var(--spacing-none, 0);
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-none, 0);
+  align-self: stretch;
+  border-radius: var(--radius-full, 200px);
+  background: var(--color-surface, #FFF);
+  border: none;
+  color: var(--color-twilight-500);
+  font-weight: 600;
+  font-size: 14px;
+}
 
 /* FSRS Statistics */
 .fsrs-stats-section {
