@@ -111,7 +111,7 @@ body {
 .onboarding-sheet[style*="display: block"] { opacity: 1; pointer-events: auto; }
 .onboarding-sheet[style*="display: block"] .onboarding-content { transform: translateY(0); }
 .onboarding-header { margin-bottom: 16px; }
-.pill { display:inline-block; padding:6px 12px; border-radius:999px; background:var(--color-skyblue-200); color:var(--sys-text-primary); font-weight:600; font-size:12px; }
+.pill { display:inline-block; padding:2px 8px; border-radius:999px; background:var(--color-skyblue-200); color:var(--sys-text-primary); font-weight:600; font-size:12px; }
 .onboarding-title { font-size:18px; font-weight:600; color:var(--sys-text-primary); margin: 8px 0 40px; }
 .onboarding-actions { display:flex; flex-direction:column; gap:8px; }
 .onboarding-actions .primary-btn { 
