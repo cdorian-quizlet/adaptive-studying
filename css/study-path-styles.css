@@ -68,9 +68,13 @@ body {
 }
 
 .header-title {
-    font-size: 20px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
     font-weight: 600;
-    color: var(--sys-text-primary);
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-none);
+    color: var(--sys-text-secondary);
     margin: 0;
 }
 
