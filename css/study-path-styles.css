@@ -284,18 +284,25 @@ body {
 }
 
 .overview-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    line-height: 1.3;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-header-five);
+    font-style: normal;
+    font-weight: 700;
+    line-height: var(--typography-lineHeight-header-five);
+    letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-primary);
+    margin: 0 0 8px 0;
 }
 
 .overview-subtitle {
-    font-size: 14px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-five);
+    font-style: normal;
+    font-weight: 600;
+    line-height: var(--typography-lineHeight-subheading-five);
+    letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-secondary);
     margin: 0;
-    font-weight: 500;
 }
 
 .overview-right {
@@ -318,13 +325,15 @@ body {
 
 .progress-ring-bg {
     fill: none;
-    stroke: rgba(0, 142, 196, 0.2);
+    stroke: var(--color-mint-100);
+    stroke-width: 12;
 }
 
 .progress-ring-fill {
     fill: none;
-    stroke: var(--color-skyblue-500);
+    stroke: var(--color-mint-400);
     stroke-linecap: round;
+    stroke-width: 12;
     transition: stroke-dasharray 0.6s ease;
 }
 
@@ -336,16 +345,18 @@ body {
 }
 
 .progress-percentage {
-    font-size: 20px;
+    font-feature-settings: 'liga' off, 'clig' off;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-header-four);
+    font-style: normal;
     font-weight: 700;
-    line-height: 1;
+    line-height: var(--typography-lineHeight-header-four);
+    letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-primary);
 }
 
 .progress-label {
-    font-size: 14px;
-    color: var(--sys-text-secondary);
-    font-weight: 500;
+    display: none; /* Remove "Complete" label */
 }
 
 /* Study Path Section */

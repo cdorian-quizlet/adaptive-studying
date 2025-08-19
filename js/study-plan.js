@@ -358,7 +358,7 @@ function updateUI() {
 // Update circular progress ring
 function updateCircularProgress(percentage) {
     if (progressRingFill) {
-        const radius = 32;
+        const radius = 38;
         const circumference = 2 * Math.PI * radius;
         const progress = (percentage / 100) * circumference;
         
