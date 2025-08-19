@@ -424,7 +424,7 @@ body {
     transition: all 0.3s ease;
     color: var(--color-gray-500);
     background-image: url('../images/star-filled.png');
-    background-size: 24px 24px;
+    background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
 }
@@ -434,12 +434,20 @@ body {
     color: var(--sys-text-primary);
     border-radius: 16px;
     animation: checkmarkPulse 0.6s ease-out;
+    /* No background image for completed state - uses check icon */
 }
 
 .step-circle.in-progress {
     background: var(--color-twilight-100);
     color: var(--sys-text-primary);
     border-radius: 16px;
+    background-image: none; /* Remove filled star background */
+}
+
+/* Show outline star icon for in-progress state */
+.step-circle.in-progress .step-icon {
+    display: block;
+    font-size: 40px;
 }
 
 .step-circle.diagnostic {
@@ -460,6 +468,12 @@ body {
     display: none; /* Hide icon since we're using background image */
 }
 
+/* Show icon for completed state */
+.step-circle.completed .step-icon {
+    display: block;
+    font-size: 20px;
+}
+
 /* Remove step lines for simplified design */
 .step-line {
     display: none;
@@ -469,20 +483,15 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
     position: relative;
 }
 
 .step-header {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    position: relative;
-}
-
-/* Completed steps have no gap between title and description */
-.path-step.completed .step-header {
     gap: 0;
+    position: relative;
 }
 
 /* Hide progress bar for completed steps */
@@ -494,6 +503,29 @@ body {
 .step-spacer {
     height: 24px; /* 8px below + 16px above = 24px total */
     width: 100%;
+}
+
+/* Vertical rule spacer under each round */
+.step-vertical-spacer {
+    height: 24px;
+    width: 100%;
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.step-vertical-spacer::before {
+    content: '';
+    position: absolute;
+    left: 28px; /* Center align with 56px step-circle (28px = 56px/2) */
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: var(--color-gray-200);
+}
+
+/* Hide vertical spacer after the last step */
+.path-container .step-vertical-spacer:last-child {
+    display: none;
 }
 
 .step-title {
@@ -580,7 +612,7 @@ body {
 
 .step-progress {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 8px;
     display: none; /* Hide by default */
 }
 

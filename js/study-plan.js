@@ -170,7 +170,7 @@ function generatePathStepsHTML() {
             <div class="path-step" data-round="${roundNumber}">
                 <div class="step-indicator">
                     <div class="step-circle">
-                        <span class="material-icons-round step-icon">star</span>
+                        <span class="material-icons-round step-icon">star_outline</span>
                     </div>
                     ${hasNextStep ? '<div class="step-line"></div>' : ''}
                 </div>
@@ -191,6 +191,7 @@ function generatePathStepsHTML() {
                     </div>
                 </div>
             </div>
+            <div class="step-vertical-spacer"></div>
         `;
     }
     
@@ -466,7 +467,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         step.classList.remove('completed'); // Remove completed class from step
         stepCircle.classList.add('in-progress');
         stepCircle.classList.remove('completed');
-        stepCircle.querySelector('.step-icon').textContent = 'star';
+        stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
         stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
         stepStatus.classList.add('in-progress');
@@ -486,7 +487,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         // Round with diagnostic progress
         step.classList.remove('completed'); // Remove completed class from step
         stepCircle.classList.remove('completed', 'in-progress');
-        stepCircle.querySelector('.step-icon').textContent = 'star';
+        stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
         stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
         stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
@@ -500,7 +501,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         // Future round
         step.classList.remove('completed'); // Remove completed class from step
         stepCircle.classList.remove('completed', 'in-progress');
-        stepCircle.querySelector('.step-icon').textContent = 'star';
+        stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
         stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
         stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
