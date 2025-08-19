@@ -147,15 +147,15 @@ function generatePathStepsHTML() {
             <div class="path-step diagnostic" data-round="diagnostic-${type}">
                 <div class="step-indicator">
                     <div class="step-circle">
-                        <span class="material-symbols-rounded step-icon">checklist</span>
+                        <span class="material-icons-round step-icon">quiz</span>
                     </div>
                     <div class="step-line"></div>
                 </div>
                 <div class="step-content">
                     <div class="step-header">
                         <h3 class="step-title">${title}</h3>
-                        <div class="step-status" id="diagnostic${type.charAt(0).toUpperCase() + type.slice(1)}Status">
-                            <span class="status-text">Take Test</span>
+                        <div class="step-status skip-ahead" id="diagnostic${type.charAt(0).toUpperCase() + type.slice(1)}Status">
+                            <span class="status-text">Skip ahead</span>
                         </div>
                     </div>
                     <p class="step-description">${description}</p>
@@ -178,6 +178,7 @@ function generatePathStepsHTML() {
                     <div class="step-header">
                         <h3 class="step-title">Round ${roundNumber}</h3>
                         <div class="step-status" id="round${roundNumber}Status">
+                            <span class="material-icons-round">play_arrow</span>
                             <span class="status-text">Start</span>
                         </div>
                     </div>
@@ -345,8 +346,7 @@ function updateUI() {
     overallProgress.textContent = `${totalProgress}%`;
     
     // Update card progress
-    const cardsLearned = Math.round((totalProgress / 100) * 50);
-    cardProgress.textContent = `${cardsLearned} of 50 cards learned`;
+    cardProgress.textContent = `Study plan ${totalProgress}% Complete`;
     
     // Update circular progress ring
     updateCircularProgress(totalProgress);
@@ -405,16 +405,11 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
     stepCircle.classList.add('diagnostic');
     if (isTaken) {
         stepCircle.classList.add('completed');
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">check_circle</span>
-            <span class="status-text">Completed</span>
-        `;
-        stepStatus.classList.add('completed');
+        stepCircle.querySelector('.step-icon').textContent = 'check';
+        stepStatus.style.display = 'none'; // Hide button for completed diagnostics
     } else {
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Take Test</span>
-        `;
+        stepStatus.innerHTML = `<span class="status-text">Skip ahead</span>`;
+        stepStatus.classList.add('skip-ahead');
         stepStatus.classList.remove('completed');
     }
 }
@@ -443,65 +438,46 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         // Completed round
         stepCircle.classList.add('completed');
         stepCircle.classList.remove('in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'check';
         
-        if (stepLine) {
-            stepLine.classList.add('completed');
-        }
-        
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">check_circle</span>
-            <span class="status-text">Completed</span>
-        `;
-        stepStatus.classList.add('completed');
+        stepStatus.style.display = 'none'; // Hide button for completed rounds
         
         stepProgressFill.style.width = '100%';
-        stepProgressText.textContent = `${studyPathData.questionsPerRound}/${studyPathData.questionsPerRound}`;
         
     } else if (isCurrent) {
         // Current round
         stepCircle.classList.add('in-progress');
         stepCircle.classList.remove('completed');
+        stepCircle.querySelector('.step-icon').textContent = 'star';
         
-        // Add current-round class for highlighting
-        step.querySelector('.step-content').classList.add('current-round');
-        
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Continue</span>
-        `;
+        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
         stepStatus.classList.add('in-progress');
+        stepStatus.classList.remove('skip-ahead');
         
         const progressPercentage = (studyPathData.currentRoundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
-        stepProgressText.textContent = `${studyPathData.currentRoundProgress}/${studyPathData.questionsPerRound}`;
         
     } else if (hasDiagnosticProgress) {
         // Round with diagnostic progress
         stepCircle.classList.remove('completed', 'in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'star';
         
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Start</span>
-        `;
-        stepStatus.classList.remove('completed', 'in-progress');
+        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
         
         // Show diagnostic progress
         const progressPercentage = (roundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
-        stepProgressText.textContent = `${roundProgress}/${studyPathData.questionsPerRound}`;
         
     } else {
         // Future round
         stepCircle.classList.remove('completed', 'in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'star';
         
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Start</span>
-        `;
-        stepStatus.classList.remove('completed', 'in-progress');
+        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
         
         stepProgressFill.style.width = '0%';
-        stepProgressText.textContent = `0/${studyPathData.questionsPerRound}`;
     }
 }
 
