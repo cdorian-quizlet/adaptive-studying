@@ -516,9 +516,9 @@ body {
 .step-vertical-spacer::before {
     content: '';
     position: absolute;
-    left: 28px; /* Center align with 56px step-circle (28px = 56px/2) */
+    left: 24px; /* Center align with 56px step-circle, adjusted for 8px width (28px - 4px) */
     top: 0;
-    width: 2px;
+    width: 8px;
     height: 100%;
     background: var(--color-gray-200);
 }
