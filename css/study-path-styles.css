@@ -414,8 +414,8 @@ body {
 }
 
 .step-circle {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%; /* Make it circular for star icon */
     display: flex;
     align-items: center;
@@ -471,7 +471,13 @@ body {
 /* Show icon for completed state */
 .step-circle.completed .step-icon {
     display: block;
-    font-size: 20px;
+    font-size: 40px;
+}
+
+/* Show icon for diagnostic tests */
+.step-circle.diagnostic .step-icon {
+    display: block;
+    font-size: 40px;
 }
 
 /* Remove step lines for simplified design */
@@ -516,7 +522,7 @@ body {
 .step-vertical-spacer::before {
     content: '';
     position: absolute;
-    left: 24px; /* Center align with 56px step-circle, adjusted for 8px width (28px - 4px) */
+    left: 28px; /* Center align with 64px step-circle, adjusted for 8px width (32px - 4px) */
     top: 0;
     width: 8px;
     height: 100%;
