@@ -868,23 +868,46 @@ body {
     background: var(--sys-interactive-bg-secondary-default);
     border: none;
     border-radius: var(--radius-full, 200px);
-    padding: 16px 20px;
+    padding: 10px 16px; /* Default to 10px top/bottom for consistency */
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px; /* Consistent font size */
     font-weight: 600;
     color: var(--color-twilight-500);
     line-height: 1.2;
+    box-sizing: border-box;
 }
 
 /* Help card button padding override */
 .help-card .study-option {
     padding: 10px 16px !important; /* Ensure 10px top/bottom padding */
-    font-size: 14px;
+    font-size: 14px !important;
     font-weight: 600;
-    line-height: 1.2; /* Consistent line-height for even spacing */
+    line-height: 1.2 !important; /* Override typography classes */
     box-sizing: border-box; /* Ensure padding is included in sizing */
+}
+
+/* Override typography classes when applied to study option buttons */
+.help-card .study-option.subheading-4,
+.help-card .study-option .subheading-4,
+.study-option.subheading-4,
+.study-option .subheading-4 {
+    line-height: 1.2 !important;
+    font-size: 14px !important;
+}
+
+/* Ensure consistent styling for all subheading classes on study options */
+.help-card .study-option.subheading-1,
+.help-card .study-option.subheading-2,
+.help-card .study-option.subheading-3,
+.help-card .study-option.subheading-5,
+.study-option.subheading-1,
+.study-option.subheading-2,
+.study-option.subheading-3,
+.study-option.subheading-5 {
+    line-height: 1.2 !important;
+    font-size: 14px !important;
 }
 
 /* Help card: style the first option as primary */
@@ -892,6 +915,14 @@ body {
     background: var(--sys-interactive-bg-primary-default);
     color: var(--sys-surface-base);
     padding: 10px 16px !important; /* Ensure consistent padding for study plan button */
+    line-height: 1.2 !important; /* Override typography classes */
+    font-size: 14px !important;
+}
+
+/* Ensure the span inside the first button also follows the same styling */
+.help-card .studying-options .study-option:first-child .subheading-4 {
+    line-height: 1.2 !important;
+    font-size: 14px !important;
 }
 
 /* Help card: make options hug text (chips) rather than fill columns */
