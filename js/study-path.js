@@ -98,10 +98,20 @@ function loadOnboardingData() {
 // Generate dynamic study plan based on onboarding selections
 function generateDynamicStudyPlan() {
     try {
-        // Update header title with course name
+        // Update header title with course code and goal name
         const headerTitle = document.querySelector('.header-title');
         if (headerTitle && studyPathData.courseName) {
-            headerTitle.textContent = studyPathData.courseName;
+            // Extract course code (everything before " - " if it exists)
+            const courseCode = studyPathData.courseName.includes(' - ') ? 
+                studyPathData.courseName.split(' - ')[0] : studyPathData.courseName;
+            
+            // Get first goal from onboarding data
+            const firstGoal = Array.isArray(onboardingData.goals) && onboardingData.goals.length > 0 ? 
+                onboardingData.goals[0] : '';
+            
+            // Format as "BIO 201, Exam 1"
+            const title = [courseCode, firstGoal].filter(Boolean).join(', ');
+            headerTitle.textContent = title || courseCode; // Fallback to course code if no goal
         }
         
         // Calculate total rounds based on concepts plus diagnostic tests
