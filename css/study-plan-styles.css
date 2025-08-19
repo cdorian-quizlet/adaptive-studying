@@ -524,8 +524,8 @@ body {
     gap: 4px;
     font-feature-settings: 'liga' off, 'clig' off;
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-four);
-    line-height: var(--typography-lineHeight-subheading-four);
+    font-size: var(--typography-size-subheading-three);
+    line-height: var(--typography-lineHeight-subheading-three);
     letter-spacing: var(--typography-letterSpacing-none);
     font-weight: 600;
     padding: 6px 12px;
