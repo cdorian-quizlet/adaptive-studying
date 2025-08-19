@@ -880,15 +880,18 @@ body {
 
 /* Help card button padding override */
 .help-card .study-option {
-    padding: 10px 16px;
+    padding: 10px 16px !important; /* Ensure 10px top/bottom padding */
     font-size: 14px;
     font-weight: 600;
+    line-height: 1.2; /* Consistent line-height for even spacing */
+    box-sizing: border-box; /* Ensure padding is included in sizing */
 }
 
 /* Help card: style the first option as primary */
 .help-card .studying-options .study-option:first-child {
     background: var(--sys-interactive-bg-primary-default);
     color: var(--sys-surface-base);
+    padding: 10px 16px !important; /* Ensure consistent padding for study plan button */
 }
 
 /* Help card: make options hug text (chips) rather than fill columns */
