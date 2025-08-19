@@ -194,11 +194,7 @@ function generatePathStepsHTML() {
         `;
     }
     
-    // Initial Diagnostic Test
-    html += generateDiagnosticHTML('initial', 'Diagnostic Test', 'Test your knowledge to skip ahead');
-    stepCount++;
-    
-    // Generate rounds with diagnostic tests every 2 rounds
+    // Generate rounds with diagnostic tests every 2 rounds (starting with rounds)
     studyPathData.concepts.forEach((concept, index) => {
         const roundNumber = index + 1;
         const isLastConcept = index === studyPathData.concepts.length - 1;
@@ -434,6 +430,9 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
     // Remove current-round class from all steps first
     step.querySelector('.step-content').classList.remove('current-round');
     
+    // Get the step-progress element to manage visibility
+    const stepProgress = step.querySelector('.step-progress');
+    
     if (isCompleted) {
         // Completed round
         stepCircle.classList.add('completed');
@@ -443,6 +442,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepStatus.style.display = 'none'; // Hide button for completed rounds
         
         stepProgressFill.style.width = '100%';
+        stepProgress.classList.add('has-progress'); // Show progress bar for completed rounds
         
     } else if (isCurrent) {
         // Current round
@@ -457,6 +457,13 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         const progressPercentage = (studyPathData.currentRoundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
         
+        // Show progress bar only if there's actual progress
+        if (studyPathData.currentRoundProgress > 0) {
+            stepProgress.classList.add('has-progress');
+        } else {
+            stepProgress.classList.remove('has-progress');
+        }
+        
     } else if (hasDiagnosticProgress) {
         // Round with diagnostic progress
         stepCircle.classList.remove('completed', 'in-progress');
@@ -468,6 +475,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         // Show diagnostic progress
         const progressPercentage = (roundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
+        stepProgress.classList.add('has-progress'); // Show progress bar for diagnostic progress
         
     } else {
         // Future round
@@ -478,6 +486,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
         
         stepProgressFill.style.width = '0%';
+        stepProgress.classList.remove('has-progress'); // Hide progress bar for future rounds
     }
 }
 

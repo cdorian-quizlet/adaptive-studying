@@ -191,11 +191,7 @@ function generatePathStepsHTML() {
         `;
     }
     
-    // Initial Diagnostic Test
-    html += generateDiagnosticHTML('initial', 'Diagnostic Test', 'Test your knowledge to skip ahead');
-    stepCount++;
-    
-    // Generate rounds with diagnostic tests every 2 rounds
+    // Generate rounds with diagnostic tests every 2 rounds (starting with rounds)
     studyPathData.concepts.forEach((concept, index) => {
         const roundNumber = index + 1;
         const isLastConcept = index === studyPathData.concepts.length - 1;
@@ -437,69 +433,63 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
     // Remove current-round class from all steps first
     step.querySelector('.step-content').classList.remove('current-round');
     
+    // Get the step-progress element to manage visibility
+    const stepProgress = step.querySelector('.step-progress');
+    
     if (isCompleted) {
         // Completed round
         stepCircle.classList.add('completed');
         stepCircle.classList.remove('in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'check';
         
-        if (stepLine) {
-            stepLine.classList.add('completed');
-        }
-        
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">check_circle</span>
-            <span class="status-text">Completed</span>
-        `;
-        stepStatus.classList.add('completed');
+        stepStatus.style.display = 'none'; // Hide button for completed rounds
         
         stepProgressFill.style.width = '100%';
-        stepProgressText.textContent = `${studyPathData.questionsPerRound}/${studyPathData.questionsPerRound}`;
+        stepProgress.classList.add('has-progress'); // Show progress bar for completed rounds
         
     } else if (isCurrent) {
         // Current round
         stepCircle.classList.add('in-progress');
         stepCircle.classList.remove('completed');
+        stepCircle.querySelector('.step-icon').textContent = 'star';
         
-        // Add current-round class for highlighting
-        step.querySelector('.step-content').classList.add('current-round');
-        
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Continue</span>
-        `;
+        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
         stepStatus.classList.add('in-progress');
+        stepStatus.classList.remove('skip-ahead');
         
         const progressPercentage = (studyPathData.currentRoundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
-        stepProgressText.textContent = `${studyPathData.currentRoundProgress}/${studyPathData.questionsPerRound}`;
+        
+        // Show progress bar only if there's actual progress
+        if (studyPathData.currentRoundProgress > 0) {
+            stepProgress.classList.add('has-progress');
+        } else {
+            stepProgress.classList.remove('has-progress');
+        }
         
     } else if (hasDiagnosticProgress) {
         // Round with diagnostic progress
         stepCircle.classList.remove('completed', 'in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'star';
         
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Start</span>
-        `;
-        stepStatus.classList.remove('completed', 'in-progress');
+        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
         
         // Show diagnostic progress
         const progressPercentage = (roundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
-        stepProgressText.textContent = `${roundProgress}/${studyPathData.questionsPerRound}`;
+        stepProgress.classList.add('has-progress'); // Show progress bar for diagnostic progress
         
     } else {
         // Future round
         stepCircle.classList.remove('completed', 'in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'star';
         
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Start</span>
-        `;
-        stepStatus.classList.remove('completed', 'in-progress');
+        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.classList.remove('completed', 'in-progress', 'skip-ahead');
         
         stepProgressFill.style.width = '0%';
-        stepProgressText.textContent = `0/${studyPathData.questionsPerRound}`;
+        stepProgress.classList.remove('has-progress'); // Hide progress bar for future rounds
     }
 }
 

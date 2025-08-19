@@ -389,18 +389,18 @@ body {
 .path-step {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
-    padding: 16px 80px 16px 16px; /* Add right padding for button */
-    background: var(--sys-surface-base);
-    border-radius: 16px;
+    padding: 0; /* Remove padding */
+    background: transparent;
+    border-radius: 0;
     animation: fadeInUp 0.6s ease-out;
     opacity: 0;
     animation-fill-mode: both;
     cursor: pointer;
     transition: all 0.2s ease;
-    border: 1px solid var(--sys-border-primary);
-    margin-bottom: 12px;
+    border: none; /* Remove border */
+    margin: 0; /* Remove margin */
 }
 
 .path-step:hover {
@@ -428,13 +428,17 @@ body {
 .step-circle {
     width: 56px;
     height: 56px;
-    border-radius: 16px; /* Rounded square instead of circle */
+    border-radius: 50%; /* Make it circular for star icon */
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-gray-200);
+    background: var(--color-twilight-100);
     transition: all 0.3s ease;
     color: var(--color-gray-500);
+    background-image: url('../images/star-filled.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .step-circle.completed {
@@ -459,7 +463,7 @@ body {
 }
 
 .step-icon {
-    font-size: 20px;
+    display: none; /* Hide icon since we're using background image */
 }
 
 /* Remove step lines for simplified design */
@@ -472,6 +476,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    position: relative;
 }
 
 .step-header {
@@ -490,9 +495,8 @@ body {
 
 .step-status {
     position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
+    right: 0;
+    top: 0;
     width: 48px;
     height: 48px;
     border-radius: 50%;
@@ -531,7 +535,7 @@ body {
 
 .step-status:hover {
     background: var(--color-twilight-600);
-    transform: translateY(-50%) scale(1.05);
+    transform: scale(1.05);
 }
 
 .step-status.skip-ahead:hover {
@@ -567,6 +571,11 @@ body {
 .step-progress {
     width: 100%;
     margin-top: 12px;
+    display: none; /* Hide by default */
+}
+
+.step-progress.has-progress {
+    display: block; /* Show only when there's progress */
 }
 
 .step-progress-bar {
