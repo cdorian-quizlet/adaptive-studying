@@ -430,18 +430,16 @@ body {
 }
 
 .step-circle.completed {
-    background: var(--color-mint-600);
-    border-color: var(--color-mint-600);
-    color: white;
+    background: var(--color-mint-100);
+    color: var(--sys-text-primary);
+    border-radius: 16px;
     animation: checkmarkPulse 0.6s ease-out;
-    opacity: 1;
 }
 
 .step-circle.in-progress {
-    background: var(--sys-interactive-bg-primary-default);
-    border-color: var(--sys-interactive-bg-primary-default);
-    color: white;
-    opacity: 1;
+    background: var(--color-twilight-100);
+    color: var(--sys-text-primary);
+    border-radius: 16px;
 }
 
 .step-circle.diagnostic {
@@ -480,6 +478,22 @@ body {
     flex-direction: column;
     gap: 4px;
     position: relative;
+}
+
+/* Completed steps have no gap between title and description */
+.path-step.completed .step-header {
+    gap: 0;
+}
+
+/* Hide progress bar for completed steps */
+.path-step.completed .step-progress {
+    display: none !important;
+}
+
+/* Spacer for completed steps */
+.step-spacer {
+    height: 24px; /* 8px below + 16px above = 24px total */
+    width: 100%;
 }
 
 .step-title {

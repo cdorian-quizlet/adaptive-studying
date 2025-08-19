@@ -398,17 +398,21 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
     
     stepCircle.classList.add('diagnostic');
     if (isTaken) {
+        step.classList.add('completed'); // Add completed class to step
         stepCircle.classList.add('completed');
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">check_circle</span>
-            <span class="status-text">Completed</span>
-        `;
-        stepStatus.classList.add('completed');
+        stepCircle.querySelector('.step-icon').textContent = 'check';
+        stepStatus.style.display = 'none'; // Hide button for completed diagnostics
+        
+        // Add spacer after completed diagnostic if it doesn't exist
+        if (!step.nextElementSibling || !step.nextElementSibling.classList.contains('step-spacer')) {
+            const spacer = document.createElement('div');
+            spacer.className = 'step-spacer';
+            step.parentNode.insertBefore(spacer, step.nextElementSibling);
+        }
     } else {
-        stepStatus.innerHTML = `
-            <span class="material-icons-round status-icon">play_arrow</span>
-            <span class="status-text">Take Test</span>
-        `;
+        step.classList.remove('completed'); // Remove completed class from step
+        stepStatus.innerHTML = `<span class="status-text">Skip ahead</span>`;
+        stepStatus.classList.add('skip-ahead');
         stepStatus.classList.remove('completed');
     }
 }
@@ -438,6 +442,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
     
     if (isCompleted) {
         // Completed round
+        step.classList.add('completed'); // Add completed class to step
         stepCircle.classList.add('completed');
         stepCircle.classList.remove('in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'check';
@@ -447,8 +452,16 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepProgressFill.style.width = '100%';
         stepProgress.classList.add('has-progress'); // Show progress bar for completed rounds
         
+        // Add spacer after completed step if it doesn't exist
+        if (!step.nextElementSibling || !step.nextElementSibling.classList.contains('step-spacer')) {
+            const spacer = document.createElement('div');
+            spacer.className = 'step-spacer';
+            step.parentNode.insertBefore(spacer, step.nextElementSibling);
+        }
+        
     } else if (isCurrent) {
         // Current round
+        step.classList.remove('completed'); // Remove completed class from step
         stepCircle.classList.add('in-progress');
         stepCircle.classList.remove('completed');
         stepCircle.querySelector('.step-icon').textContent = 'star';
@@ -469,6 +482,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         
     } else if (hasDiagnosticProgress) {
         // Round with diagnostic progress
+        step.classList.remove('completed'); // Remove completed class from step
         stepCircle.classList.remove('completed', 'in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'star';
         
@@ -482,6 +496,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         
     } else {
         // Future round
+        step.classList.remove('completed'); // Remove completed class from step
         stepCircle.classList.remove('completed', 'in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'star';
         
