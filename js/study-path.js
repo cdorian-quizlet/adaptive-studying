@@ -159,6 +159,7 @@ function generatePathStepsHTML() {
                     <p class="step-description">${description}</p>
                 </div>
             </div>
+            <div class="step-vertical-spacer"></div>
         `;
     }
     
