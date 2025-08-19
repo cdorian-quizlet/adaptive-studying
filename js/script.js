@@ -225,7 +225,11 @@ function updateJumpBackCardFromOnboarding() {
         let goals = [];
         try { goals = JSON.parse(localStorage.getItem('onboarding_goals') || '[]'); } catch(_) {}
         const firstGoal = Array.isArray(goals) && goals.length > 0 ? goals[0] : '';
-        const title = [course, firstGoal].filter(Boolean).join(' ');
+        
+        // Extract just the course code (everything before " - " if it exists)
+        const courseCode = course.includes(' - ') ? course.split(' - ')[0] : course;
+        
+        const title = [courseCode, firstGoal].filter(Boolean).join(', ');
         const cardTitleEl = document.querySelector('.jump-back-card .card-title');
         if (cardTitleEl && title) {
             cardTitleEl.textContent = title;
