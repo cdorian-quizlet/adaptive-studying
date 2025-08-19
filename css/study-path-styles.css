@@ -285,21 +285,21 @@ body {
 
 .overview-title {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-header-five);
+    font-size: var(--typography-size-header-four);
     font-style: normal;
     font-weight: 700;
-    line-height: var(--typography-lineHeight-header-five);
+    line-height: var(--typography-lineHeight-header-four);
     letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-primary);
-    margin: 0 0 8px 0;
+    margin: 0 0 4px 0;
 }
 
 .overview-subtitle {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-five);
+    font-size: var(--typography-size-subheading-four);
     font-style: normal;
     font-weight: 600;
-    line-height: var(--typography-lineHeight-subheading-five);
+    line-height: var(--typography-lineHeight-subheading-four);
     letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-secondary);
     margin: 0;
