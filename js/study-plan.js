@@ -251,6 +251,16 @@ function syncDailyProgressWithHome() {
                 progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
             }
 
+            // Add/remove zero-state class for styling
+            const circularView = document.getElementById('circularProgressView');
+            if (circularView) {
+                if (overallProgressPercentage === 0) {
+                    circularView.classList.add('zero-state');
+                } else {
+                    circularView.classList.remove('zero-state');
+                }
+            }
+
             // Update circular progress to match overall plan progress
             updateCircularProgress(overallProgressPercentage);
             
@@ -381,6 +391,15 @@ function showCircularProgress() {
     
     // Calculate and update circular progress based on overall plan progress
     const overallProgressPercentage = calculateOverallPlanProgress();
+    
+    // Add/remove zero-state class for styling
+    if (circularView) {
+        if (overallProgressPercentage === 0) {
+            circularView.classList.add('zero-state');
+        } else {
+            circularView.classList.remove('zero-state');
+        }
+    }
     
     updateCircularProgress(overallProgressPercentage);
     

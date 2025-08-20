@@ -471,8 +471,19 @@ function loadStudyProgress() {
     
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
+    const progressContainer = document.querySelector('.progress-container');
+    
     if (progressFill) {
         progressFill.style.width = `${overallProgressPercentage}%`;
+    }
+    
+    // Add/remove zero-state class for styling
+    if (progressContainer) {
+        if (overallProgressPercentage === 0) {
+            progressContainer.classList.add('zero-state');
+        } else {
+            progressContainer.classList.remove('zero-state');
+        }
     }
     
     // Update progress text to show percentage complete
@@ -615,7 +626,7 @@ function calculateOverallPlanProgress() {
             return 0;
         }
         
-        const pathData = JSON.parse(studyPathData);
+            const pathData = JSON.parse(studyPathData);
         const questionsPerRound = pathData.questionsPerRound || 7;
         const completedRounds = pathData.completedRounds || 0;
         const currentRoundProgress = pathData.currentRoundProgress || 0;
@@ -880,7 +891,7 @@ function resetStudyProgress() {
         
         showToast('Study progress reset successfully');
         
-    } catch (error) {
+        } catch (error) {
         console.error('Error resetting study progress:', error);
         showToast('Error resetting progress');
     }
@@ -1083,10 +1094,10 @@ function emergency70PercentFix() {
         }
         
         // 3. Force UI to 0%
-        const progressFill = document.querySelector('.progress-fill');
+    const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
         
-        if (progressFill) {
+    if (progressFill) {
             progressFill.style.width = '0%';
         }
         if (progressText) {
@@ -1130,12 +1141,12 @@ function nuclearResetLocalStorage() {
             
             // Reset UI immediately
             const progressFill = document.querySelector('.progress-fill');
-            const progressText = document.querySelector('.progress-text');
+    const progressText = document.querySelector('.progress-text');
             
             if (progressFill) {
                 progressFill.style.width = '0%';
             }
-            if (progressText) {
+    if (progressText) {
                 progressText.textContent = '0% complete';
             }
             

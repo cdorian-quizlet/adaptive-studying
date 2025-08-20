@@ -32,6 +32,15 @@
     top: 0;
 }
 
+/* 0% state styling - gray colors */
+.progress-container.zero-state .progress-bar {
+    background: var(--color-gray-200);
+}
+
+.progress-container.zero-state .progress-fill {
+    background: var(--color-gray-500);
+}
+
 .progress-number {
     position: absolute;
     left: -72px;

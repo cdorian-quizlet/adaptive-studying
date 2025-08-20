@@ -346,6 +346,30 @@ body {
     color: var(--color-red-500);
 }
 
+/* Circular progress ring styles */
+.progress-ring-bg {
+    stroke: var(--color-mint-100);
+    fill: none;
+}
+
+.progress-ring-fill {
+    stroke: url(#progressGradient);
+    fill: none;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+/* 0% state styling - gray colors */
+.circular-progress.zero-state .progress-ring-bg {
+    stroke: var(--color-gray-200);
+}
+
+.circular-progress.zero-state .progress-ring-fill {
+    stroke: var(--color-gray-500);
+}
+
 
 
 /* Circular progress styles */
