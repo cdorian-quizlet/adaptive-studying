@@ -400,6 +400,11 @@ body {
     fill: var(--color-gray-500);
 }
 
+/* Hide daily stats text below progress ring */
+.daily-stats {
+    display: none;
+}
+
 /* Current round progress text fade animation */
 .step-progress-text {
     transition: opacity 0.4s ease-out;

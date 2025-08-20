@@ -322,10 +322,7 @@ body {
 }
 
 .daily-stats {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    display: none; /* Hide the text below progress ring */
 }
 
 .daily-change {
