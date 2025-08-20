@@ -237,6 +237,8 @@ function syncDailyProgressWithHome() {
 }
 
 function updateProgressSummary() {
+    console.log('🔍 DEBUG: [STUDY PLAN] updateProgressSummary() called');
+    
     const dailyData = getDailyProgress();
     const today = getTodayDateString();
     const yesterday = new Date();
@@ -246,10 +248,27 @@ function updateProgressSummary() {
     const todayQuestions = dailyData[today]?.questions || 0;
     const yesterdayQuestions = dailyData[yesterdayString]?.questions || 0;
     
+    console.log('🔍 DEBUG: [STUDY PLAN] Progress data state:', {
+        today,
+        todayQuestions,
+        yesterdayQuestions,
+        dailyData,
+        todayData: dailyData[today]
+    });
+    
     // Check if progress has been reset (no data)
-    const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-    if (!hasProgressData) {
-        console.log('No progress data found, resetting overview card');
+    const hasStudyPathData = localStorage.getItem('studyPathData');
+    const hasDailyProgress = localStorage.getItem('dailyProgress');
+    
+    console.log('🔍 DEBUG: [STUDY PLAN] localStorage check:', {
+        hasStudyPathData: !!hasStudyPathData,
+        hasDailyProgress: !!hasDailyProgress,
+        studyPathContent: hasStudyPathData ? JSON.parse(hasStudyPathData) : null,
+        dailyProgressContent: hasDailyProgress ? JSON.parse(hasDailyProgress) : null
+    });
+    
+    if (!hasStudyPathData && !hasDailyProgress) {
+        console.log('🔍 DEBUG: [STUDY PLAN] No progress data found, resetting overview card');
         if (progressSummary) {
             progressSummary.textContent = '0 questions today';
         }

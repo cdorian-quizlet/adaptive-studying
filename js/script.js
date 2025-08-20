@@ -21,6 +21,21 @@ let PROGRESS_VALUE = 0; // Dynamic progress value
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚨 HOME PAGE LOAD: Starting home page initialization');
+    
+    // IMMEDIATELY check localStorage state on page load
+    console.log('🚨 HOME PAGE LOAD: Checking localStorage state...');
+    debugLocalStorageQuick();
+    
+    // Check for stale data that might be causing 70% issue
+    const dailyData = getDailyProgress();
+    const today = getTodayDateString();
+    console.log('🚨 HOME PAGE LOAD: Daily data check:', {
+        today,
+        dailyData,
+        todayData: dailyData[today]
+    });
+    
     loadStudyProgress();
     toggleFirstTimeState();
     updateJumpBackCardFromOnboarding();
@@ -378,6 +393,34 @@ function escapeHtml(str) {
 
 // Load and display study progress
 function loadStudyProgress() {
+    console.log('🔍 DEBUG: loadStudyProgress() called');
+    
+    // Check if we have any study data at all
+    const hasStudyPathData = localStorage.getItem('studyPathData');
+    const hasDailyProgress = localStorage.getItem('dailyProgress');
+    
+    console.log('🔍 DEBUG: localStorage check', {
+        hasStudyPathData: !!hasStudyPathData,
+        hasDailyProgress: !!hasDailyProgress,
+        studyPathDataContent: hasStudyPathData ? JSON.parse(hasStudyPathData) : null,
+        dailyProgressContent: hasDailyProgress ? JSON.parse(hasDailyProgress) : null
+    });
+    
+    // If no study data exists, force progress to 0
+    if (!hasStudyPathData && !hasDailyProgress) {
+        console.log('🔍 DEBUG: No study data found, setting progress to 0');
+        const progressFill = document.querySelector('.progress-fill');
+        const progressText = document.querySelector('.progress-text');
+        
+        if (progressFill) {
+            progressFill.style.width = '0%';
+        }
+        if (progressText) {
+            progressText.textContent = '0% complete';
+        }
+        return;
+    }
+    
     // Update today's progress from study data first
     updateTodaysProgressFromStudyData();
     
@@ -386,11 +429,47 @@ function loadStudyProgress() {
     const today = getTodayDateString();
     const todayQuestions = dailyData[today]?.questions || 0;
     
-    console.log('Loading progress:', { today, todayQuestions, dailyData });
+    console.log('🔍 DEBUG: Progress calculation:', { 
+        today, 
+        todayQuestions, 
+        dailyData,
+        todayData: dailyData[today]
+    });
     
     // Update progress bar based on daily goal (e.g., 10 questions per day)
     const dailyGoal = 10;
     const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    
+    console.log('🔍 DEBUG: Final progress calculation:', {
+        todayQuestions,
+        dailyGoal,
+        dailyProgressPercentage
+    });
+    
+    // SAFEGUARD: If we detect suspicious 70% progress, force it to 0
+    if (dailyProgressPercentage === 70) {
+        console.log('🚨 SAFEGUARD: Detected 70% progress, likely from stale data. Forcing to 0.');
+        const progressFill = document.querySelector('.progress-fill');
+        const progressText = document.querySelector('.progress-text');
+        
+        if (progressFill) {
+            progressFill.style.width = '0%';
+        }
+        if (progressText) {
+            progressText.textContent = '0% complete';
+        }
+        
+        // Clear the problematic data
+        const today = getTodayDateString();
+        const dailyData = getDailyProgress();
+        if (dailyData[today]) {
+            console.log('🚨 SAFEGUARD: Clearing today\'s problematic data:', dailyData[today]);
+            delete dailyData[today];
+            saveDailyProgress(dailyData);
+        }
+        
+        return; // Exit early after forcing reset
+    }
     
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
@@ -430,17 +509,28 @@ function saveDailyProgress(data) {
 
 // Update today's progress from study session data
 function updateTodaysProgressFromStudyData() {
+    console.log('🔍 DEBUG: updateTodaysProgressFromStudyData() called');
+    
     const today = getTodayDateString();
     const dailyData = getDailyProgress();
+    
+    console.log('🔍 DEBUG: Starting data state:', {
+        today,
+        dailyData,
+        todayData: dailyData[today]
+    });
     
     // Check if progress has been reset - if so, don't calculate from stale data
     const hasStudyPathData = localStorage.getItem('studyPathData');
     if (!hasStudyPathData) {
-        console.log('No study path data found, maintaining reset state for daily progress');
+        console.log('🔍 DEBUG: No study path data found, maintaining reset state for daily progress');
         // Ensure today's data is at zero if no study path exists
         if (!dailyData[today]) {
             dailyData[today] = { questions: 0, totalQuestions: 0, timestamp: Date.now() };
             saveDailyProgress(dailyData);
+            console.log('🔍 DEBUG: Created zero progress data for today');
+        } else {
+            console.log('🔍 DEBUG: Today already has data:', dailyData[today]);
         }
         return dailyData;
     }
@@ -669,6 +759,51 @@ function addAnimationTestButtons() {
             if (bottomSheet) bottomSheet.style.display = 'none';
         });
         bottomSheetActions.appendChild(clearTestBtn);
+        
+        // Debug: Show localStorage contents
+        const debugBtn = document.createElement('button');
+        debugBtn.className = 'action-button';
+        debugBtn.innerHTML = `
+            <span class="material-icons-round">bug_report</span>
+            <span class="subheading-3">Debug: Show localStorage</span>
+        `;
+        debugBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            debugLocalStorage();
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(debugBtn);
+        
+        // Emergency fix for 70% bug
+        const emergencyBtn = document.createElement('button');
+        emergencyBtn.className = 'action-button';
+        emergencyBtn.innerHTML = `
+            <span class="material-icons-round">healing</span>
+            <span class="subheading-3">🩹 Fix 70% Progress Bug</span>
+        `;
+        emergencyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emergency70PercentFix();
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(emergencyBtn);
+        
+        // Nuclear option: Clear ALL localStorage 
+        const nuclearBtn = document.createElement('button');
+        nuclearBtn.className = 'action-button';
+        nuclearBtn.innerHTML = `
+            <span class="material-icons-round">delete_forever</span>
+            <span class="subheading-3">🚨 Nuclear: Clear ALL localStorage</span>
+        `;
+        nuclearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nuclearResetLocalStorage();
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(nuclearBtn);
     }
 }
 
@@ -794,6 +929,184 @@ function clearTestProgressData() {
     } catch (error) {
         console.error('Error clearing test progress data:', error);
         showToast('Error clearing test data');
+    }
+}
+
+// Quick debug function for page load
+function debugLocalStorageQuick() {
+    const allKeys = Object.keys(localStorage);
+    console.log('🚨 QUICK DEBUG: localStorage keys:', allKeys);
+    
+    // Check specifically for problematic data
+    const dailyProgress = localStorage.getItem('dailyProgress');
+    const studyPathData = localStorage.getItem('studyPathData');
+    
+    if (dailyProgress) {
+        try {
+            const parsed = JSON.parse(dailyProgress);
+            console.log('🚨 QUICK DEBUG: dailyProgress:', parsed);
+            
+            // Check if today has suspicious data
+            const today = new Date().toISOString().split('T')[0];
+            if (parsed[today] && parsed[today].questions > 0) {
+                console.log('🚨 POTENTIAL ISSUE: Today has questions but should be 0:', parsed[today]);
+                
+                // Check if this is test data or real data
+                if (parsed[today].isTestData) {
+                    console.log('🚨 FOUND ISSUE: Test data persisting, clearing it...');
+                    delete parsed[today];
+                    localStorage.setItem('dailyProgress', JSON.stringify(parsed));
+                    console.log('✅ Cleared test data');
+                }
+            }
+        } catch (e) {
+            console.log('🚨 ERROR parsing dailyProgress:', e);
+        }
+    }
+    
+    if (studyPathData) {
+        try {
+            const parsed = JSON.parse(studyPathData);
+            console.log('🚨 QUICK DEBUG: studyPathData:', parsed);
+        } catch (e) {
+            console.log('🚨 ERROR parsing studyPathData:', e);
+        }
+    }
+}
+
+// Debug function to inspect localStorage contents
+function debugLocalStorage() {
+    console.log('🔍 DEBUG: Complete localStorage dump:');
+    
+    const allKeys = Object.keys(localStorage);
+    console.log('🔍 DEBUG: All localStorage keys:', allKeys);
+    
+    allKeys.forEach(key => {
+        try {
+            const value = localStorage.getItem(key);
+            const parsed = JSON.parse(value);
+            console.log(`🔍 DEBUG: ${key}:`, parsed);
+        } catch (e) {
+            console.log(`🔍 DEBUG: ${key}:`, localStorage.getItem(key));
+        }
+    });
+    
+    // Show in alert for user visibility
+    const debugInfo = allKeys.map(key => {
+        try {
+            const value = localStorage.getItem(key);
+            const parsed = JSON.parse(value);
+            return `${key}: ${JSON.stringify(parsed, null, 2)}`;
+        } catch (e) {
+            return `${key}: ${localStorage.getItem(key)}`;
+        }
+    }).join('\n\n');
+    
+    alert(`localStorage Contents:\n\n${debugInfo}`);
+}
+
+// Emergency fix specifically for the 70% progress bug
+function emergency70PercentFix() {
+    try {
+        console.log('🩹 EMERGENCY FIX: Starting 70% progress bug fix...');
+        
+        const today = getTodayDateString();
+        let fixesApplied = [];
+        
+        // 1. Clear any dailyProgress data for today
+        const dailyData = getDailyProgress();
+        if (dailyData[today]) {
+            console.log('🩹 Clearing today\'s daily progress data:', dailyData[today]);
+            delete dailyData[today];
+            saveDailyProgress(dailyData);
+            fixesApplied.push('Cleared today\'s daily progress');
+        }
+        
+        // 2. Clear studyPathData if it exists but has no real progress
+        const studyPathData = localStorage.getItem('studyPathData');
+        if (studyPathData) {
+            try {
+                const parsed = JSON.parse(studyPathData);
+                if (parsed.completedRounds === 0 && parsed.currentRoundProgress === 0) {
+                    console.log('🩹 Clearing empty studyPathData:', parsed);
+                    localStorage.removeItem('studyPathData');
+                    fixesApplied.push('Cleared empty study path data');
+                }
+            } catch (e) {
+                console.log('🩹 Clearing corrupt studyPathData');
+                localStorage.removeItem('studyPathData');
+                fixesApplied.push('Cleared corrupt study path data');
+            }
+        }
+        
+        // 3. Force UI to 0%
+        const progressFill = document.querySelector('.progress-fill');
+        const progressText = document.querySelector('.progress-text');
+        
+        if (progressFill) {
+            progressFill.style.width = '0%';
+        }
+        if (progressText) {
+            progressText.textContent = '0% complete';
+        }
+        fixesApplied.push('Reset UI to 0%');
+        
+        // 4. Clear session storage flags that might be interfering
+        sessionStorage.removeItem('fromStudyPlan');
+        sessionStorage.removeItem('fromQuestionScreen');
+        fixesApplied.push('Cleared session storage flags');
+        
+        console.log('🩹 EMERGENCY FIX: Completed. Fixes applied:', fixesApplied);
+        
+        if (fixesApplied.length > 0) {
+            showToast(`🩹 Applied ${fixesApplied.length} fixes for 70% bug`);
+        } else {
+            showToast('🩹 No issues found to fix');
+        }
+        
+        // Force reload the progress to ensure clean state
+        setTimeout(() => {
+            loadStudyProgress();
+        }, 500);
+        
+    } catch (error) {
+        console.error('🩹 Error during emergency fix:', error);
+        showToast('🩹 Error during emergency fix');
+    }
+}
+
+// Nuclear option: Clear ALL localStorage data
+function nuclearResetLocalStorage() {
+    const confirmed = confirm('🚨 WARNING: This will clear ALL localStorage data including onboarding, progress, and settings. Are you sure?');
+    
+    if (confirmed) {
+        try {
+            console.log('🚨 NUCLEAR: Clearing ALL localStorage data');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Reset UI immediately
+            const progressFill = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            
+            if (progressFill) {
+                progressFill.style.width = '0%';
+            }
+            if (progressText) {
+                progressText.textContent = '0% complete';
+            }
+            
+            showToast('🚨 ALL localStorage cleared - page will reload');
+            
+            // Reload the page to start fresh
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error during nuclear reset:', error);
+            showToast('Error during nuclear reset');
+        }
     }
 }
 
