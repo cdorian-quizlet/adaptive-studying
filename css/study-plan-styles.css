@@ -356,7 +356,7 @@ body {
     stroke: url(#progressGradient);
     fill: none;
     stroke-linecap: round;
-    transition: stroke-dashoffset 0.3s ease;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
     /* Initialize for circular progress - will be set by JavaScript */
     stroke-dasharray: 0;
     stroke-dashoffset: 0;

@@ -88,8 +88,16 @@ document.addEventListener('DOMContentLoaded', function() {
             overviewTitle.textContent = 'Keep up the momentum';
         }
         
+        // Initialize circular progress properly to start from 0%
+        const progressRingFill = document.querySelector('.progress-ring-fill');
+        if (progressRingFill) {
+            const circumference = 2 * Math.PI * 38; // radius = 38
+            progressRingFill.style.strokeDasharray = circumference;
+            progressRingFill.style.strokeDashoffset = circumference; // Start at 0%
+        }
+        
         // Reset circular progress and ensure circular view is shown
-        updateCircularProgress(0);
+        updateCircularProgress(0, false); // Don't animate the initial 0% reset
         
         // Make sure circular view is visible and add zero-state class
         const circularView = document.getElementById('circularProgressView');
@@ -296,8 +304,8 @@ function syncDailyProgressWithHome() {
                 }
             }
 
-            // Update circular progress to match overall plan progress
-            updateCircularProgress(overallProgressPercentage);
+            // Update circular progress to match overall plan progress (no animation for data sync)
+            updateCircularProgress(overallProgressPercentage, false);
             
             // Update text to show percentage complete (default home view)
             if (trendChange && !sessionStorage.getItem('fromQuestionScreen')) {
@@ -436,7 +444,10 @@ function showCircularProgress() {
         }
     }
     
-    updateCircularProgress(overallProgressPercentage);
+    // Animate the progress after a small delay for page load
+    setTimeout(() => {
+        updateCircularProgress(overallProgressPercentage, true);
+    }, 200);
     
     // Keep motivational headline
     if (overviewTitle) {
@@ -559,8 +570,8 @@ document.addEventListener('visibilitychange', function() {
                 overviewTitle.textContent = 'Keep up the momentum';
             }
             
-            // Reset circular progress
-            updateCircularProgress(0);
+            // Reset circular progress (no animation for reset)
+            updateCircularProgress(0, false);
             
             // Ensure circular view is shown
             showCircularProgress();
@@ -955,7 +966,7 @@ function checkForRoundCompletion() {
 }
 
 // Update circular progress ring
-function updateCircularProgress(percentage) {
+function updateCircularProgress(percentage, animate = true) {
     const progressRingFill = document.querySelector('.progress-ring-fill');
     const progressPercentageText = document.getElementById('progressPercentageText');
     
@@ -964,19 +975,29 @@ function updateCircularProgress(percentage) {
         const circumference = 2 * Math.PI * radius;
         
         // Set up the stroke-dasharray and stroke-dashoffset for circular progress
-        // This approach starts from top (12 o'clock) and fills clockwise
         progressRingFill.style.strokeDasharray = circumference;
         
-        // Calculate offset to show progress starting from top (12 o'clock)
-        // With transform: rotate(-90deg), we need to offset to start from top
-        const offset = circumference - (percentage / 100) * circumference;
-        progressRingFill.style.strokeDashoffset = offset;
+        if (animate) {
+            // Start from 0% and animate to target percentage
+            progressRingFill.style.strokeDashoffset = circumference; // Start at 0%
+            
+            // Small delay to ensure the starting position is set before animating
+            setTimeout(() => {
+                const offset = circumference - (percentage / 100) * circumference;
+                progressRingFill.style.strokeDashoffset = offset;
+            }, 50);
+        } else {
+            // Set directly without animation
+            const offset = circumference - (percentage / 100) * circumference;
+            progressRingFill.style.strokeDashoffset = offset;
+        }
         
         console.log('🔄 Updating circular progress:', {
             percentage,
             radius,
             circumference,
-            dashOffset: circumference - (percentage / 100) * circumference
+            animate,
+            targetOffset: circumference - (percentage / 100) * circumference
         });
     }
     
