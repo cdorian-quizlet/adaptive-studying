@@ -412,7 +412,7 @@ body {
 }
 
 .progress-ring {
-    transform: rotate(-90deg);
+    /* Removed rotation to prevent text from being rotated */
 }
 
 .progress-ring-bg {
