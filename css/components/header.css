@@ -1,0 +1,128 @@
+/* Shared Header Component Styles */
+
+/* Header Container */
+.study-path-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: var(--sys-surface-base);
+}
+
+/* Header Buttons */
+.back-btn,
+.settings-btn {
+    background: none;
+    border: none;
+    color: var(--sys-text-secondary);
+    font-size: 24px;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.back-btn:hover,
+.settings-btn:hover {
+    background: rgba(88, 99, 128, 0.1);
+}
+
+.back-btn:focus,
+.settings-btn:focus {
+    outline: 2px solid var(--color-twilight-500);
+    outline-offset: 2px;
+}
+
+/* Header Title */
+.header-title {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
+    font-weight: 600;
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-none);
+    color: var(--sys-text-secondary);
+    margin: 0;
+    text-align: center;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 16px;
+}
+
+/* Material Icons */
+.material-icons-round,
+.material-symbols-rounded {
+    font-family: 'Material Icons Round', 'Material Symbols Rounded', sans-serif;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    visibility: hidden;
+    transition: visibility 0.1s ease;
+}
+
+/* Show icons once fonts are loaded */
+.material-icons-round.loaded,
+.material-symbols-rounded.loaded {
+    visibility: visible;
+}
+
+/* Responsive Design */
+@media (max-width: 360px) {
+    .study-path-header {
+        padding: 16px;
+    }
+    
+    .header-title {
+        font-size: 16px;
+        padding: 0 8px;
+    }
+    
+    .back-btn,
+    .settings-btn {
+        min-width: 36px;
+        min-height: 36px;
+        padding: 6px;
+    }
+}
+
+/* Animation for header appearance */
+.study-path-header {
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: headerFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes headerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .back-btn:hover,
+    .settings-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}

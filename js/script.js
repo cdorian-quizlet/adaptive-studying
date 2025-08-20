@@ -35,7 +35,27 @@ document.addEventListener('DOMContentLoaded', function() {
 // Also refresh progress when page becomes visible (e.g., returning from diagnostic test)
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        loadStudyProgress();
+        // Check if user is returning from study plan
+        const fromStudyPlan = sessionStorage.getItem('fromStudyPlan');
+        if (fromStudyPlan === 'true') {
+            sessionStorage.removeItem('fromStudyPlan');
+            animateProgressUpdate();
+        } else {
+            loadStudyProgress();
+        }
+    }
+});
+
+// Check for URL parameter indicating return from study plan
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'study-plan') {
+        // Remove the parameter from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Trigger animation after a short delay
+        setTimeout(() => {
+            animateProgressUpdate();
+        }, 100);
     }
 });
 
@@ -353,52 +373,106 @@ function escapeHtml(str) {
 
 // Load and display study progress
 function loadStudyProgress() {
-    let PROGRESS_VALUE = 0;
+    // Load daily progress data
+    const dailyData = getDailyProgress();
+    const today = getTodayDateString();
+    const todayQuestions = dailyData[today]?.questions || 0;
     
-    // Check for diagnostic test progress
-    const studyPathData = localStorage.getItem('studyPathData');
-    if (studyPathData) {
-        try {
-            const pathData = JSON.parse(studyPathData);
-            if (pathData.roundProgress) {
-                const diagnosticProgress = Object.values(pathData.roundProgress).reduce((sum, progress) => sum + progress, 0);
-                const diagnosticPercentage = Math.round((diagnosticProgress / 50) * 100);
-                PROGRESS_VALUE = Math.max(PROGRESS_VALUE, diagnosticPercentage);
-                console.log('Diagnostic Progress:', { diagnosticProgress, diagnosticPercentage, finalProgress: PROGRESS_VALUE });
-            }
-        } catch (error) {
-            console.error('Error parsing study path data:', error);
-        }
-    }
-    
-    // Fallback to old progress system
-    if (PROGRESS_VALUE === 0) {
-        const savedProgress = localStorage.getItem('studyProgress');
-        const currentQuestionIndex = localStorage.getItem('currentQuestionIndex') || 0;
-        const totalQuestions = 50; // Total questions (all 50 state capitals)
-        
-        if (savedProgress) {
-            PROGRESS_VALUE = parseInt(savedProgress);
-        } else {
-            // Calculate progress based on current question index
-            PROGRESS_VALUE = Math.round((parseInt(currentQuestionIndex) / totalQuestions) * 100);
-        }
-    }
+    // Update progress bar based on daily goal (e.g., 10 questions per day)
+    const dailyGoal = 10;
+    const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
     
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
     if (progressFill) {
-        progressFill.style.width = `${PROGRESS_VALUE}%`;
+        progressFill.style.width = `${dailyProgressPercentage}%`;
     }
     
-    // Update progress text
+    // Update progress text to show daily progress
     const progressText = document.querySelector('.progress-text');
     if (progressText) {
-        progressText.textContent = `${PROGRESS_VALUE}% complete`;
+        const questionText = todayQuestions === 1 ? 'question' : 'questions';
+        progressText.textContent = `${todayQuestions} ${questionText} today`;
     }
+}
+
+// Daily progress helper functions for home page
+function getTodayDateString() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function getDailyProgress() {
+    try {
+        const dailyData = localStorage.getItem('dailyProgress');
+        return dailyData ? JSON.parse(dailyData) : {};
+    } catch (error) {
+        console.error('Error loading daily progress:', error);
+        return {};
+    }
+}
+
+// Animate progress update when returning from study plan
+function animateProgressUpdate() {
+    const progressFill = document.querySelector('.progress-fill');
+    const progressText = document.querySelector('.progress-text');
     
-    // Store the calculated progress for other screens
-    localStorage.setItem('studyProgress', PROGRESS_VALUE.toString());
+    if (!progressFill || !progressText) return;
+    
+    // Get current and new progress values
+    const dailyData = getDailyProgress();
+    const today = getTodayDateString();
+    const todayQuestions = dailyData[today]?.questions || 0;
+    
+    // Calculate new progress percentage
+    const dailyGoal = 10;
+    const newProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    
+    // Store original progress width for animation
+    const currentWidth = parseInt(progressFill.style.width) || 0;
+    
+    // Step 1: Animate progress bar from current to new value
+    progressFill.style.transition = 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+    progressFill.style.width = `${newProgressPercentage}%`;
+    
+    // Step 2: Show "X questions today" with highlight animation
+    const questionText = todayQuestions === 1 ? 'question' : 'questions';
+    const dailyText = `${todayQuestions} ${questionText} today`;
+    
+    setTimeout(() => {
+        // Add highlighting class and change text
+        progressText.classList.add('highlighting');
+        progressText.textContent = dailyText;
+        
+        // Apply highlight styling
+        progressText.style.cssText = `
+            color: var(--color-mint-500) !important;
+            font-weight: 700 !important;
+            transform: scale(1.05);
+            transition: all 0.3s ease;
+        `;
+    }, 600); // Start text change partway through progress animation
+    
+    // Step 3: Animate back to percentage complete
+    setTimeout(() => {
+        // Remove highlight and return to normal text
+        progressText.classList.remove('highlighting');
+        progressText.style.cssText = '';
+        progressText.textContent = `${newProgressPercentage}% complete`;
+        
+        // Add a subtle fade transition
+        progressText.style.transition = 'all 0.4s ease';
+        
+        // Clean up transition styles
+        setTimeout(() => {
+            progressFill.style.transition = '';
+            progressText.style.transition = '';
+        }, 500);
+    }, 2800); // Show daily text for ~2 seconds
+}
+
+// Set flag when navigating to study plan (to detect return)
+function setStudyPlanFlag() {
+    sessionStorage.setItem('fromStudyPlan', 'true');
 }
 
 // Navigation Functions

@@ -88,6 +88,8 @@ body {
     transform: scale(1.05);
 }
 
+/* Header styles are now in css/components/header.css */
+
 /* Progress bar styles imported from progress-bar.css */
 
 /* Main Content */

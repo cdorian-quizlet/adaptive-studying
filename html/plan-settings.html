@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan Settings - BIOL 210</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/components/header.css">
+    <link rel="stylesheet" href="../css/plan-settings-styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="plan-settings-header">
+            <button class="close-btn" id="closeBtn">
+                <span class="material-icons-round">close</span>
+            </button>
+            <h1 class="header-title">Plan settings</h1>
+            <div></div> <!-- Spacer for layout -->
+        </header>
+
+        <!-- Settings Content -->
+        <main class="settings-content">
+            <!-- Course Setting -->
+            <div class="setting-item" id="courseSetting">
+                <div class="setting-content">
+                    <h3 class="setting-label">Course</h3>
+                    <p class="setting-value" id="courseValue">BIO 220</p>
+                </div>
+                <span class="material-icons-round setting-chevron">chevron_right</span>
+            </div>
+
+            <!-- Goal Setting -->
+            <div class="setting-item" id="goalSetting">
+                <div class="setting-content">
+                    <h3 class="setting-label">Goal</h3>
+                    <p class="setting-value" id="goalValue">Exam 1</p>
+                </div>
+                <span class="material-icons-round setting-chevron">chevron_right</span>
+            </div>
+
+            <!-- Concepts Setting -->
+            <div class="setting-item" id="conceptsSetting">
+                <div class="setting-content">
+                    <h3 class="setting-label">Concepts</h3>
+                    <p class="setting-value" id="conceptsValue">Anatomy & Physiology, Cells & Tissues</p>
+                </div>
+                <span class="material-icons-round setting-chevron">chevron_right</span>
+            </div>
+
+            <!-- Knowledge State Setting -->
+            <div class="setting-item" id="knowledgeSetting">
+                <div class="setting-content">
+                    <h3 class="setting-label">Knowledge state</h3>
+                    <p class="setting-value" id="knowledgeValue">Somewhat, speed me along</p>
+                </div>
+                <span class="material-icons-round setting-chevron">chevron_right</span>
+            </div>
+
+            <!-- Goal Date Setting -->
+            <div class="setting-item" id="dateSetting">
+                <div class="setting-content">
+                    <h3 class="setting-label">Goal date</h3>
+                    <p class="setting-value" id="dateValue">June 26, 2025</p>
+                </div>
+                <span class="material-icons-round setting-chevron">chevron_right</span>
+            </div>
+        </main>
+
+        <!-- Delete Plan Button -->
+        <div class="delete-section">
+            <button class="delete-btn" id="deletePlanBtn">Delete plan</button>
+        </div>
+    </div>
+
+    <script src="../js/components/header.js"></script>
+    <script src="../js/plan-settings.js"></script>
+</body>
+</html>

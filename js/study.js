@@ -532,7 +532,8 @@ const submitBtn = document.getElementById('submitBtn');
 const currentQuestionEl = document.getElementById('currentQuestion');
 const totalQuestionsEl = document.getElementById('totalQuestions');
 const progressFill = document.getElementById('progressFill');
-const closeBtn = document.getElementById('closeBtn');
+// Header component instance
+let appHeader = null;
 
 // QA helpers: show an "API" badge next to content if it came from the API
 function createApiBadge() {
@@ -632,6 +633,29 @@ async function fetchAndLoadQuestionsFromApi() {
     }
 }
 
+// Initialize header component
+function initializeHeader() {
+    appHeader = new AppHeader({
+        backUrl: '../html/study-plan.html',
+        onBackClick: function() {
+            // Close study session with confirmation
+            if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
+                // Save current progress before leaving
+                if (window.StudyPath) {
+                    window.StudyPath.updateRoundProgress(currentRoundProgress);
+                }
+                window.location.href = '../html/study-plan.html';
+            }
+        },
+        onSettingsClick: function() {
+            console.log('Settings clicked from study screen');
+            window.location.href = '../html/plan-settings.html';
+        }
+    });
+    
+    appHeader.init();
+}
+
 // Initialize the study session
 async function initStudySession() {
     // Load current round number from localStorage
@@ -655,6 +679,9 @@ async function initStudySession() {
         currentRoundNumber = parseInt(targetRound);
         localStorage.removeItem('targetRound');
     }
+    
+    // Initialize header component
+    initializeHeader();
     
     initFirstRound();
     setupEventListeners();
@@ -1283,17 +1310,7 @@ function setupEventListeners() {
         }
     });
     
-    // Navigation buttons
-    closeBtn.addEventListener('click', () => {
-        // Close study session
-        if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
-            // Save current progress before leaving
-            if (window.StudyPath) {
-                window.StudyPath.updateRoundProgress(currentRoundProgress);
-            }
-    window.location.href = '../html/study-plan.html';
-        }
-    });
+    // Navigation is now handled by AppHeader component
 }
 
 // Handle Material Icons loading
@@ -1326,4 +1343,64 @@ function resetQuestionsArray() {
 window.resetQuestionsArray = resetQuestionsArray;
 
 // Initialize when DOM is loaded
+// Toast notification system
+function showToast(message, duration = 3000) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    
+    // Add toast styles (Design System)
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 10px;
+        width: 90%;
+        min-width: 320px;
+        max-width: 480px;
+        min-height: 72px;
+        padding: 0 var(--spacing-small, 16px);
+        background: var(--sys-surface-inverse, #1A1D28);
+        color: var(--sys-text-inverse, #FFFFFF);
+        border-radius: var(--radius-large, 16px);
+        box-shadow: var(--shadow-medium);
+        font-size: 14px;
+        text-align: left;
+        font-weight: 600;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+    
+    // Add to page
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.opacity = '1';
+    }, 10);
+    
+    // Animate out and remove
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, duration);
+}
+
 document.addEventListener('DOMContentLoaded', initStudySession); 

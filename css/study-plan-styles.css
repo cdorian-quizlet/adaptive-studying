@@ -22,66 +22,12 @@ body {
     position: relative;
 }
 
-/* Header */
-.study-path-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px;
-}
-
-.back-btn {
-    background: none;
-    border: none;
-    color: var(--sys-text-secondary);
-    font-size: 24px;
-    padding: 8px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.back-btn:hover {
-    background: rgba(88, 99, 128, 0.1);
-}
-
-.settings-btn,
-.stats-btn {
-    background: none;
-    border: none;
-    color: var(--sys-text-secondary);
-    font-size: 24px;
-    padding: 8px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.settings-btn:hover,
-.stats-btn:hover {
-    background: rgba(88, 99, 128, 0.1);
-}
-
-.header-title {
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-three);
-    font-style: normal;
-    font-weight: 600;
-    line-height: var(--typography-lineHeight-subheading-three);
-    letter-spacing: var(--typography-letterSpacing-none);
-    color: var(--sys-text-secondary);
-    margin: 0;
-}
+/* Header styles are now in css/components/header.css */
 
 /* Progress Overview */
 .progress-overview {
     padding: 24px 20px;
+    margin-bottom: 24px; /* Add 24px spacing before first round */
     animation: fadeInUp 0.6s ease-out;
 }
 
@@ -332,6 +278,34 @@ body {
     gap: 8px;
 }
 
+.daily-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.daily-change {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
+    font-weight: 700;
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-none);
+    color: var(--sys-text-primary);
+}
+
+.daily-change.positive {
+    color: var(--color-mint-500);
+}
+
+.daily-change.negative {
+    color: var(--color-red-500);
+}
+
+
+
+/* Circular progress styles */
 .circular-progress {
     position: relative;
     display: flex;
@@ -351,28 +325,10 @@ body {
 
 .progress-ring-fill {
     fill: none;
-    stroke: var(--color-mint-400);
+    stroke: url(#progressGradient);
     stroke-linecap: round;
     stroke-width: 12;
     transition: stroke-dasharray 0.6s ease;
-}
-
-.progress-center {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.progress-percentage {
-    font-feature-settings: 'liga' off, 'clig' off;
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-header-four);
-    font-style: normal;
-    font-weight: 700;
-    line-height: var(--typography-lineHeight-header-four);
-    letter-spacing: var(--typography-letterSpacing-none);
-    color: var(--sys-text-primary);
 }
 
 .progress-label {
@@ -387,13 +343,13 @@ body {
 .path-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0; /* Remove vertical spacing */
 }
 
 .path-step {
     position: relative;
     display: flex;
-    align-items: flex-start;
+    align-items: center; /* Center align step-circle, step-content, and step-status */
     gap: 16px;
     padding: 0; /* Remove padding */
     background: transparent;
@@ -404,7 +360,7 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     border: none; /* Remove border */
-    margin: 0; /* Remove margin */
+    margin: 0; /* Remove bottom margin */
 }
 
 .path-step:hover {
@@ -446,7 +402,7 @@ body {
 .step-circle {
     width: 64px;
     height: 64px;
-    border-radius: 50%; /* Make it circular for star icon */
+    border-radius: 16px; /* Rounded square for all rounds */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -460,29 +416,45 @@ body {
 }
 
 .step-circle.completed {
-    background: var(--color-mint-100);
+    background: var(--color-mint-200);
     color: var(--sys-text-primary);
     border-radius: 16px;
     animation: checkmarkPulse 0.6s ease-out;
-    /* No background image for completed state - uses check icon */
+    background-image: url('../images/circled-check-filled-mint.png');
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .step-circle.in-progress {
-    background: var(--color-twilight-100);
+    background: var(--color-twilight-200);
     color: var(--sys-text-primary);
     border-radius: 16px;
-    background-image: none; /* Remove filled star background */
+    background-image: url('../images/star-filled.png');
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
-/* Show outline star icon for in-progress state */
-.step-circle.in-progress .step-icon {
-    display: block;
-    font-size: 40px;
+/* Next/future rounds - disabled state */
+.step-circle.next {
+    background: var(--color-gray-400);
+    color: var(--sys-text-primary);
+    border-radius: 16px;
+    background-image: url('../images/star-filled-disabled.png');
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .step-circle.diagnostic {
-    background: var(--color-sherbert-400);
+    background: var(--color-sherbert-200);
     color: white;
+    border-radius: 16px; /* Rounded square like other steps */
+    background-image: url('../images/brand-practice-tests.png');
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .step-circle.diagnostic.completed {
@@ -491,19 +463,22 @@ body {
 }
 
 .step-icon {
-    display: none; /* Hide icon since we're using background image */
+    display: none; /* Hide icon since we're using background image for rounds */
 }
 
-/* Show icon for completed state */
-.step-circle.completed .step-icon {
-    display: block;
-    font-size: 40px;
+/* Hide icon for completed rounds - using star-filled.png background */
+.step-circle.completed:not(.diagnostic) .step-icon {
+    display: none;
 }
 
-/* Show icon for diagnostic tests */
+/* Hide icon for diagnostic tests since we're using background image */
 .step-circle.diagnostic .step-icon {
-    display: block;
-    font-size: 40px;
+    display: none;
+}
+
+/* Hide material icons for all round states (in-progress, future, with diagnostic progress) */
+.step-circle:not(.completed):not(.diagnostic) .step-icon {
+    display: none;
 }
 
 /* Remove step lines for simplified design */
@@ -514,16 +489,58 @@ body {
 .step-content {
     flex: 1;
     display: flex;
+    flex-direction: row;
+    align-items: center; /* Center align text group and status button */
+    gap: 16px;
+    position: relative;
+}
+
+.step-text-group {
+    flex: 1;
+    display: flex;
     flex-direction: column;
     gap: 0;
-    position: relative;
 }
 
 .step-header {
     display: flex;
+    flex-direction: row; /* Change to row for diagnostic buttons to float right */
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    position: relative;
+}
+
+/* For regular rounds, keep column layout */
+.path-step:not(.diagnostic) .step-header {
     flex-direction: column;
     gap: 0;
-    position: relative;
+}
+
+/* For diagnostic tests, ensure proper layout */
+.path-step.diagnostic .step-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.path-step.diagnostic .step-header > div:first-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.path-step.diagnostic .step-title {
+    margin-bottom: 4px;
+}
+
+.path-step.diagnostic .step-description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--sys-text-secondary);
+    line-height: 1.4;
 }
 
 /* Hide progress bar for completed steps */
@@ -542,8 +559,7 @@ body {
     height: 24px;
     width: 100%;
     position: relative;
-    margin-top: 8px;
-    margin-bottom: 16px;
+    margin: 8px 0 16px 0; /* 8px top, 16px bottom */
     animation: fadeInUp 0.6s ease-out;
     opacity: 0;
     animation-fill-mode: both;
@@ -560,6 +576,23 @@ body {
     border-radius: var(--radius-full, 200px);
 }
 
+/* Spacer colors for different states */
+.step-vertical-spacer.completed::before {
+    background: var(--color-mint-200);
+}
+
+.step-vertical-spacer.current::before {
+    background: var(--color-twilight-200);
+}
+
+.step-vertical-spacer.next::before {
+    background: var(--color-gray-400);
+}
+
+.step-vertical-spacer.diagnostic::before {
+    background: var(--color-sherbert-200);
+}
+
 /* Hide vertical spacer after the last step */
 .path-container .step-vertical-spacer:last-child {
     display: none;
@@ -573,11 +606,9 @@ body {
 }
 
 .step-status {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 48px;
-    height: 48px;
+    position: static;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: var(--color-twilight-500);
     color: white;
@@ -587,21 +618,28 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    font-size: 20px;
+    font-size: 24px;
+    flex-shrink: 0;
 }
 
 .step-status.skip-ahead {
     position: static;
     width: auto;
     height: auto;
-    background: transparent;
-    color: var(--color-twilight-500);
-    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-none, 0);
+    border-radius: var(--radius-full, 200px);
+    background: var(--interactive-bg-secondary-default, #EDEFFF);
+    color: var(--color-skyblue-700);
+    font-size: 14px;
     font-weight: 600;
-    border-radius: 0;
     transform: none;
-    padding: 0;
-    margin-top: 8px;
+    padding: 8px 16px;
+    margin-top: 0;
+    align-self: center; /* Center vertically with content and icon */
+    margin-left: auto; /* Float to the right */
 }
 
 .status-text {
@@ -619,12 +657,36 @@ body {
 
 .step-status.skip-ahead:hover {
     transform: none;
-    background: transparent;
-    color: var(--color-twilight-600);
+    background: var(--color-skyblue-400);
+    color: var(--color-skyblue-800);
 }
 
 .step-status.completed {
     display: none; /* Hide button for completed steps */
+}
+
+/* Next/future round status buttons */
+.step-status.next {
+    background: var(--color-gray-400);
+    color: white;
+    cursor: default;
+    pointer-events: none;
+}
+
+.step-status.next:hover {
+    background: var(--color-gray-400);
+    transform: none;
+}
+
+/* Make next rounds non-interactive */
+.path-step.next {
+    cursor: default;
+    pointer-events: none;
+}
+
+.path-step.next:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .step-status.in-progress {
@@ -651,10 +713,20 @@ body {
     width: 100%;
     margin-top: 8px;
     display: none; /* Hide by default */
+    align-items: center;
+    gap: 0;
 }
 
+/* When progress is shown, use flex layout */
 .step-progress.has-progress {
-    display: block; /* Show only when there's progress */
+    display: flex;
+}
+
+
+
+/* Show progress bar for current round only when there's progress */
+.path-step.current .step-progress.has-progress {
+    display: flex !important;
 }
 
 .step-progress-bar {
@@ -670,11 +742,28 @@ body {
     height: 100%;
     background: var(--color-twilight-500);
     border-radius: 4px;
-    transition: width 0.6s ease;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .step-progress-text {
-    display: none; /* Hide progress text for cleaner look */
+    display: none; /* Hide progress text by default */
+}
+
+/* Show progress text for current round */
+.path-step.current .step-progress-text {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sys-text-highlight);
+    margin-left: 12px;
+    white-space: nowrap;
+    transition: opacity 0.3s ease;
+}
+
+/* Animation for progress text changes */
+.step-progress-text.updating {
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
 }
 
 /* Diagnostic Test Styles */

@@ -1,14 +1,13 @@
 // Study Plan screen logic (migrated from study-path.js)
 
-// DOM Elements
-const backBtn = document.getElementById('backBtn');
-const settingsBtn = document.getElementById('settingsBtn');
+// Header component instance
+let appHeader = null;
 
 let pathSteps = document.querySelectorAll('.path-step'); // Will be updated when we generate dynamic content
 
 // Progress Elements
-const overallProgress = document.getElementById('overallProgress');
-const cardProgress = document.getElementById('cardProgress');
+const progressSummary = document.getElementById('progressSummary');
+const trendChange = document.getElementById('trendChange');
 const progressRingFill = document.querySelector('.progress-ring-fill');
 
 // Onboarding data from plan flow
@@ -37,6 +36,9 @@ const studyPathData = {
 
 // Initialize the study plan
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize header component
+    initializeHeader();
+    
     loadOnboardingData();
     generateDynamicStudyPlan();
     loadStudyPathData();
@@ -49,10 +51,129 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show onboarding bottom sheet if coming from plan flow
     maybeShowOnboardingSheet();
+    
+    // Initialize material icons
+    initMaterialIcons();
 });
+
+// Initialize header component
+function initializeHeader() {
+    appHeader = new AppHeader({
+        backUrl: '../index.html',
+        onBackClick: function() {
+            sessionStorage.setItem('fromStudyPlan', 'true');
+            window.location.href = '../index.html';
+        },
+        onSettingsClick: function() {
+            console.log('Settings clicked');
+            window.location.href = '../html/plan-settings.html';
+        }
+    });
+    
+    appHeader.init();
+}
 
 // Store previous progress for animation
 let previousProgress = new Map();
+
+// Daily progress tracking
+function getTodayDateString() {
+    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+}
+
+function getDailyProgress() {
+    try {
+        const dailyData = localStorage.getItem('dailyProgress');
+        return dailyData ? JSON.parse(dailyData) : {};
+    } catch (error) {
+        console.error('Error loading daily progress:', error);
+        return {};
+    }
+}
+
+function saveDailyProgress(data) {
+    try {
+        localStorage.setItem('dailyProgress', JSON.stringify(data));
+    } catch (error) {
+        console.error('Error saving daily progress:', error);
+    }
+}
+
+function updateTodaysProgress() {
+    const today = getTodayDateString();
+    const dailyData = getDailyProgress();
+    
+    // Calculate total questions completed so far
+    const todayRoundProgress = studyPathData.currentRoundProgress || 0;
+    const completedRoundsQuestions = studyPathData.completedRounds * studyPathData.questionsPerRound;
+    const totalQuestionsCompleted = completedRoundsQuestions + todayRoundProgress;
+    
+    // Get yesterday's total to calculate today's new questions
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0];
+    const yesterdayTotalQuestions = dailyData[yesterdayString]?.totalQuestions || 0;
+    
+    // Today's new questions = current total - yesterday's total
+    const todaysNewQuestions = Math.max(0, totalQuestionsCompleted - yesterdayTotalQuestions);
+    
+    // Initialize today's data if it doesn't exist
+    if (!dailyData[today]) {
+        dailyData[today] = { questions: 0, totalQuestions: 0 };
+    }
+    
+    // Update today's progress (don't decrease if we're loading saved data)
+    dailyData[today].questions = Math.max(dailyData[today].questions || 0, todaysNewQuestions);
+    dailyData[today].totalQuestions = totalQuestionsCompleted;
+    dailyData[today].timestamp = Date.now();
+    
+    saveDailyProgress(dailyData);
+    console.log('Updated daily progress:', {
+        today,
+        todaysNewQuestions: dailyData[today].questions,
+        totalQuestions: totalQuestionsCompleted,
+        yesterdayTotal: yesterdayTotalQuestions
+    });
+    
+    return dailyData;
+}
+
+// Function removed - using circular progress instead of trend chart
+
+function updateProgressSummary() {
+    const dailyData = getDailyProgress();
+    const today = getTodayDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0];
+    
+    const todayQuestions = dailyData[today]?.questions || 0;
+    const yesterdayQuestions = dailyData[yesterdayString]?.questions || 0;
+    
+    // Update summary text
+    if (progressSummary) {
+        const questionText = todayQuestions === 1 ? 'question' : 'questions';
+        progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+    }
+    
+    // Calculate daily progress percentage (based on daily goal)
+    const dailyGoal = 10; // questions per day goal
+    const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    
+    // Update circular progress ring (visual only, no text)
+    updateCircularProgress(dailyProgressPercentage);
+    
+    // Update today's total questions
+    if (trendChange) {
+        if (todayQuestions === 0) {
+            trendChange.textContent = '-- today';
+            trendChange.className = 'daily-change';
+        } else {
+            trendChange.textContent = `+${todayQuestions} today`;
+            trendChange.className = 'daily-change positive';
+        }
+    }
+}
 
 // Refresh progress when returning from study screen
 document.addEventListener('visibilitychange', function() {
@@ -148,6 +269,9 @@ function generateDynamicStudyPlan() {
             
             // Update pathSteps reference after generating new content
             pathSteps = document.querySelectorAll('.path-step');
+            
+            // Initialize material icons for newly generated content
+            initMaterialIcons();
         }
         
         console.log(`Generated study plan with ${conceptCount} concept rounds + 1 diagnostic`);
@@ -167,7 +291,7 @@ function generatePathStepsHTML() {
             <div class="path-step diagnostic" data-round="diagnostic-${type}">
                 <div class="step-indicator">
                     <div class="step-circle">
-                        <span class="material-icons-round step-icon">quiz</span>
+                        <span class="material-icons-round step-icon loaded">quiz</span>
                     </div>
                     <div class="step-line"></div>
                 </div>
@@ -193,7 +317,7 @@ function generatePathStepsHTML() {
             <div class="path-step" data-round="${roundNumber}">
                 <div class="step-indicator">
                     <div class="step-circle">
-                        <span class="material-icons-round step-icon">star_outline</span>
+                        <span class="material-icons-round step-icon loaded">star_outline</span>
                     </div>
                     ${hasNextStep ? '<div class="step-line"></div>' : ''}
                 </div>
@@ -209,7 +333,7 @@ function generatePathStepsHTML() {
                         </div>
                     </div>
                     <div class="step-status" id="round${roundNumber}Status">
-                        <span class="material-icons-round">play_arrow</span>
+                        <span class="material-icons-round loaded">play_arrow</span>
                         <span class="status-text">Start</span>
                     </div>
                 </div>
@@ -325,7 +449,7 @@ function loadStudyPathData() {
             console.log(`Loading fresh data: currentRound=${loadedCurrentRound}, progress=${loadedCurrentProgress}`);
             studyPathData.currentRound = loadedCurrentRound;
             studyPathData.currentRoundProgress = loadedCurrentProgress;
-            studyPathData.completedRounds = Math.max(0, studyPathData.currentRound - 1);
+        studyPathData.completedRounds = Math.max(0, studyPathData.currentRound - 1);
         } else {
             // We have saved completion data, so preserve it
             console.log(`Preserving saved completion data: completedRounds=${studyPathData.completedRounds}, currentRound=${studyPathData.currentRound} vs loaded=${loadedCurrentRound}`);
@@ -421,27 +545,15 @@ function updateUI() {
     // Check if any rounds need to be auto-completed based on progress
     checkForRoundCompletion();
     
-    // Calculate total progress including diagnostic tests
-    let totalProgress = studyPathData.totalQuestionsAnswered || 0;
-    
-    // Add progress from diagnostic tests
-    if (studyPathData.roundProgress) {
-        const diagnosticProgress = Object.values(studyPathData.roundProgress).reduce((sum, progress) => sum + progress, 0);
-        const diagnosticPercentage = Math.round((diagnosticProgress / 50) * 100);
-        totalProgress = Math.max(totalProgress, diagnosticPercentage);
-    }
-    
-    // Update overview stats
-    overallProgress.textContent = `${totalProgress}%`;
-    
-    // Update card progress
-    cardProgress.textContent = `Study plan ${totalProgress}% Complete`;
-    
-    // Update circular progress ring
-    updateCircularProgress(totalProgress);
+    // Update daily progress tracking and display
+    updateTodaysProgress();
+    updateProgressSummary();
     
     // Update path steps
     updatePathSteps();
+    
+    // Ensure new icons are loaded
+    initMaterialIcons();
 }
 
 // Check if current round should be marked as completed
@@ -567,6 +679,7 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
     const nextSibling = step.nextElementSibling;
     if (nextSibling && nextSibling.classList.contains('step-vertical-spacer')) {
         nextSibling.classList.remove('completed', 'current', 'next');
+        nextSibling.classList.add('diagnostic'); // Add diagnostic class for sherbert200 color
     }
     
     if (isTaken) {
@@ -660,7 +773,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('in-progress');
         stepStatus.style.display = 'flex';
         
@@ -693,7 +806,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('next');
         stepStatus.style.display = 'flex';
         
@@ -716,7 +829,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        stepStatus.innerHTML = `<span class="material-icons-round">play_arrow</span>`;
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('next');
         stepStatus.style.display = 'flex';
         
@@ -770,18 +883,6 @@ function animateCompletedSteps() {
 
 // Event Listeners
 function setupEventListeners() {
-    // Back button
-    backBtn.addEventListener('click', function() {
-        window.location.href = '../index.html';
-    });
-    
-    // Settings button
-    settingsBtn.addEventListener('click', function() {
-        // Settings functionality would go here
-        console.log('Settings clicked');
-        showToast('Settings menu opened');
-    });
-    
     // Path step clicks
     pathSteps.forEach((step, index) => {
         step.addEventListener('click', function() {
@@ -806,7 +907,7 @@ function setupEventListeners() {
                 const roundNumber = parseInt(roundType);
                 // Additional check: only allow current round or earlier
                 if (roundNumber <= studyPathData.currentRound) {
-                    startRound(roundNumber);
+                startRound(roundNumber);
                 }
             }
         });
@@ -875,7 +976,7 @@ function startDiagnosticTest(type) {
                 showToast(`Starting checkpoint diagnostic test...`);
                 window.location.href = '../html/diagnostic-1.html';
             } else {
-                showToast(`Starting ${type} diagnostic test...`);
+            showToast(`Starting ${type} diagnostic test...`);
                 window.location.href = '../html/diagnostic-1.html';
             }
     }
@@ -973,7 +1074,7 @@ function markRoundCompleted(roundNumber) {
         
         // Set current round to next available round
         if (roundNumber < conceptRounds) {
-            studyPathData.currentRound = roundNumber + 1;
+        studyPathData.currentRound = roundNumber + 1;
         } else {
             // All rounds completed
             studyPathData.currentRound = conceptRounds + 1;
@@ -1002,6 +1103,9 @@ function updateRoundProgress(questionsCompleted) {
     
     // Save to localStorage for persistence
     localStorage.setItem('currentRoundProgress', questionsCompleted);
+    
+    // Update daily progress tracking
+    updateTodaysProgress();
     
     // Check if round is completed and automatically advance
     if (questionsCompleted >= studyPathData.questionsPerRound) {
@@ -1292,6 +1396,23 @@ function updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRa
     console.log('Updated round progress:', roundProgress);
     
     // Don't save here - let the caller handle saving to avoid conflicts
+}
+
+// Initialize material icons
+function initMaterialIcons() {
+    // Check if fonts are loaded
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+            const icons = document.querySelectorAll('.material-icons-round, .material-symbols-rounded');
+            icons.forEach(icon => icon.classList.add('loaded'));
+        });
+    } else {
+        // Fallback: show icons after a short delay
+        setTimeout(() => {
+            const icons = document.querySelectorAll('.material-icons-round, .material-symbols-rounded');
+            icons.forEach(icon => icon.classList.add('loaded'));
+        }, 500);
+    }
 }
 
 // Export functions for external use
