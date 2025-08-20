@@ -433,6 +433,18 @@ function updateTodaysProgressFromStudyData() {
     const today = getTodayDateString();
     const dailyData = getDailyProgress();
     
+    // Check if progress has been reset - if so, don't calculate from stale data
+    const hasStudyPathData = localStorage.getItem('studyPathData');
+    if (!hasStudyPathData) {
+        console.log('No study path data found, maintaining reset state for daily progress');
+        // Ensure today's data is at zero if no study path exists
+        if (!dailyData[today]) {
+            dailyData[today] = { questions: 0, totalQuestions: 0, timestamp: Date.now() };
+            saveDailyProgress(dailyData);
+        }
+        return dailyData;
+    }
+    
     // Get study path data
     let studyPathData = {};
     try {
@@ -442,12 +454,23 @@ function updateTodaysProgressFromStudyData() {
         }
     } catch (error) {
         console.error('Error loading study path data:', error);
+        return dailyData;
     }
     
-    // Calculate total questions completed
+    // Calculate total questions completed - but only if we have valid data
     const questionsPerRound = studyPathData.questionsPerRound || 7;
     const completedRounds = studyPathData.completedRounds || 0;
     const currentRoundProgress = studyPathData.currentRoundProgress || 0;
+    
+    // Safety check: if all values are 0, don't create fake progress
+    if (completedRounds === 0 && currentRoundProgress === 0) {
+        console.log('No actual progress found in study path data');
+        if (!dailyData[today]) {
+            dailyData[today] = { questions: 0, totalQuestions: 0, timestamp: Date.now() };
+            saveDailyProgress(dailyData);
+        }
+        return dailyData;
+    }
     
     const totalQuestionsCompleted = (completedRounds * questionsPerRound) + currentRoundProgress;
     
@@ -631,6 +654,21 @@ function addAnimationTestButtons() {
             if (bottomSheet) bottomSheet.style.display = 'none';
         });
         bottomSheetActions.appendChild(animBtn7);
+        
+        // Clear test data button
+        const clearTestBtn = document.createElement('button');
+        clearTestBtn.className = 'action-button';
+        clearTestBtn.innerHTML = `
+            <span class="material-icons-round">clear_all</span>
+            <span class="subheading-3">Clear Test Progress Data</span>
+        `;
+        clearTestBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            clearTestProgressData();
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(clearTestBtn);
     }
 }
 
@@ -643,9 +681,10 @@ function resetStudyProgress() {
         localStorage.removeItem('studyStats');
         localStorage.removeItem('fsrsStats');
         
-        console.log('Study progress reset successfully');
+        console.log('✅ Study progress reset successfully - all localStorage data cleared');
+        console.log('✅ Test data and real progress data have been cleared');
         
-        // Reset the progress bar and text on the page
+        // Reset the progress bar and text on the page immediately
         const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
         
@@ -656,6 +695,10 @@ function resetStudyProgress() {
         if (progressText) {
             progressText.textContent = '0% complete';
         }
+        
+        // Also clear any session storage flags
+        sessionStorage.removeItem('fromStudyPlan');
+        sessionStorage.removeItem('fromQuestionScreen');
         
         showToast('Study progress reset successfully');
         
@@ -701,17 +744,57 @@ function simulateQuestionsCompleted(count = 5) {
         dailyData[today] = { questions: 0, totalQuestions: 0 };
     }
     
-    // Add the simulated questions
+    // Add the simulated questions - mark as test data
     dailyData[today].questions = count;
     dailyData[today].totalQuestions = count;
     dailyData[today].timestamp = Date.now();
+    dailyData[today].isTestData = true; // Mark this as test data
     
     saveDailyProgress(dailyData);
     
-    console.log(`Simulated ${count} questions completed for testing - animation will show: "${count} ${count === 1 ? 'question' : 'questions'} today"`);
+    console.log(`⚠️ DEBUG: Simulated ${count} questions completed for testing - animation will show: "${count} ${count === 1 ? 'question' : 'questions'} today"`);
+    console.log('⚠️ DEBUG: This is test data and may affect real progress calculation');
     
     // Trigger the animation
     animateProgressUpdate();
+}
+
+// Clear test progress data without affecting real study progress
+function clearTestProgressData() {
+    try {
+        const today = getTodayDateString();
+        const dailyData = getDailyProgress();
+        
+        // Check if today's data is marked as test data
+        if (dailyData[today] && dailyData[today].isTestData) {
+            // Clear today's test data
+            delete dailyData[today];
+            saveDailyProgress(dailyData);
+            
+            console.log('✅ Test progress data cleared');
+            
+            // Reset UI to 0
+            const progressFill = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            
+            if (progressFill) {
+                progressFill.style.width = '0%';
+            }
+            
+            if (progressText) {
+                progressText.textContent = '0% complete';
+            }
+            
+            showToast('Test progress data cleared');
+        } else {
+            console.log('No test data found to clear');
+            showToast('No test data to clear');
+        }
+        
+    } catch (error) {
+        console.error('Error clearing test progress data:', error);
+        showToast('Error clearing test data');
+    }
 }
 
 

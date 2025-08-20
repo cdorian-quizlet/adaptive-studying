@@ -38,26 +38,60 @@ const studyPathData = {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize header component
     initializeHeader();
-    
+
+    // Check if progress has been reset FIRST, before loading any data
+    const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+    if (!hasProgressData) {
+        console.log('No progress data found on page load, resetting overview card');
+        // Reset overview card immediately
+        const progressSummary = document.getElementById('progressSummary');
+        const trendChange = document.getElementById('trendChange');
+        const overviewTitle = document.querySelector('.overview-title');
+        
+        if (progressSummary) {
+            progressSummary.textContent = '0 questions today';
+        }
+        if (trendChange) {
+            trendChange.textContent = '0% complete';
+            trendChange.className = 'daily-change';
+        }
+        if (overviewTitle) {
+            overviewTitle.textContent = 'Keep up the momentum';
+        }
+        
+        // Reset circular progress and ensure circular view is shown
+        updateCircularProgress(0);
+        
+        // Make sure circular view is visible
+        const circularView = document.getElementById('circularProgressView');
+        const trendView = document.getElementById('trendGraphView');
+        if (circularView) circularView.style.display = 'flex';
+        if (trendView) trendView.style.display = 'none';
+    }
+
     loadOnboardingData();
     generateDynamicStudyPlan();
     loadStudyPathData();
     updateUI();
     setupEventListeners();
     animateCompletedSteps();
-    
+
     // Check for diagnostic completion and show confetti
     checkDiagnosticCompletion();
 
     // Show onboarding bottom sheet if coming from plan flow
     maybeShowOnboardingSheet();
-    
+
     // Initialize material icons
     initMaterialIcons();
-    
+
     // Extra sync after everything loads to ensure consistency
     setTimeout(() => {
-        syncDailyProgressWithHome();
+        // Only sync if we have progress data (don't overwrite reset state)
+        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+        if (hasProgressData) {
+            syncDailyProgressWithHome();
+        }
     }, 100);
 });
 
@@ -148,42 +182,49 @@ function updateTodaysProgress() {
 // Sync daily progress data with home page calculations
 function syncDailyProgressWithHome() {
     try {
+        // First check if progress has been reset
+        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+        if (!hasProgressData) {
+            console.log('No progress data found during sync, maintaining reset state');
+            return; // Don't sync if data has been reset
+        }
+
         // Get home page daily progress data
         const dailyData = getDailyProgress();
         const today = getTodayDateString();
-        
+
         // Check if home page has updated today's progress
         const homePageProgress = dailyData[today];
         if (homePageProgress && homePageProgress.timestamp) {
             console.log('Syncing with home page daily progress:', homePageProgress);
-            
-                    // Use the home page calculated values to ensure consistency
-        const todayQuestions = homePageProgress.questions || 0;
-        const totalQuestions = homePageProgress.totalQuestions || 0;
 
-        // Update our progress summary to match home page
-        if (progressSummary) {
-            const questionText = todayQuestions === 1 ? 'question' : 'questions';
-            progressSummary.textContent = `${todayQuestions} ${questionText} today`;
-        }
+            // Use the home page calculated values to ensure consistency
+            const todayQuestions = homePageProgress.questions || 0;
+            const totalQuestions = homePageProgress.totalQuestions || 0;
 
-        // Update circular progress to match home page calculation
-        const dailyGoal = 10;
-        const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
-        updateCircularProgress(dailyProgressPercentage);
-        
-        // Update text to show percentage complete (default home view)
-        if (trendChange && !sessionStorage.getItem('fromQuestionScreen')) {
-            trendChange.textContent = `${dailyProgressPercentage}% complete`;
-            trendChange.className = 'daily-change';
-        }
-        
-        // Keep motivational headline (default home view)
-        const overviewTitle = document.querySelector('.overview-title');
-        if (overviewTitle && !sessionStorage.getItem('fromQuestionScreen')) {
-            overviewTitle.textContent = 'Keep up the momentum';
-        }
+            // Update our progress summary to match home page
+            if (progressSummary) {
+                const questionText = todayQuestions === 1 ? 'question' : 'questions';
+                progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+            }
+
+            // Update circular progress to match home page calculation
+            const dailyGoal = 10;
+            const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+            updateCircularProgress(dailyProgressPercentage);
             
+            // Update text to show percentage complete (default home view)
+            if (trendChange && !sessionStorage.getItem('fromQuestionScreen')) {
+                trendChange.textContent = `${dailyProgressPercentage}% complete`;
+                trendChange.className = 'daily-change';
+            }
+            
+            // Keep motivational headline (default home view)
+            const overviewTitle = document.querySelector('.overview-title');
+            if (overviewTitle && !sessionStorage.getItem('fromQuestionScreen')) {
+                overviewTitle.textContent = 'Keep up the momentum';
+            }
+                
             console.log('Study plan synced with home page:', {
                 todayQuestions,
                 totalQuestions,
