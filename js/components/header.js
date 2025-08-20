@@ -6,6 +6,7 @@ class AppHeader {
             showSettingsButton: true,
             title: '',
             backUrl: '../index.html',
+            backButtonIcon: 'arrow_back', // 'arrow_back' or 'close'
             onBackClick: null,
             onSettingsClick: null,
             loadTitleFromStorage: true,
@@ -27,9 +28,10 @@ class AppHeader {
         
         // Back button
         if (this.options.showBackButton) {
+            const iconClass = this.options.backButtonIcon === 'close' ? 'material-symbols-rounded' : 'material-icons-round';
             headerHTML += `
                 <button class="back-btn" id="headerBackBtn">
-                    <span class="material-icons-round">arrow_back</span>
+                    <span class="${iconClass}">${this.options.backButtonIcon}</span>
                 </button>
             `;
         } else {

@@ -13,17 +13,25 @@ function buildUrl(path, params = {}) {
 }
 
 async function apiGet(url) {
-  const resp = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json'
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`API request failed (${resp.status}): ${text || resp.statusText}`);
     }
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`API request failed (${resp.status}): ${text || resp.statusText}`);
+    return resp.json();
+  } catch (error) {
+    // Handle network errors, CORS errors, etc.
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to API');
+    }
+    throw error;
   }
-  return resp.json();
 }
 
 async function getSubjects() {

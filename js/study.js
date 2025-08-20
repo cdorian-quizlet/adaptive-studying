@@ -584,6 +584,12 @@ function setSourceBadge(element) {
 
 // Load questions from API based on URL params (search, subject, subcategory)
 async function fetchAndLoadQuestionsFromApi() {
+    // Skip API calls if they're likely to fail (development/local environment)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+        console.log('Skipping API calls in local environment - using static questions');
+        return;
+    }
+
     try {
         const params = new URLSearchParams(window.location.search);
         const search = params.get('search');
@@ -607,7 +613,7 @@ async function fetchAndLoadQuestionsFromApi() {
                         fallbackSubject = String(subjects[0]).toLowerCase();
                     }
                 } catch (_) {
-                    // ignore
+                    // Silently ignore getSubjects errors
                 }
             }
             fallbackSubject = fallbackSubject || 'biology';
@@ -624,12 +630,11 @@ async function fetchAndLoadQuestionsFromApi() {
             limited.forEach(q => questions.push(q));
             // Mark that we're using API-backed content for this session
             window.USING_API_CONTENT = true;
+            console.log(`Loaded ${limited.length} questions from API`);
         }
     } catch (err) {
-        console.error('Failed to load questions from API:', err);
-        if (window.StudyApp?.showToast) {
-            window.StudyApp.showToast('Unable to load cards from API. Using local sample questions.');
-        }
+        // Silently handle API errors in development
+        console.log('API unavailable - using static questions');
     }
 }
 
@@ -637,6 +642,7 @@ async function fetchAndLoadQuestionsFromApi() {
 function initializeHeader() {
     appHeader = new AppHeader({
         backUrl: '../html/study-plan.html',
+        backButtonIcon: 'close',
         onBackClick: function() {
             // Close study session with confirmation
             if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
@@ -965,7 +971,7 @@ function checkAnswer() {
     adaptDifficulty(isCorrect);
     
     // Update progress immediately after answering
-    updateProgress();
+    updateProgress(true); // Force full progress after answering
     
     // Save round progress after each answer
     saveRoundProgress();
@@ -1017,7 +1023,11 @@ function showFeedback(isCorrect) {
             btn.classList.remove('selected');
             // Always show the correct answer
             if (btn.dataset.answer === currentQuestion.correctAnswer) {
-                btn.classList.add('correct');
+                if (isCorrect) {
+                    btn.classList.add('correct-selected');
+                } else {
+                    btn.classList.add('correct');
+                }
             }
             // Show the incorrect selected answer if user got it wrong
             if (btn.dataset.answer === selectedAnswer && !isCorrect) {
@@ -1049,9 +1059,8 @@ function showFeedback(isCorrect) {
                 nextQuestion();
             });
             
-            // Insert the button after the flashcard
-            const flashcardContainer = document.querySelector('.flashcard-container');
-            flashcardContainer.appendChild(continueBtn);
+            // Insert the button into the app container (fixed positioned)
+            document.body.appendChild(continueBtn);
         }
         return;
     }
@@ -1079,22 +1088,8 @@ function showFeedback(isCorrect) {
             nextQuestion();
         });
         
-        // Insert the button after the answer options or question card
-        const answerOptions = document.querySelector('.answer-options');
-        const trueFalseContainer = document.querySelector('.true-false-container');
-        const textInputContainer = document.querySelector('.text-input-container');
-        
-        if (answerOptions && answerOptions.style.display !== 'none') {
-            answerOptions.appendChild(continueBtn);
-        } else if (trueFalseContainer && trueFalseContainer.style.display !== 'none') {
-            trueFalseContainer.appendChild(continueBtn);
-        } else if (textInputContainer && textInputContainer.style.display !== 'none') {
-            textInputContainer.appendChild(continueBtn);
-        } else {
-            // Fallback to question card
-            const questionCard = document.querySelector('.question-card');
-            questionCard.appendChild(continueBtn);
-        }
+        // Insert the button into the body (fixed positioned)
+        document.body.appendChild(continueBtn);
     }
     
     // Disable all option buttons
@@ -1210,12 +1205,29 @@ function completeRound() {
 }
 
 // Update progress bar and counter
-function updateProgress() {
+function updateProgress(forceFullProgress = false) {
     // Calculate round progress for display
-    const roundProgress = ((currentQuestionIndex + 1) / questionsInRound.length) * 100;
+    // Show progress based on questions completed, not questions viewed
+    let roundProgress;
+    
+    if (forceFullProgress && currentQuestionIndex === questionsInRound.length - 1) {
+        // After answering the last question, show 100%
+        roundProgress = 100;
+    } else {
+        // Show progress based on completed questions (currentQuestionIndex represents completed questions)
+        roundProgress = (currentQuestionIndex / questionsInRound.length) * 100;
+    }
+    
     progressFill.style.width = `${roundProgress}%`;
     currentQuestionEl.textContent = currentQuestionIndex + 1;
-    totalQuestionsEl.textContent = questionsInRound.length;
+    
+    // Position the counter at the end of the filled section
+    const progressCounter = document.getElementById('progressCounter');
+    if (progressCounter) {
+        // Calculate position: right edge of progress bar minus the progress percentage
+        const rightPosition = 100 - roundProgress;
+        progressCounter.style.right = `${rightPosition}%`;
+    }
     
     // Save progress to localStorage
     saveRoundProgress();

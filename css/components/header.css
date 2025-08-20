@@ -5,37 +5,56 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px;
+    height: 56px;
+    margin-top: 8px;
+    padding: 0;
     background: var(--sys-surface-base);
 }
 
 /* Header Buttons */
+button.back-btn,
+button.settings-btn,
 .back-btn,
 .settings-btn {
-    background: none;
-    border: none;
-    color: var(--sys-text-secondary);
-    font-size: 24px;
-    padding: 8px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s ease;
     display: flex;
-    align-items: center;
+    padding: 8px;
     justify-content: center;
+    align-items: center;
+    gap: 8px;
+    border-radius: 200px;
+    background: var(--color-gray-200);
+    border: none;
+    color: var(--sys-text-primary);
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
     min-width: 40px;
     min-height: 40px;
+    margin: 0 20px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
+button.back-btn:hover,
+button.settings-btn:hover,
 .back-btn:hover,
 .settings-btn:hover {
-    background: rgba(88, 99, 128, 0.1);
+    background: var(--color-gray-300);
 }
 
+button.back-btn:active,
+button.settings-btn:active,
+.back-btn:active,
+.settings-btn:active {
+    background: var(--color-gray-400);
+}
+
+button.back-btn:focus,
+button.settings-btn:focus,
 .back-btn:focus,
 .settings-btn:focus {
-    outline: 2px solid var(--color-twilight-500);
-    outline-offset: 2px;
+    outline: 1px solid var(--shared-input-border-focus);
+    outline-offset: 1px;
 }
 
 /* Header Title */
@@ -85,7 +104,8 @@
 /* Responsive Design */
 @media (max-width: 360px) {
     .study-path-header {
-        padding: 16px;
+        height: 56px;
+        margin-top: 8px;
     }
     
     .header-title {
@@ -98,6 +118,7 @@
         min-width: 36px;
         min-height: 36px;
         padding: 6px;
+        margin: 0 16px;
     }
 }
 
@@ -119,10 +140,4 @@
     }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .back-btn:hover,
-    .settings-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
-}
+/* Dark mode is handled by design tokens - no overrides needed */

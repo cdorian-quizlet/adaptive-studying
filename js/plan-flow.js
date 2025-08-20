@@ -5,6 +5,22 @@
     requestAnimationFrame(()=>{
       document.body.classList.add('page-enter-active');
     });
+    
+    // Ensure Material Icons are visible once fonts load
+    function makeFontsVisible() {
+      const icons = document.querySelectorAll('.material-icons-round, .material-symbols-rounded');
+      icons.forEach(icon => {
+        icon.classList.add('loaded');
+      });
+    }
+    
+    // Try to detect when fonts are loaded
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(makeFontsVisible);
+    } else {
+      // Fallback: just show icons after a short delay
+      setTimeout(makeFontsVisible, 100);
+    }
   });
   const flowContent = document.getElementById('flowContent');
   const backBtn = document.getElementById('flowBackBtn');
@@ -263,6 +279,21 @@
     'help me diagnose': "We’ll start with a quick diagnostic to find gaps."
   };
 
+  function updateBackButtonIcon() {
+    const backBtnIcon = document.querySelector('#flowBackBtn span');
+    if (!backBtnIcon) return;
+    
+    if (stepIndex === 1 || stepIndex === 'addCourse') {
+      // First step and add course screen: use close icon from Material Symbols Rounded
+      backBtnIcon.className = 'material-symbols-rounded loaded';
+      backBtnIcon.textContent = 'close';
+    } else {
+      // All other steps: use back arrow from Material Icons Round
+      backBtnIcon.className = 'material-icons-round loaded';
+      backBtnIcon.textContent = 'arrow_back';
+    }
+  }
+
   function updateProgress() {
     const computedPct = (stepIndex-1)/TOTAL_STEPS * 100;
     const remaining = Math.max(0, TOTAL_STEPS - (stepIndex-1));
@@ -297,6 +328,7 @@
 
   function render() {
     updateProgress();
+    updateBackButtonIcon();
     switch(stepIndex){
       case 1: return renderCourse();
       case 'addCourse': return renderAddCourse();

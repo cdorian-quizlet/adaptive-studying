@@ -4,9 +4,46 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 .page-enter { opacity: 0; }
 .page-enter-active { opacity: 1; transition: opacity .3s ease; }
 .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
-.flow-header { display:flex; align-items:center; gap:12px; padding: 20px 20px 0; }
-.back-btn { background:none; border:none; padding:8px; border-radius:50%; cursor:pointer; color:var(--sys-text-secondary); display:flex; align-items:center; justify-content:center; }
-.back-btn:hover { background: rgba(88,99,128,0.1); }
+.flow-header { display:flex; align-items:center; gap:12px; margin-top: 24px; padding: 0 20px 0; }
+/* Note: .back-btn styles are now handled by css/components/header.css */
+
+/* Specific override for onboarding flow back button - keep sizing but remove background */
+#flowBackBtn {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 200px !important;
+  /* Keep the sizing and centering properties from header.css */
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 8px !important;
+  margin: 0 !important;
+}
+
+#flowBackBtn:hover {
+  background: var(--color-gray-200) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#flowBackBtn:active {
+  background: var(--color-gray-300) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#flowBackBtn:focus {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
 .progress-wrap { flex:1; display:flex; flex-direction:column; gap:10px; position:relative; }
 .progress-track { width:100%; height:16px; background:var(--color-twilight-200); border-radius:999px; overflow:visible; position:relative; }
 .progress-fill { height:100%; width:0%; background:var(--sys-interactive-bg-primary-default); transition: width .25s ease; border-radius:999px; }
@@ -94,7 +131,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 }
 
 .close-btn:hover {
-  background: rgba(88,99,128,0.1);
+  background: var(--color-gray-200);
 }
 
 .add-course-title {
@@ -233,7 +270,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 }
 
 .input-clear-btn:hover {
-  background-color: rgba(88,99,128,0.1);
+  background-color: var(--color-gray-200);
   background-image: url('../images/clear.png');
   background-repeat: no-repeat;
   background-position: center;
@@ -410,7 +447,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   gap: var(--spacing-none, 0);
   align-self: stretch;
   border-radius: var(--radius-full, 200px);
-  background: var(--color-surface, #FFF);
+  background: var(--sys-surface-base);
   border: none;
   color: var(--color-twilight-500);
   font-family: var(--typography-fontFamily);
@@ -428,7 +465,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 
 .text-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(66, 62, 216, 0.1);
+  box-shadow: 0 0 0 2px var(--shared-input-border-focus);
 }
 
 /* Expandable concepts */
@@ -714,7 +751,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   margin-bottom: 4px;
   height: var(--typography-lineHeight-subheading-four);
   border-radius: var(--radius-xLarge, 24px);
-  background: rgba(88, 99, 128, 0.08);
+  background: var(--color-gray-200);
   position: relative;
   overflow: hidden;
 }
@@ -734,7 +771,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   width: 60%;
   height: var(--typography-lineHeight-subheading-four);
   border-radius: var(--radius-xLarge, 24px);
-  background: rgba(88, 99, 128, 0.08);
+  background: var(--color-gray-200);
   position: relative;
   overflow: hidden;
 }

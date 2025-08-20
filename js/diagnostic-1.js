@@ -499,8 +499,14 @@ function updateProgress() {
     const progress = ((currentQuestionIndex + 1) / testQuestions.length) * 100;
     progressFill.style.width = `${progress}%`;
     currentQuestionEl.textContent = currentQuestionIndex + 1;
-    totalQuestionsEl.textContent = testQuestions.length;
-
+    
+    // Position the counter at the end of the filled section
+    const progressCounter = document.getElementById('progressCounter');
+    if (progressCounter) {
+        // Calculate position: right edge of progress bar minus the progress percentage
+        const rightPosition = 100 - progress;
+        progressCounter.style.right = `${rightPosition}%`;
+    }
 }
 
 // Setup event listeners

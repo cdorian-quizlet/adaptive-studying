@@ -231,7 +231,7 @@ A reusable progress bar component with counters that can be used across all ques
 
 ### Files
 
-- `css/progress-bar.css` — The reusable component styles
+- `css/components/progress-bar.css` — The reusable component styles
 
 ### Usage
 
@@ -240,20 +240,17 @@ A reusable progress bar component with counters that can be used across all ques
 Add this line to your HTML file's `<head>` section:
 
 ```html
-<link rel="stylesheet" href="css/progress-bar.css">
+<link rel="stylesheet" href="css/components/progress-bar.css">
 ```
 
 #### 2. Use the HTML structure
 
 ```html
-<div class="progress-info">
-  <div class="progress-bar">
-    <div class="progress-number" id="currentQuestion">1</div>
-    <div class="progress-fill" id="progressFill"></div>
-    <div class="progress-total" id="totalQuestions">10</div>
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill"></div>
+  <div class="progress-counter" id="progressCounter">
+    <span id="currentQuestion">1</span>
   </div>
-  <!-- Other header content can go here -->
-  <!-- ... -->
 </div>
 ```
 
@@ -298,4 +295,4 @@ This component is now used by:
 
 ### Future Updates
 
-To update the progress bar styling across all screens, modify `css/progress-bar.css`. All screens will automatically inherit the changes.
+To update the progress bar styling across all screens, modify `css/components/progress-bar.css`. All screens will automatically inherit the changes.

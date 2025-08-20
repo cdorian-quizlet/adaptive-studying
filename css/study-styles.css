@@ -1,6 +1,6 @@
 /* Reset and Base Styles */
 /* Import reusable progress bar component */
-@import url('progress-bar.css');
+@import url('components/progress-bar.css');
 
 * {
     margin: 0;
@@ -23,7 +23,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    max-width: 414px;
+    max-width: 480px;
     margin: 0 auto;
     background: var(--sys-surface-base);
 }
@@ -95,30 +95,46 @@ body {
 /* Main Content */
 .study-content {
     flex: 1;
-    padding: 20px;
+    padding: 32px 0 20px 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding-top: 12px;
 }
 
 /* Question Container */
 .question-container {
     opacity: 1;
-    transform: translateY(0);
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease;
     width: 100%;
-    margin: 0;
+    margin: 32px 0 0 0;
+    padding: 0 20px;
 }
 
 .question-container.fade-out {
     opacity: 0;
-    transform: translateY(-20px);
+}
+
+/* Bottom UI - Grouped prompt and options */
+.bottom-ui {
+    width: 100%;
+    padding: 0 20px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.bottom-ui.fade-out {
+    opacity: 0;
 }
 
 .question-card {
     background: transparent;
     text-align: left;
+    min-height: 25vh;
+    max-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
 }
 
 .question-text {
@@ -131,9 +147,13 @@ body {
 }
 
 .question-prompt {
-    font-size: 16px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
+    font-weight: 600;
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-secondary);
-    font-weight: 500;
     margin: 0 0 12px 0;
     text-align: left;
     transition: all 0.2s ease;
@@ -154,18 +174,22 @@ body {
 .answer-options {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     width: 100%;
     margin: 0;
 }
 
 .option-btn {
-    background: var(--sys-surface-base);
-    border: 1px solid var(--sys-border-primary);
+    background: transparent;
+    border: 2px solid var(--color-gray-300);
     border-radius: 12px;
-    padding: 20px 24px;
-    font-size: 16px;
-    font-weight: 600;
+    padding: 16px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-three);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-body-three);
+    line-height: var(--typography-lineHeight-body-three);
+    letter-spacing: var(--typography-letterSpacing-body-three);
     color: var(--sys-text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
@@ -174,32 +198,40 @@ body {
 }
 
 .option-btn:hover {
-    border-color: var(--color-twilight-500);
-    background: var(--color-gray-200);
-    transform: translateY(-1px);
+    border-color: var(--color-gray-500);
+    background: transparent;
 }
 
 .option-btn.selected {
-    border-color: var(--color-twilight-500);
-    background: var(--sys-interactive-bg-primary-default);
-    color: white;
+    border-color: var(--color-gray-500);
+    background: transparent;
+    color: var(--sys-text-primary);
 }
 
 .option-btn.correct {
     border: 2px dashed var(--color-mint-600);
-    background: var(--sys-surface-base);
+    background: transparent;
     color: var(--sys-text-primary);
     position: relative;
     border-radius: 12px;
 }
 
-.option-btn.correct::before {
+.option-btn.correct-selected {
+    border: 2px solid var(--color-mint-600);
+    background: transparent;
+    color: var(--sys-text-primary);
+    position: relative;
+    border-radius: 12px;
+}
+
+.option-btn.correct::before,
+.option-btn.correct-selected::before {
     content: "check";
     font-family: 'Material Icons Round';
     color: var(--color-mint-600);
     font-weight: bold;
     margin-right: 8px;
-    font-size: 20px;
+    font-size: 24px;
     vertical-align: middle;
     display: inline-block;
     line-height: 1;
@@ -209,7 +241,7 @@ body {
 
 .option-btn.incorrect {
     border: 2px solid var(--color-sherbert-300);
-    background: var(--sys-surface-base);
+    background: transparent;
     color: var(--sys-text-primary);
     position: relative;
     border-radius: 12px;
@@ -218,15 +250,21 @@ body {
 .option-btn.incorrect::before {
     content: "close";
     font-family: 'Material Icons Round';
-    color: var(--color-sherbert-300);
+    color: var(--color-sherbert-500);
     font-weight: bold;
     margin-right: 8px;
-    font-size: 20px;
+    font-size: 24px;
     vertical-align: middle;
     display: inline-block;
     line-height: 1;
     position: relative;
-    top: 1px;
+    top: -1px;
+}
+
+/* Distractor options during feedback (not correct, not incorrect) */
+.option-btn:disabled:not(.correct):not(.correct-selected):not(.incorrect) {
+    color: var(--color-gray-500);
+    border-color: var(--color-gray-300);
 }
 
 /* Text Input */
@@ -272,13 +310,12 @@ body {
 
 .submit-btn:hover {
     background: var(--sys-interactive-bg-primary-hover);
-    transform: translateY(-1px);
 }
 
 /* True/False */
 .true-false-container {
     display: flex;
-    gap: 12px;
+    gap: 16px;
 }
 
 .true-false-container .option-btn {
@@ -299,20 +336,19 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-top: 32px;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    z-index: 100;
     display: block;
-    width: 100%;
-    margin-left: 0;
-    margin-right: 0;
+    box-shadow: var(--shadow-large);
 }
 
 .continue-btn:hover {
     background: var(--sys-interactive-bg-primary-hover);
-    transform: translateY(-1px);
-}
-
-.continue-btn:active {
-    transform: translateY(0);
 }
 
 /* Flashcard Styles */
@@ -340,7 +376,6 @@ body {
 
 .flashcard:hover {
     border-color: var(--color-twilight-500);
-    transform: translateY(-2px);
     box-shadow: var(--shadow-interactive);
 }
 
@@ -401,11 +436,6 @@ body {
 
 .flashcard-btn:hover {
     background: var(--sys-interactive-bg-primary-hover);
-    transform: translateY(-1px);
-}
-
-.flashcard-btn:active {
-    transform: translateY(0);
 }
 
 .study-again-btn {
@@ -419,11 +449,17 @@ body {
 /* Responsive Design */
 @media (min-width: 768px) {
     .app-container {
-        max-width: 480px;
+        max-width: 520px;
+    }
+    
+    .continue-btn {
+        max-width: 520px;
     }
     
     .question-card, .feedback-card {
         padding: 40px 0;
+        min-height: 30vh;
+        max-height: 45vh;
     }
     
     .question-text {
@@ -433,26 +469,33 @@ body {
 
 @media (min-width: 1024px) {
     .app-container {
-        max-width: 520px;
+        max-width: 560px;
+    }
+    
+    .continue-btn {
+        max-width: 560px;
     }
 }
 
 /* Focus states for accessibility */
-.back-btn:focus, .close-btn:focus, .option-btn:focus, .submit-btn:focus, .next-btn:focus {
+.back-btn:focus, .close-btn:focus, .submit-btn:focus, .next-btn:focus {
     outline: 2px solid var(--color-twilight-500);
     outline-offset: 2px;
 }
 
-/* Animation for page load */
-.question-card, .feedback-card {
-    animation: fadeInUp 0.6s ease-out forwards;
-    opacity: 0;
-    transform: translateY(20px);
+/* Remove focus outline from option buttons */
+.option-btn:focus {
+    outline: none;
 }
 
-@keyframes fadeInUp {
+/* Animation for page load */
+.question-card, .feedback-card {
+    animation: fadeIn 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fadeIn {
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 } 

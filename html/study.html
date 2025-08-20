@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="../css/components/header.css">
     <link rel="stylesheet" href="../css/study-styles.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=close,settings" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
@@ -20,55 +20,58 @@
         <!-- Main Content -->
         <main class="study-content">
             <!-- Progress Bar -->
-            <div class="progress-info">
-                <div class="progress-bar">
-                    <div class="progress-number" id="currentQuestion">5</div>
-                    <div class="progress-fill" id="progressFill"></div>
-                    <div class="progress-total" id="totalQuestions">75</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-counter" id="progressCounter">
+                    <span id="currentQuestion">5</span>
                 </div>
             </div>
             <!-- Question Container -->
             <div class="question-container" id="questionContainer">
                 <div class="question-card">
                     <h2 class="question-text" id="questionText">What is the primary function of the cell membrane?</h2>
-                    <p class="question-prompt" id="questionPrompt">Choose the answer</p>
-                    
-                    <!-- Multiple Choice -->
-                    <div class="answer-options" id="multipleChoice">
-                        <button class="option-btn" data-answer="">Option 1</button>
-                        <button class="option-btn" data-answer="">Option 2</button>
-                        <button class="option-btn" data-answer="">Option 3</button>
-                        <button class="option-btn" data-answer="">Option 4</button>
-                    </div>
+                </div>
+            </div>
+            
+            <!-- Fixed Bottom UI -->
+            <div class="bottom-ui" id="bottomUI">
+                <p class="question-prompt" id="questionPrompt">Choose the answer</p>
+                
+                <!-- Multiple Choice -->
+                <div class="answer-options" id="multipleChoice">
+                    <button class="option-btn" data-answer="">Option 1</button>
+                    <button class="option-btn" data-answer="">Option 2</button>
+                    <button class="option-btn" data-answer="">Option 3</button>
+                    <button class="option-btn" data-answer="">Option 4</button>
+                </div>
 
-                    <!-- Free Text Input -->
-                    <div class="text-input-container" id="textInput" style="display: none;">
-                        <input type="text" class="text-input" id="textAnswer" placeholder="Type your answer...">
-                        <button class="submit-btn" id="submitBtn">Submit</button>
-                    </div>
+                <!-- Free Text Input -->
+                <div class="text-input-container" id="textInput" style="display: none;">
+                    <input type="text" class="text-input" id="textAnswer" placeholder="Type your answer...">
+                    <button class="submit-btn" id="submitBtn">Submit</button>
+                </div>
 
-                    <!-- True/False -->
-                    <div class="true-false-container" id="trueFalse" style="display: none;">
-                        <button class="option-btn" data-answer="true">True</button>
-                        <button class="option-btn" data-answer="false">False</button>
-                    </div>
+                <!-- True/False -->
+                <div class="true-false-container" id="trueFalse" style="display: none;">
+                    <button class="option-btn" data-answer="true">True</button>
+                    <button class="option-btn" data-answer="false">False</button>
+                </div>
 
-                    <!-- Flashcard -->
-                    <div class="flashcard-container" id="flashcard" style="display: none;">
-                        <div class="flashcard" id="flashcardElement">
-                            <div class="flashcard-front">
-                                <h3 class="flashcard-term">Cell Membrane Function</h3>
-                                <p class="flashcard-hint">Click to reveal the answer</p>
-                            </div>
-                            <div class="flashcard-back">
-                                <h3 class="flashcard-definition">Regulate what enters and exits the cell</h3>
-                                <p class="flashcard-explanation">The cell membrane controls the passage of materials in and out of the cell</p>
-                            </div>
+                <!-- Flashcard -->
+                <div class="flashcard-container" id="flashcard" style="display: none;">
+                    <div class="flashcard" id="flashcardElement">
+                        <div class="flashcard-front">
+                            <h3 class="flashcard-term">Cell Membrane Function</h3>
+                            <p class="flashcard-hint">Click to reveal the answer</p>
                         </div>
-                        <div class="flashcard-buttons">
-                            <button class="flashcard-btn got-it-btn" id="gotItBtn">Got it</button>
-                            <button class="flashcard-btn study-again-btn" id="studyAgainBtn">Study again</button>
+                        <div class="flashcard-back">
+                            <h3 class="flashcard-definition">Regulate what enters and exits the cell</h3>
+                            <p class="flashcard-explanation">The cell membrane controls the passage of materials in and out of the cell</p>
                         </div>
+                    </div>
+                    <div class="flashcard-buttons">
+                        <button class="flashcard-btn got-it-btn" id="gotItBtn">Got it</button>
+                        <button class="flashcard-btn study-again-btn" id="studyAgainBtn">Study again</button>
                     </div>
                 </div>
             </div>

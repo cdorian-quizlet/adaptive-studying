@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeHeader() {
     appHeader = new AppHeader({
         backUrl: '../index.html',
+        backButtonIcon: 'close',
         onBackClick: function() {
             sessionStorage.setItem('fromStudyPlan', 'true');
             window.location.href = '../index.html';
@@ -549,6 +550,9 @@ document.addEventListener('visibilitychange', function() {
         // Load new data and sync with home page
         loadStudyPathData();
         syncDailyProgressWithHome();
+        
+        // Ensure current round progress is properly synced after loading
+        syncCurrentRoundProgressFromRoundData();
 
         // Check if progress has been reset (no data in localStorage)
         const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
@@ -810,6 +814,9 @@ function loadStudyPathData() {
     // Check for regular study progress and update roundProgress
     updateRoundProgressFromStudyData();
     
+    // Sync current round progress from roundProgressData after loading
+    syncCurrentRoundProgressFromRoundData();
+    
     if (fsrsStats) {
         try {
             const stats = JSON.parse(fsrsStats);
@@ -846,7 +853,8 @@ function loadStudyPathData() {
             // We have saved completion data, so preserve it
             console.log(`Preserving saved completion data: completedRounds=${studyPathData.completedRounds}, currentRound=${studyPathData.currentRound} vs loaded=${loadedCurrentRound}`);
             studyPathData.currentRound = Math.max(studyPathData.currentRound, loadedCurrentRound);
-            studyPathData.currentRoundProgress = studyPathData.currentRound === loadedCurrentRound ? loadedCurrentProgress : 0;
+            // Don't reset progress to 0 - we'll sync it properly after loading roundProgressData
+            studyPathData.currentRoundProgress = Math.max(studyPathData.currentRoundProgress || 0, loadedCurrentProgress);
         }
         
         // Check if this round should be completed based on loaded progress
@@ -1435,6 +1443,36 @@ function startRound(roundNumber) {
         ? `../html/study.html?subject=${encodeURIComponent(preferredSubject)}`
         : '../html/study.html';
     window.location.href = url;
+}
+
+// Sync current round progress from detailed round progress data
+function syncCurrentRoundProgressFromRoundData() {
+    const roundProgressData = localStorage.getItem('roundProgressData');
+    if (roundProgressData && studyPathData.currentRound) {
+        try {
+            const roundData = JSON.parse(roundProgressData);
+            const currentRoundData = roundData[studyPathData.currentRound];
+            
+            if (currentRoundData && currentRoundData.progress !== undefined) {
+                // Update current round progress from the detailed data
+                const detailedProgress = currentRoundData.progress;
+                console.log(`Syncing current round ${studyPathData.currentRound} progress: ${studyPathData.currentRoundProgress} → ${detailedProgress}`);
+                studyPathData.currentRoundProgress = detailedProgress;
+                
+                // Also sync from localStorage currentRoundProgress if it's more recent
+                const storedProgress = localStorage.getItem('currentRoundProgress');
+                if (storedProgress) {
+                    const storedProgressNum = parseInt(storedProgress);
+                    if (storedProgressNum > detailedProgress) {
+                        console.log(`Using more recent localStorage progress: ${storedProgressNum}`);
+                        studyPathData.currentRoundProgress = storedProgressNum;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error syncing current round progress from round data:', error);
+        }
+    }
 }
 
 // Update roundProgress from regular study session data

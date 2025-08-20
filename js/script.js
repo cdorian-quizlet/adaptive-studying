@@ -289,6 +289,12 @@ function updateJumpBackCardFromOnboarding() {
 // Load homepage dynamic content from API
 async function loadHomeContentFromApi() {
     if (!window.QuizletApi) return;
+    
+    // Skip API calls if they're likely to fail (development/local environment)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+        console.log('Skipping API calls in local environment');
+        return;
+    }
     // Prefer help card's options if visible; otherwise default
     const studyingOptions = document.querySelector('.help-section .studying-options') || document.querySelector('.studying-new-section .studying-options');
     const recentsList = document.querySelector('.recents-list');

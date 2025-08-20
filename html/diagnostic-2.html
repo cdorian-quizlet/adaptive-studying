@@ -6,7 +6,7 @@
     <title>Diagnostic Test 2 - BIOL 210</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/study-styles.css">
-    <link rel="stylesheet" href="../css/progress-bar.css">
+    <link rel="stylesheet" href="../css/components/progress-bar.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -372,11 +372,10 @@
         <!-- Main Content -->
         <main class="study-content" id="studyContent" style="display: none;">
             <!-- Progress Bar -->
-            <div class="progress-info">
-                <div class="progress-bar">
-                    <div class="progress-number" id="currentQuestion">1</div>
-                    <div class="progress-fill" id="progressFill"></div>
-                    <div class="progress-total" id="totalQuestions">10</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-counter" id="progressCounter">
+                    <span id="currentQuestion">1</span>
                 </div>
             </div>
             
@@ -384,21 +383,25 @@
             <div class="question-container" id="questionContainer">
                 <div class="question-card">
                     <h2 class="question-text" id="questionText">What is the capital of Michigan?</h2>
-                    <p class="question-prompt" id="questionPrompt">Choose the answer</p>
-                    
-                    <!-- Multiple Choice -->
-                    <div class="answer-options" id="multipleChoice">
-                        <button class="option-btn" data-answer="">Option 1</button>
-                        <button class="option-btn" data-answer="">Option 2</button>
-                        <button class="option-btn" data-answer="">Option 3</button>
-                        <button class="option-btn" data-answer="">Option 4</button>
-                    </div>
+                </div>
+            </div>
+            
+            <!-- Fixed Bottom UI -->
+            <div class="bottom-ui" id="bottomUI">
+                <p class="question-prompt" id="questionPrompt">Choose the answer</p>
+                
+                <!-- Multiple Choice -->
+                <div class="answer-options" id="multipleChoice">
+                    <button class="option-btn" data-answer="">Option 1</button>
+                    <button class="option-btn" data-answer="">Option 2</button>
+                    <button class="option-btn" data-answer="">Option 3</button>
+                    <button class="option-btn" data-answer="">Option 4</button>
+                </div>
 
-                    <!-- Free Text Input -->
-                    <div class="text-input-container" id="textInput" style="display: none;">
-                        <input type="text" class="text-input" id="textAnswer" placeholder="Type your answer...">
-                        <button class="submit-btn" id="submitBtn">Next</button>
-                    </div>
+                <!-- Free Text Input -->
+                <div class="text-input-container" id="textInput" style="display: none;">
+                    <input type="text" class="text-input" id="textAnswer" placeholder="Type your answer...">
+                    <button class="submit-btn" id="submitBtn">Next</button>
                 </div>
             </div>
         </main>

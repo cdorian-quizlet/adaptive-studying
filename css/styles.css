@@ -572,7 +572,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    max-width: 414px;
+    max-width: 480px;
     margin: 0 auto;
     position: relative;
     overflow: visible;
@@ -1256,13 +1256,13 @@ body {
 /* Responsive Design */
 @media (min-width: 768px) {
     .app-container {
-        max-width: 480px;
+        max-width: 520px;
     }
 }
 
 @media (min-width: 1024px) {
     .app-container {
-        max-width: 520px;
+        max-width: 560px;
     }
 }
 

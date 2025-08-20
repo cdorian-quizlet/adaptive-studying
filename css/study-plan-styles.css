@@ -932,6 +932,10 @@ body {
     .app-container { max-width: 520px; }
 }
 
+@media (min-width: 1024px) {
+    .app-container { max-width: 560px; }
+}
+
 /* Focus states for accessibility */
 .back-btn:focus,
 .continue-btn:focus,
