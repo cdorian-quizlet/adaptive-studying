@@ -356,8 +356,6 @@ body {
     stroke: url(#progressGradient);
     fill: none;
     stroke-linecap: round;
-    transform: rotate(-90deg);
-    transform-origin: 50% 50%;
     transition: stroke-dashoffset 0.3s ease;
     /* Initialize for circular progress - will be set by JavaScript */
     stroke-dasharray: 0;
@@ -371,6 +369,21 @@ body {
 
 .circular-progress.zero-state .progress-ring-fill {
     stroke: var(--color-gray-500);
+}
+
+/* Current round progress text fade animation */
+.step-progress-text {
+    transition: opacity 0.4s ease-out;
+}
+
+.step-progress-text.fade-out {
+    opacity: 0;
+}
+
+@keyframes progressTextBriefShow {
+    0% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 

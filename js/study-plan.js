@@ -10,6 +10,35 @@ const progressSummary = document.getElementById('progressSummary');
 const trendChange = document.getElementById('trendChange');
 const progressRingFill = document.querySelector('.progress-ring-fill');
 
+// Progress text fade timeout tracking
+let progressTextFadeTimeout = null;
+
+// Clear existing progress text fade animation
+function clearProgressTextFade() {
+    if (progressTextFadeTimeout) {
+        clearTimeout(progressTextFadeTimeout);
+        progressTextFadeTimeout = null;
+    }
+    
+    // Reset any existing fade states
+    const currentRoundText = document.querySelector('.path-step.current .step-progress-text');
+    if (currentRoundText) {
+        currentRoundText.classList.remove('fade-out');
+        currentRoundText.style.opacity = '1';
+    }
+}
+
+// Start progress text fade animation
+function startProgressTextFade(textElement) {
+    clearProgressTextFade(); // Clear any existing fade
+    
+    progressTextFadeTimeout = setTimeout(() => {
+        if (textElement) {
+            textElement.classList.add('fade-out');
+        }
+    }, 2000); // Show for 2 seconds then fade
+}
+
 // Onboarding data from plan flow
 let onboardingData = {
     course: '',
@@ -75,6 +104,9 @@ document.addEventListener('DOMContentLoaded', function() {
     updateUI();
     setupEventListeners();
     animateCompletedSteps();
+    
+    // Clear any existing progress text fade animations
+    clearProgressTextFade();
     
     // Check for diagnostic completion and show confetti
     checkDiagnosticCompletion();
@@ -929,7 +961,11 @@ function updateCircularProgress(percentage) {
         // Set up the stroke-dasharray and stroke-dashoffset for circular progress
         // This approach starts from top (12 o'clock) and fills clockwise
         progressRingFill.style.strokeDasharray = circumference;
-        progressRingFill.style.strokeDashoffset = circumference - (percentage / 100) * circumference;
+        
+        // Calculate offset to show progress starting from top (12 o'clock)
+        // With transform: rotate(-90deg), we need to offset to start from top
+        const offset = circumference - (percentage / 100) * circumference;
+        progressRingFill.style.strokeDashoffset = offset;
         
         console.log('🔄 Updating circular progress:', {
             percentage,
@@ -974,15 +1010,22 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
     // Animate text update
     if (stepProgressText && newProgress > 0) {
         stepProgressText.classList.add('updating');
+        clearProgressTextFade(); // Clear any existing fade
+        stepProgressText.style.opacity = '1';
         
         // Update text after brief delay
         setTimeout(() => {
             stepProgressText.textContent = `${Math.round(newPercentage)}% complete`;
             stepProgressText.classList.remove('updating');
+            
+            // Start fade out animation after showing updated progress
+            startProgressTextFade(stepProgressText);
         }, 150);
     } else if (stepProgressText && newProgress === 0) {
         // Handle case where progress goes to 0
         stepProgressText.textContent = '';
+        clearProgressTextFade(); // Clear any existing fade
+        stepProgressText.style.opacity = '1';
     }
     
     // Animate progress bar
@@ -1145,12 +1188,18 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
             // Update progress text for current round (only if not currently animating)
             if (stepProgressText && !stepProgressText.classList.contains('updating')) {
                 stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
+                stepProgressText.style.opacity = '1';
+                
+                // Start fade out animation after brief display
+                startProgressTextFade(stepProgressText);
             }
         } else {
             stepProgress.classList.remove('has-progress');
             // Hide progress text when no progress
             if (stepProgressText && !stepProgressText.classList.contains('updating')) {
                 stepProgressText.textContent = '';
+                clearProgressTextFade(); // Clear any existing fade
+                stepProgressText.style.opacity = '1';
             }
         }
         
