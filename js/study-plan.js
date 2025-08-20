@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateUI();
     setupEventListeners();
     animateCompletedSteps();
-
+    
     // Check for diagnostic completion and show confetti
     checkDiagnosticCompletion();
 
@@ -177,6 +177,49 @@ function updateTodaysProgress() {
     return dailyData;
 }
 
+// Calculate overall study plan progress
+function calculateOverallPlanProgress() {
+    try {
+        // Use the global studyPathData if available
+        if (!studyPathData || !studyPathData.concepts) {
+            console.log('🔍 DEBUG: [STUDY PLAN] No study path data found, progress is 0%');
+            return 0;
+        }
+        
+        const questionsPerRound = studyPathData.questionsPerRound || 7;
+        const completedRounds = studyPathData.completedRounds || 0;
+        const currentRoundProgress = studyPathData.currentRoundProgress || 0;
+        
+        // Get total rounds from concepts
+        const totalRounds = studyPathData.concepts.length || 4; // Fallback to 4 if no concepts
+        
+        // Calculate total questions in plan
+        const totalQuestions = totalRounds * questionsPerRound;
+        
+        // Calculate completed questions
+        const completedQuestions = (completedRounds * questionsPerRound) + currentRoundProgress;
+        
+        // Calculate percentage
+        const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log('🔍 DEBUG: [STUDY PLAN] Overall plan progress calculation:', {
+            totalRounds,
+            questionsPerRound,
+            totalQuestions,
+            completedRounds,
+            currentRoundProgress,
+            completedQuestions,
+            progressPercentage
+        });
+        
+        return Math.min(progressPercentage, 100); // Cap at 100%
+        
+    } catch (error) {
+        console.error('Error calculating overall plan progress in study plan:', error);
+        return 0;
+    }
+}
+
 // Function removed - using circular progress instead of trend chart
 
 // Sync daily progress data with home page calculations
@@ -202,20 +245,18 @@ function syncDailyProgressWithHome() {
             const todayQuestions = homePageProgress.questions || 0;
             const totalQuestions = homePageProgress.totalQuestions || 0;
 
-            // Update our progress summary to match home page
+            // Update progress summary and circular progress to show overall plan progress
+            const overallProgressPercentage = calculateOverallPlanProgress();
             if (progressSummary) {
-                const questionText = todayQuestions === 1 ? 'question' : 'questions';
-                progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+                progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
             }
 
-            // Update circular progress to match home page calculation
-            const dailyGoal = 10;
-            const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
-            updateCircularProgress(dailyProgressPercentage);
+            // Update circular progress to match overall plan progress
+            updateCircularProgress(overallProgressPercentage);
             
             // Update text to show percentage complete (default home view)
             if (trendChange && !sessionStorage.getItem('fromQuestionScreen')) {
-                trendChange.textContent = `${dailyProgressPercentage}% complete`;
+                trendChange.textContent = `${overallProgressPercentage}% complete`;
                 trendChange.className = 'daily-change';
             }
             
@@ -228,7 +269,7 @@ function syncDailyProgressWithHome() {
             console.log('Study plan synced with home page:', {
                 todayQuestions,
                 totalQuestions,
-                dailyProgressPercentage
+                overallProgressPercentage
             });
         }
     } catch (error) {
@@ -280,10 +321,18 @@ function updateProgressSummary() {
         return;
     }
     
-    // Update summary text
+    // Update summary text based on context
     if (progressSummary) {
-        const questionText = todayQuestions === 1 ? 'question' : 'questions';
-        progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+        const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+        if (fromQuestionScreen) {
+            // Show daily questions when coming from question screen
+            const questionText = todayQuestions === 1 ? 'question' : 'questions';
+            progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+        } else {
+            // Show overall plan progress by default
+            const overallProgressPercentage = calculateOverallPlanProgress();
+            progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
+        }
     }
     
     // Check if user came from question screen to show comparison
@@ -313,10 +362,9 @@ function updateProgressSummary() {
                 trendChange.className = 'daily-change positive';
             }
         } else {
-            // Show percentage complete when coming from home
-            const dailyGoal = 10;
-            const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
-            trendChange.textContent = `${dailyProgressPercentage}% complete`;
+            // Show overall plan progress percentage when coming from home
+            const overallProgressPercentage = calculateOverallPlanProgress();
+            trendChange.textContent = `${overallProgressPercentage}% complete`;
             trendChange.className = 'daily-change';
         }
     }
@@ -331,14 +379,10 @@ function showCircularProgress() {
     if (circularView) circularView.style.display = 'flex';
     if (trendView) trendView.style.display = 'none';
     
-    // Calculate and update circular progress
-    const dailyData = getDailyProgress();
-    const today = getTodayDateString();
-    const todayQuestions = dailyData[today]?.questions || 0;
-    const dailyGoal = 10;
-    const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    // Calculate and update circular progress based on overall plan progress
+    const overallProgressPercentage = calculateOverallPlanProgress();
     
-    updateCircularProgress(dailyProgressPercentage);
+    updateCircularProgress(overallProgressPercentage);
     
     // Keep motivational headline
     if (overviewTitle) {

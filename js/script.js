@@ -436,18 +436,16 @@ function loadStudyProgress() {
         todayData: dailyData[today]
     });
     
-    // Update progress bar based on daily goal (e.g., 10 questions per day)
-    const dailyGoal = 10;
-    const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    // Calculate overall study plan progress instead of daily progress
+    const overallProgressPercentage = calculateOverallPlanProgress();
     
     console.log('🔍 DEBUG: Final progress calculation:', {
         todayQuestions,
-        dailyGoal,
-        dailyProgressPercentage
+        overallProgressPercentage
     });
     
     // SAFEGUARD: If we detect suspicious 70% progress, force it to 0
-    if (dailyProgressPercentage === 70) {
+    if (overallProgressPercentage === 70) {
         console.log('🚨 SAFEGUARD: Detected 70% progress, likely from stale data. Forcing to 0.');
         const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
@@ -474,13 +472,13 @@ function loadStudyProgress() {
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
     if (progressFill) {
-        progressFill.style.width = `${dailyProgressPercentage}%`;
+        progressFill.style.width = `${overallProgressPercentage}%`;
     }
     
     // Update progress text to show percentage complete
     const progressText = document.querySelector('.progress-text');
     if (progressText) {
-        progressText.textContent = `${dailyProgressPercentage}% complete`;
+        progressText.textContent = `${overallProgressPercentage}% complete`;
     }
 }
 
@@ -607,6 +605,52 @@ function updateTodaysProgressFromStudyData() {
     return dailyData;
 }
 
+// Calculate overall study plan progress
+function calculateOverallPlanProgress() {
+    try {
+        // Get study path data
+        const studyPathData = localStorage.getItem('studyPathData');
+        if (!studyPathData) {
+            console.log('🔍 DEBUG: No study path data found, progress is 0%');
+            return 0;
+        }
+        
+        const pathData = JSON.parse(studyPathData);
+        const questionsPerRound = pathData.questionsPerRound || 7;
+        const completedRounds = pathData.completedRounds || 0;
+        const currentRoundProgress = pathData.currentRoundProgress || 0;
+        
+        // Get total rounds from concepts (since study plan is based on concepts)
+        const concepts = pathData.concepts || [];
+        const totalRounds = concepts.length || 4; // Fallback to 4 if no concepts
+        
+        // Calculate total questions in plan
+        const totalQuestions = totalRounds * questionsPerRound;
+        
+        // Calculate completed questions
+        const completedQuestions = (completedRounds * questionsPerRound) + currentRoundProgress;
+        
+        // Calculate percentage
+        const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log('🔍 DEBUG: Overall plan progress calculation:', {
+            totalRounds,
+            questionsPerRound,
+            totalQuestions,
+            completedRounds,
+            currentRoundProgress,
+            completedQuestions,
+            progressPercentage
+        });
+        
+        return Math.min(progressPercentage, 100); // Cap at 100%
+        
+    } catch (error) {
+        console.error('Error calculating overall plan progress:', error);
+        return 0;
+    }
+}
+
 // Animate progress update when returning from study plan
 function animateProgressUpdate() {
     const progressFill = document.querySelector('.progress-fill');
@@ -614,26 +658,25 @@ function animateProgressUpdate() {
     
     if (!progressFill || !progressText) return;
     
-    // Wait for screen to fully load before starting animation
-    setTimeout(() => {
-        // First, update today's progress from study data
-        updateTodaysProgressFromStudyData();
-        
-        // Get current and new progress values
-        const dailyData = getDailyProgress();
-        const today = getTodayDateString();
-        const todayQuestions = dailyData[today]?.questions || 0;
-        
-        console.log('Animation Debug:', {
-            today,
-            todayQuestions,
-            dailyData,
-            allData: dailyData
-        });
-        
-        // Calculate new progress percentage
-        const dailyGoal = 10;
-        const newProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+            // Wait for screen to fully load before starting animation
+        setTimeout(() => {
+            // First, update today's progress from study data
+            updateTodaysProgressFromStudyData();
+
+            // Get current and new progress values
+            const dailyData = getDailyProgress();
+            const today = getTodayDateString();
+            const todayQuestions = dailyData[today]?.questions || 0;
+
+            console.log('Animation Debug:', {
+                today,
+                todayQuestions,
+                dailyData,
+                allData: dailyData
+            });
+
+            // Calculate new progress percentage based on overall plan progress
+            const newProgressPercentage = calculateOverallPlanProgress();
         
         // Store original progress width for animation
         const currentWidth = parseInt(progressFill.style.width) || 0;
