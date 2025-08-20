@@ -91,10 +91,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset circular progress and ensure circular view is shown
         updateCircularProgress(0);
         
-        // Make sure circular view is visible
+        // Make sure circular view is visible and add zero-state class
         const circularView = document.getElementById('circularProgressView');
         const trendView = document.getElementById('trendGraphView');
-        if (circularView) circularView.style.display = 'flex';
+        if (circularView) {
+            circularView.style.display = 'flex';
+            circularView.classList.add('zero-state');
+        }
         if (trendView) trendView.style.display = 'none';
     }
 
@@ -954,6 +957,8 @@ function checkForRoundCompletion() {
 // Update circular progress ring
 function updateCircularProgress(percentage) {
     const progressRingFill = document.querySelector('.progress-ring-fill');
+    const progressPercentageText = document.getElementById('progressPercentageText');
+    
     if (progressRingFill) {
         const radius = 38;
         const circumference = 2 * Math.PI * radius;
@@ -973,6 +978,11 @@ function updateCircularProgress(percentage) {
             circumference,
             dashOffset: circumference - (percentage / 100) * circumference
         });
+    }
+    
+    // Update percentage text in the center
+    if (progressPercentageText) {
+        progressPercentageText.textContent = `${percentage}%`;
     }
 }
 

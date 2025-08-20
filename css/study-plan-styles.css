@@ -362,6 +362,17 @@ body {
     stroke-dashoffset: 0;
 }
 
+/* Progress percentage text in center */
+.progress-percentage {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-header-four);
+    font-style: normal;
+    font-weight: 700;
+    line-height: var(--typography-lineHeight-header-four);
+    letter-spacing: var(--typography-letterSpacing-none);
+    fill: var(--sys-text-primary);
+}
+
 /* 0% state styling - gray colors */
 .circular-progress.zero-state .progress-ring-bg {
     stroke: var(--color-gray-200);
@@ -369,6 +380,10 @@ body {
 
 .circular-progress.zero-state .progress-ring-fill {
     stroke: var(--color-gray-500);
+}
+
+.circular-progress.zero-state .progress-percentage {
+    fill: var(--color-gray-500);
 }
 
 /* Current round progress text fade animation */
