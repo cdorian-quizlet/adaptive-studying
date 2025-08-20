@@ -41,7 +41,7 @@ document.addEventListener('visibilitychange', function() {
             sessionStorage.removeItem('fromStudyPlan');
             animateProgressUpdate();
         } else {
-            loadStudyProgress();
+        loadStudyProgress();
         }
     }
 });
@@ -57,6 +57,11 @@ document.addEventListener('DOMContentLoaded', function() {
             animateProgressUpdate();
         }, 100);
     }
+    
+    // Add animation test buttons to debug bottom sheet (delay to avoid conflicts)
+    setTimeout(() => {
+        addAnimationTestButtons();
+    }, 100);
 });
 
 // Event Listeners
@@ -373,10 +378,15 @@ function escapeHtml(str) {
 
 // Load and display study progress
 function loadStudyProgress() {
+    // Update today's progress from study data first
+    updateTodaysProgressFromStudyData();
+    
     // Load daily progress data
     const dailyData = getDailyProgress();
     const today = getTodayDateString();
     const todayQuestions = dailyData[today]?.questions || 0;
+    
+    console.log('Loading progress:', { today, todayQuestions, dailyData });
     
     // Update progress bar based on daily goal (e.g., 10 questions per day)
     const dailyGoal = 10;
@@ -388,11 +398,10 @@ function loadStudyProgress() {
         progressFill.style.width = `${dailyProgressPercentage}%`;
     }
     
-    // Update progress text to show daily progress
+    // Update progress text to show percentage complete
     const progressText = document.querySelector('.progress-text');
     if (progressText) {
-        const questionText = todayQuestions === 1 ? 'question' : 'questions';
-        progressText.textContent = `${todayQuestions} ${questionText} today`;
+        progressText.textContent = `${dailyProgressPercentage}% complete`;
     }
 }
 
@@ -411,6 +420,80 @@ function getDailyProgress() {
     }
 }
 
+function saveDailyProgress(data) {
+    try {
+        localStorage.setItem('dailyProgress', JSON.stringify(data));
+        } catch (error) {
+        console.error('Error saving daily progress:', error);
+    }
+}
+
+// Update today's progress from study session data
+function updateTodaysProgressFromStudyData() {
+    const today = getTodayDateString();
+    const dailyData = getDailyProgress();
+    
+    // Get study path data
+    let studyPathData = {};
+    try {
+        const savedData = localStorage.getItem('studyPathData');
+        if (savedData) {
+            studyPathData = JSON.parse(savedData);
+        }
+    } catch (error) {
+        console.error('Error loading study path data:', error);
+    }
+    
+    // Calculate total questions completed
+    const questionsPerRound = studyPathData.questionsPerRound || 7;
+    const completedRounds = studyPathData.completedRounds || 0;
+    const currentRoundProgress = studyPathData.currentRoundProgress || 0;
+    
+    const totalQuestionsCompleted = (completedRounds * questionsPerRound) + currentRoundProgress;
+    
+    // Get yesterday's total to calculate today's new questions
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0];
+    const yesterdayTotalQuestions = dailyData[yesterdayString]?.totalQuestions || 0;
+    
+    // Today's new questions = current total - yesterday's total
+    const todaysNewQuestions = Math.max(0, totalQuestionsCompleted - yesterdayTotalQuestions);
+    
+    console.log('Daily Progress Calculation:', {
+        today,
+        totalQuestionsCompleted,
+        yesterdayTotalQuestions,
+        todaysNewQuestions,
+        completedRounds,
+        currentRoundProgress,
+        questionsPerRound
+    });
+    
+    // Initialize today's data if it doesn't exist
+    if (!dailyData[today]) {
+        dailyData[today] = { questions: 0, totalQuestions: 0 };
+    }
+    
+    // Update today's progress (don't decrease if we're loading saved data)
+    // Also preserve any higher values that might have been set by the study plan
+    const existingQuestions = dailyData[today].questions || 0;
+    const existingTotal = dailyData[today].totalQuestions || 0;
+    
+    dailyData[today].questions = Math.max(existingQuestions, todaysNewQuestions);
+    dailyData[today].totalQuestions = Math.max(existingTotal, totalQuestionsCompleted);
+    dailyData[today].timestamp = Date.now();
+    
+    saveDailyProgress(dailyData);
+    
+    console.log('Updated home page daily progress:', {
+        todaysQuestions: dailyData[today].questions,
+        totalQuestions: totalQuestionsCompleted
+    });
+    
+    return dailyData;
+}
+
 // Animate progress update when returning from study plan
 function animateProgressUpdate() {
     const progressFill = document.querySelector('.progress-fill');
@@ -418,62 +501,220 @@ function animateProgressUpdate() {
     
     if (!progressFill || !progressText) return;
     
-    // Get current and new progress values
-    const dailyData = getDailyProgress();
-    const today = getTodayDateString();
-    const todayQuestions = dailyData[today]?.questions || 0;
-    
-    // Calculate new progress percentage
-    const dailyGoal = 10;
-    const newProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
-    
-    // Store original progress width for animation
-    const currentWidth = parseInt(progressFill.style.width) || 0;
-    
-    // Step 1: Animate progress bar from current to new value
-    progressFill.style.transition = 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
-    progressFill.style.width = `${newProgressPercentage}%`;
-    
-    // Step 2: Show "X questions today" with highlight animation
-    const questionText = todayQuestions === 1 ? 'question' : 'questions';
-    const dailyText = `${todayQuestions} ${questionText} today`;
-    
+    // Wait for screen to fully load before starting animation
     setTimeout(() => {
-        // Add highlighting class and change text
-        progressText.classList.add('highlighting');
-        progressText.textContent = dailyText;
+        // First, update today's progress from study data
+        updateTodaysProgressFromStudyData();
         
-        // Apply highlight styling
-        progressText.style.cssText = `
-            color: var(--color-mint-500) !important;
-            font-weight: 700 !important;
-            transform: scale(1.05);
-            transition: all 0.3s ease;
-        `;
-    }, 600); // Start text change partway through progress animation
-    
-    // Step 3: Animate back to percentage complete
-    setTimeout(() => {
-        // Remove highlight and return to normal text
-        progressText.classList.remove('highlighting');
-        progressText.style.cssText = '';
-        progressText.textContent = `${newProgressPercentage}% complete`;
+        // Get current and new progress values
+        const dailyData = getDailyProgress();
+        const today = getTodayDateString();
+        const todayQuestions = dailyData[today]?.questions || 0;
         
-        // Add a subtle fade transition
-        progressText.style.transition = 'all 0.4s ease';
+        console.log('Animation Debug:', {
+            today,
+            todayQuestions,
+            dailyData,
+            allData: dailyData
+        });
         
-        // Clean up transition styles
+        // Calculate new progress percentage
+        const dailyGoal = 10;
+        const newProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+        
+        // Store original progress width for animation
+        const currentWidth = parseInt(progressFill.style.width) || 0;
+        
+        // Step 1: Animate progress bar from current to new value (slower)
+        progressFill.style.transition = 'width 2.2s cubic-bezier(0.25, 0.1, 0.25, 1)';
+        progressFill.style.width = `${newProgressPercentage}%`;
+        
+        // Step 2: Show actual questions completed today
+        const questionText = todayQuestions === 1 ? 'question' : 'questions';
+        const dailyText = `${todayQuestions} ${questionText} today`;
+        
+        console.log('Animation will show:', dailyText);
+        
         setTimeout(() => {
-            progressFill.style.transition = '';
-            progressText.style.transition = '';
-        }, 500);
-    }, 2800); // Show daily text for ~2 seconds
+            // Simply change text content - no special styling
+            progressText.textContent = dailyText;
+        }, 1200); // Start text change partway through slower progress animation
+        
+        // Step 3: Animate back to percentage complete
+        setTimeout(() => {
+            // Simply change back to percentage text - no special styling cleanup needed
+            progressText.textContent = `${newProgressPercentage}% complete`;
+            
+            // Clean up progress bar transition
+            setTimeout(() => {
+                progressFill.style.transition = '';
+            }, 500);
+        }, 4000); // Show daily text for longer with slower animation
+        
+    }, 800); // Delay start of animation to let screen load
 }
 
 // Set flag when navigating to study plan (to detect return)
 function setStudyPlanFlag() {
     sessionStorage.setItem('fromStudyPlan', 'true');
 }
+
+// Add animation test buttons to debug bottom sheet
+function addAnimationTestButtons() {
+    const bottomSheetActions = document.querySelector('.bottom-sheet-actions');
+    
+    // Check if buttons already exist to prevent duplicates
+    if (bottomSheetActions && !bottomSheetActions.querySelector('.animation-test-section')) {
+        // Create separator
+        const separator = document.createElement('div');
+        separator.style.cssText = `
+            height: 1px;
+            background: var(--sys-border-primary);
+            margin: 16px 0;
+            opacity: 0.5;
+        `;
+        bottomSheetActions.appendChild(separator);
+        
+        // Add section title with class for duplicate detection
+        const animationTitle = document.createElement('h4');
+        animationTitle.className = 'animation-test-section';
+        animationTitle.textContent = 'Test Progress Animation';
+        animationTitle.style.cssText = `
+            margin: 16px 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sys-text-primary);
+        `;
+        bottomSheetActions.appendChild(animationTitle);
+        
+        // Test with 1 question (singular)
+        const animBtn1 = document.createElement('button');
+        animBtn1.className = 'action-button';
+        animBtn1.innerHTML = `
+            <span class="material-icons-round">play_arrow</span>
+            <span class="subheading-3">Test Animation: 1 question today</span>
+        `;
+        animBtn1.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            simulateQuestionsCompleted(1);
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(animBtn1);
+        
+        // Test with 3 questions (plural)
+        const animBtn3 = document.createElement('button');
+        animBtn3.className = 'action-button';
+        animBtn3.innerHTML = `
+            <span class="material-icons-round">play_arrow</span>
+            <span class="subheading-3">Test Animation: 3 questions today</span>
+        `;
+        animBtn3.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            simulateQuestionsCompleted(3);
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(animBtn3);
+        
+        // Test with 7 questions
+        const animBtn7 = document.createElement('button');
+        animBtn7.className = 'action-button';
+        animBtn7.innerHTML = `
+            <span class="material-icons-round">play_arrow</span>
+            <span class="subheading-3">Test Animation: 7 questions today</span>
+        `;
+        animBtn7.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            simulateQuestionsCompleted(7);
+            const bottomSheet = document.getElementById('bottomSheet');
+            if (bottomSheet) bottomSheet.style.display = 'none';
+        });
+        bottomSheetActions.appendChild(animBtn7);
+    }
+}
+
+// Reset study progress functionality
+function resetStudyProgress() {
+    try {
+        // Clear all progress-related localStorage items
+        localStorage.removeItem('studyPathData');
+        localStorage.removeItem('dailyProgress');
+        localStorage.removeItem('studyStats');
+        localStorage.removeItem('fsrsStats');
+        
+        console.log('Study progress reset successfully');
+        
+        // Reset the progress bar and text on the page
+        const progressFill = document.querySelector('.progress-fill');
+        const progressText = document.querySelector('.progress-text');
+        
+        if (progressFill) {
+            progressFill.style.width = '0%';
+        }
+        
+        if (progressText) {
+            progressText.textContent = '0% complete';
+        }
+        
+        showToast('Study progress reset successfully');
+        
+    } catch (error) {
+        console.error('Error resetting study progress:', error);
+        showToast('Error resetting progress');
+    }
+}
+
+// Reset onboarding flow
+function resetOnboardingFlow() {
+    try {
+        // Clear onboarding-related localStorage items
+        localStorage.removeItem('onboarding_completed');
+        localStorage.removeItem('onboarding_course');
+        localStorage.removeItem('onboarding_goals');
+        localStorage.removeItem('onboarding_concepts');
+        localStorage.removeItem('onboarding_due_date');
+        localStorage.removeItem('onboarding_confidence');
+        
+        console.log('Onboarding flow reset successfully');
+        
+        showToast('Onboarding reset - page will reload');
+        
+        // Reload the page to show first-time experience
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Error resetting onboarding:', error);
+        showToast('Error resetting onboarding');
+    }
+}
+
+// Temporary debug function to test the animation (simulate completing questions)
+function simulateQuestionsCompleted(count = 5) {
+    const today = getTodayDateString();
+    const dailyData = getDailyProgress();
+    
+    // Initialize today's data if it doesn't exist
+    if (!dailyData[today]) {
+        dailyData[today] = { questions: 0, totalQuestions: 0 };
+    }
+    
+    // Add the simulated questions
+    dailyData[today].questions = count;
+    dailyData[today].totalQuestions = count;
+    dailyData[today].timestamp = Date.now();
+    
+    saveDailyProgress(dailyData);
+    
+    console.log(`Simulated ${count} questions completed for testing - animation will show: "${count} ${count === 1 ? 'question' : 'questions'} today"`);
+    
+    // Trigger the animation
+    animateProgressUpdate();
+}
+
+
 
 // Navigation Functions
 function navigateToStudyScreen() {

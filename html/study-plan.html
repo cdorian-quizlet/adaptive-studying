@@ -26,7 +26,8 @@
                         <p class="overview-subtitle" id="progressSummary">0 questions today</p>
                     </div>
                     <div class="overview-right">
-                        <div class="circular-progress">
+                        <!-- Circular Progress (default view from home) -->
+                        <div class="circular-progress" id="circularProgressView">
                             <svg class="progress-ring" width="88" height="88">
                                 <defs>
                                     <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -38,6 +39,18 @@
                                 <circle class="progress-ring-fill" cx="44" cy="44" r="38" stroke-width="12"></circle>
                             </svg>
                         </div>
+                        
+                        <!-- Trend Graph (from question screen) -->
+                        <div class="trend-graph" id="trendGraphView" style="display: none;">
+                            <svg class="trend-line-chart" width="120" height="60" id="overviewTrendChart">
+                                <!-- Trend line will be drawn here -->
+                            </svg>
+                            <div class="trend-labels">
+                                <span class="trend-start-label">Yesterday</span>
+                                <span class="trend-end-label">Today</span>
+                            </div>
+                        </div>
+                        
                         <div class="daily-stats">
                             <span class="daily-change" id="trendChange">-- today</span>
                         </div>

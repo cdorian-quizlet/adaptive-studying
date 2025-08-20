@@ -54,6 +54,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize material icons
     initMaterialIcons();
+    
+    // Extra sync after everything loads to ensure consistency
+    setTimeout(() => {
+        syncDailyProgressWithHome();
+    }, 100);
 });
 
 // Initialize header component
@@ -140,6 +145,56 @@ function updateTodaysProgress() {
 
 // Function removed - using circular progress instead of trend chart
 
+// Sync daily progress data with home page calculations
+function syncDailyProgressWithHome() {
+    try {
+        // Get home page daily progress data
+        const dailyData = getDailyProgress();
+        const today = getTodayDateString();
+        
+        // Check if home page has updated today's progress
+        const homePageProgress = dailyData[today];
+        if (homePageProgress && homePageProgress.timestamp) {
+            console.log('Syncing with home page daily progress:', homePageProgress);
+            
+                    // Use the home page calculated values to ensure consistency
+        const todayQuestions = homePageProgress.questions || 0;
+        const totalQuestions = homePageProgress.totalQuestions || 0;
+
+        // Update our progress summary to match home page
+        if (progressSummary) {
+            const questionText = todayQuestions === 1 ? 'question' : 'questions';
+            progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+        }
+
+        // Update circular progress to match home page calculation
+        const dailyGoal = 10;
+        const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+        updateCircularProgress(dailyProgressPercentage);
+        
+        // Update text to show percentage complete (default home view)
+        if (trendChange && !sessionStorage.getItem('fromQuestionScreen')) {
+            trendChange.textContent = `${dailyProgressPercentage}% complete`;
+            trendChange.className = 'daily-change';
+        }
+        
+        // Keep motivational headline (default home view)
+        const overviewTitle = document.querySelector('.overview-title');
+        if (overviewTitle && !sessionStorage.getItem('fromQuestionScreen')) {
+            overviewTitle.textContent = 'Keep up the momentum';
+        }
+            
+            console.log('Study plan synced with home page:', {
+                todayQuestions,
+                totalQuestions,
+                dailyProgressPercentage
+            });
+        }
+    } catch (error) {
+        console.error('Error syncing daily progress with home page:', error);
+    }
+}
+
 function updateProgressSummary() {
     const dailyData = getDailyProgress();
     const today = getTodayDateString();
@@ -150,43 +205,211 @@ function updateProgressSummary() {
     const todayQuestions = dailyData[today]?.questions || 0;
     const yesterdayQuestions = dailyData[yesterdayString]?.questions || 0;
     
+    // Check if progress has been reset (no data)
+    const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+    if (!hasProgressData) {
+        console.log('No progress data found, resetting overview card');
+        if (progressSummary) {
+            progressSummary.textContent = '0 questions today';
+        }
+        if (trendChange) {
+            trendChange.textContent = '0% complete';
+            trendChange.className = 'daily-change';
+        }
+        showCircularProgress();
+        return;
+    }
+    
     // Update summary text
     if (progressSummary) {
         const questionText = todayQuestions === 1 ? 'question' : 'questions';
         progressSummary.textContent = `${todayQuestions} ${questionText} today`;
     }
     
-    // Calculate daily progress percentage (based on daily goal)
-    const dailyGoal = 10; // questions per day goal
-    const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    // Check if user came from question screen to show comparison
+    const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
     
-    // Update circular progress ring (visual only, no text)
-    updateCircularProgress(dailyProgressPercentage);
+    if (fromQuestionScreen) {
+        // Show trend comparison (today vs yesterday)
+        showTrendComparison();
+        // Clear the flag
+        sessionStorage.removeItem('fromQuestionScreen');
+    } else {
+        // Show circular progress (default from home)
+        showCircularProgress();
+    }
     
-    // Update today's total questions
+    // Update bottom text based on view
     if (trendChange) {
-        if (todayQuestions === 0) {
-            trendChange.textContent = '-- today';
-            trendChange.className = 'daily-change';
+        if (fromQuestionScreen) {
+            // Show comparison when coming from question screen
+            if (yesterdayQuestions > 0) {
+                const change = todayQuestions - yesterdayQuestions;
+                const changeText = change >= 0 ? `+${change}` : `${change}`;
+                trendChange.textContent = `${changeText} vs yesterday`;
+                trendChange.className = change >= 0 ? 'daily-change positive' : 'daily-change negative';
+            } else {
+                trendChange.textContent = `+${todayQuestions} today`;
+                trendChange.className = 'daily-change positive';
+            }
         } else {
-            trendChange.textContent = `+${todayQuestions} today`;
-            trendChange.className = 'daily-change positive';
+            // Show percentage complete when coming from home
+            const dailyGoal = 10;
+            const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+            trendChange.textContent = `${dailyProgressPercentage}% complete`;
+            trendChange.className = 'daily-change';
         }
     }
+}
+
+// Show circular progress view (from home navigation)
+function showCircularProgress() {
+    const circularView = document.getElementById('circularProgressView');
+    const trendView = document.getElementById('trendGraphView');
+    const overviewTitle = document.querySelector('.overview-title');
+    
+    if (circularView) circularView.style.display = 'flex';
+    if (trendView) trendView.style.display = 'none';
+    
+    // Calculate and update circular progress
+    const dailyData = getDailyProgress();
+    const today = getTodayDateString();
+    const todayQuestions = dailyData[today]?.questions || 0;
+    const dailyGoal = 10;
+    const dailyProgressPercentage = Math.min(Math.round((todayQuestions / dailyGoal) * 100), 100);
+    
+    updateCircularProgress(dailyProgressPercentage);
+    
+    // Keep motivational headline
+    if (overviewTitle) {
+        overviewTitle.textContent = 'Keep up the momentum';
+    }
+}
+
+// Show trend comparison view (from question screen)
+function showTrendComparison() {
+    const circularView = document.getElementById('circularProgressView');
+    const trendView = document.getElementById('trendGraphView');
+    const overviewTitle = document.querySelector('.overview-title');
+    
+    if (circularView) circularView.style.display = 'none';
+    if (trendView) trendView.style.display = 'flex';
+    
+    // Update headline to motivational text when showing trend
+    if (overviewTitle) {
+        overviewTitle.textContent = 'Keep up the momentum';
+    }
+    
+    // Generate today vs yesterday comparison chart
+    generateTodayVsYesterdayChart();
+}
+
+// Generate today vs yesterday comparison chart
+function generateTodayVsYesterdayChart() {
+    const trendChart = document.getElementById('overviewTrendChart');
+    if (!trendChart) return;
+    
+    // Clear existing content
+    trendChart.innerHTML = '';
+    
+    // Get today and yesterday data
+    const dailyData = getDailyProgress();
+    const today = getTodayDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0];
+    
+    const todayQuestions = dailyData[today]?.questions || 0;
+    const yesterdayQuestions = dailyData[yesterdayString]?.questions || 0;
+    
+    // Chart dimensions
+    const width = 120;
+    const height = 60;
+    const padding = 16;
+    const plotWidth = width - (padding * 2);
+    const plotHeight = height - (padding * 2);
+    
+    // Find max for scaling
+    const maxQuestions = Math.max(todayQuestions, yesterdayQuestions, 1);
+    
+    // Create points for yesterday and today
+    const yesterdayY = padding + plotHeight - ((yesterdayQuestions / maxQuestions) * plotHeight);
+    const todayY = padding + plotHeight - ((todayQuestions / maxQuestions) * plotHeight);
+    
+    const yesterdayX = padding + 20;
+    const todayX = padding + plotWidth - 20;
+    
+    // Create organic curve between the two points
+    const midX = (yesterdayX + todayX) / 2;
+    const controlY = (yesterdayY + todayY) / 2 + (Math.random() - 0.5) * 10; // Add organic variation
+    
+    // Generate smooth curve path
+    const pathData = `M ${yesterdayX} ${yesterdayY} Q ${midX} ${controlY} ${todayX} ${todayY}`;
+    
+    // Create the trend path
+    const trendPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trendPath.setAttribute('d', pathData);
+    trendPath.setAttribute('class', 'trend-path');
+    trendChart.appendChild(trendPath);
+    
+    // Add yesterday dot
+    const yesterdayDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    yesterdayDot.setAttribute('cx', yesterdayX);
+    yesterdayDot.setAttribute('cy', yesterdayY);
+    yesterdayDot.setAttribute('r', '3');
+    yesterdayDot.setAttribute('fill', '#9CA3AF');
+    trendChart.appendChild(yesterdayDot);
+    
+    // Add today dot (highlighted)
+    const todayDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    todayDot.setAttribute('cx', todayX);
+    todayDot.setAttribute('cy', todayY);
+    todayDot.setAttribute('class', 'trend-end-dot');
+    trendChart.appendChild(todayDot);
 }
 
 // Refresh progress when returning from study screen
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        console.log('Page became visible, refreshing progress data');
-        
+        console.log('Study plan page became visible, refreshing progress data');
+
         // Store current progress before updating
         const currentRound = studyPathData.currentRound;
         const currentProgress = studyPathData.currentRoundProgress;
-        
-        // Load new data
+
+        // Load new data and sync with home page
         loadStudyPathData();
-        
+        syncDailyProgressWithHome();
+
+        // Check if progress has been reset (no data in localStorage)
+        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+        if (!hasProgressData) {
+            console.log('Progress data has been reset, updating overview card');
+            // Reset overview card display
+            const progressSummary = document.getElementById('progressSummary');
+            const trendChange = document.getElementById('trendChange');
+            const overviewTitle = document.querySelector('.overview-title');
+            
+            if (progressSummary) {
+                progressSummary.textContent = '0 questions today';
+            }
+            if (trendChange) {
+                trendChange.textContent = '0% complete';
+                trendChange.className = 'daily-change';
+            }
+            if (overviewTitle) {
+                overviewTitle.textContent = 'Keep up the momentum';
+            }
+            
+            // Reset circular progress
+            updateCircularProgress(0);
+            
+            // Ensure circular view is shown
+            showCircularProgress();
+            
+            return;
+        }
+
         // Check if current round progress increased and trigger animation
         const newProgress = studyPathData.currentRoundProgress;
         if (studyPathData.currentRound === currentRound && newProgress > currentProgress) {
@@ -548,6 +771,9 @@ function updateUI() {
     // Update daily progress tracking and display
     updateTodaysProgress();
     updateProgressSummary();
+    
+    // Sync daily progress with home page data
+    syncDailyProgressWithHome();
     
     // Update path steps
     updatePathSteps();
