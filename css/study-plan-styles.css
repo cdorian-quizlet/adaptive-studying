@@ -359,6 +359,9 @@ body {
     transform: rotate(-90deg);
     transform-origin: 50% 50%;
     transition: stroke-dashoffset 0.3s ease;
+    /* Initialize for circular progress - will be set by JavaScript */
+    stroke-dasharray: 0;
+    stroke-dashoffset: 0;
 }
 
 /* 0% state styling - gray colors */

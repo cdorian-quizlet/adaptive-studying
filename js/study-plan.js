@@ -921,12 +921,22 @@ function checkForRoundCompletion() {
 
 // Update circular progress ring
 function updateCircularProgress(percentage) {
+    const progressRingFill = document.querySelector('.progress-ring-fill');
     if (progressRingFill) {
         const radius = 38;
         const circumference = 2 * Math.PI * radius;
-        const progress = (percentage / 100) * circumference;
         
-        progressRingFill.style.strokeDasharray = `${progress} ${circumference}`;
+        // Set up the stroke-dasharray and stroke-dashoffset for circular progress
+        // This approach starts from top (12 o'clock) and fills clockwise
+        progressRingFill.style.strokeDasharray = circumference;
+        progressRingFill.style.strokeDashoffset = circumference - (percentage / 100) * circumference;
+        
+        console.log('🔄 Updating circular progress:', {
+            percentage,
+            radius,
+            circumference,
+            dashOffset: circumference - (percentage / 100) * circumference
+        });
     }
 }
 
