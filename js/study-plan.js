@@ -7,7 +7,6 @@ let pathSteps = document.querySelectorAll('.path-step'); // Will be updated when
 
 // Progress Elements
 const progressSummary = document.getElementById('progressSummary');
-const trendChange = document.getElementById('trendChange');
 const progressRingFill = document.querySelector('.progress-ring-fill');
 
 // Progress text fade timeout tracking
@@ -39,6 +38,31 @@ function startProgressTextFade(textElement) {
     }, 2000); // Show for 2 seconds then fade
 }
 
+// Show progress text and fade-out when coming from question screen
+function showProgressTextWithFadeOut(textElement) {
+    if (!textElement) {
+        console.log('⚠️ No textElement provided to showProgressTextWithFadeOut');
+        return;
+    }
+    
+    console.log('🎬 Showing progress text immediately, will fade out after few seconds', textElement.textContent);
+    
+    clearProgressTextFade(); // Clear any existing fade
+    
+    // Remove any existing animation classes and show immediately
+    textElement.classList.remove('fade-out', 'auto-fade', 'entering');
+    textElement.style.opacity = '1';
+    
+    // After a few seconds, start the fade-out
+    setTimeout(() => {
+        console.log('🎬 Starting fade-out after delay');
+        startProgressTextFade(textElement);
+        
+        // Clear the fromQuestionScreen flag after triggering animation
+        sessionStorage.removeItem('fromQuestionScreen');
+    }, 3000); // 3 seconds before fade-out starts
+}
+
 // Onboarding data from plan flow
 let onboardingData = {
     course: '',
@@ -63,8 +87,11 @@ const studyPathData = {
     courseName: '' // Course name for header
 };
 
-// Initialize the study plan
+    // Initialize the study plan
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize progress ring first
+    initializeProgressRing();
+    
     // Initialize header component
     initializeHeader();
 
@@ -72,29 +99,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
     if (!hasProgressData) {
         console.log('No progress data found on page load, resetting overview card');
-        // Reset overview card immediately
+        // Reset overview card immediately for 0% state
         const progressSummary = document.getElementById('progressSummary');
-        const trendChange = document.getElementById('trendChange');
         const overviewTitle = document.querySelector('.overview-title');
         
         if (progressSummary) {
-            progressSummary.textContent = '0 questions today';
-        }
-        if (trendChange) {
-            trendChange.textContent = '0% complete';
-            trendChange.className = 'daily-change';
+            progressSummary.style.display = 'none'; // Hide progress summary for 0% state
         }
         if (overviewTitle) {
-            overviewTitle.textContent = 'Keep up the momentum';
+            const examDate = formatExamDate();
+            if (examDate) {
+                overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
+            } else {
+                overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+            }
         }
         
-        // Initialize circular progress properly to start from 0%
-        const progressRingFill = document.querySelector('.progress-ring-fill');
-        if (progressRingFill) {
-            const circumference = 2 * Math.PI * 38; // radius = 38
-            progressRingFill.style.strokeDasharray = circumference;
-            progressRingFill.style.strokeDashoffset = circumference; // Start at 0%
-        }
+        // Initialize circular progress properly to start from 0% (with visible pill)
+        initializeProgressRing();
         
         // Reset circular progress and ensure circular view is shown
         updateCircularProgress(0, false); // Don't animate the initial 0% reset
@@ -291,34 +313,37 @@ function syncDailyProgressWithHome() {
 
             // Update progress summary and circular progress to show overall plan progress
             const overallProgressPercentage = calculateOverallPlanProgress();
-            if (progressSummary) {
-                progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
-            }
-
-            // Add/remove zero-state class for styling
             const circularView = document.getElementById('circularProgressView');
-            if (circularView) {
-                if (overallProgressPercentage === 0) {
+            const overviewTitle = document.querySelector('.overview-title');
+            
+            // Handle 0% state vs. progress state
+            if (overallProgressPercentage === 0) {
+                // 0% state - special styling and content
+                if (circularView) {
                     circularView.classList.add('zero-state');
-                } else {
+                }
+                if (progressSummary) {
+                    progressSummary.style.display = 'none';
+                }
+                if (overviewTitle) {
+                    overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+                }
+            } else {
+                // Progress state - normal display
+                if (circularView) {
                     circularView.classList.remove('zero-state');
+                }
+                if (progressSummary) {
+                    progressSummary.style.display = 'block';
+                    progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
+                }
+                if (overviewTitle) {
+                    overviewTitle.textContent = 'Keep up the momentum';
                 }
             }
 
             // Update circular progress to match overall plan progress (no animation for data sync)
             updateCircularProgress(overallProgressPercentage, false);
-            
-            // Update text to show percentage complete (default home view)
-            if (trendChange && !sessionStorage.getItem('fromQuestionScreen')) {
-                trendChange.textContent = `${overallProgressPercentage}% complete`;
-                trendChange.className = 'daily-change';
-            }
-            
-            // Keep motivational headline (default home view)
-            const overviewTitle = document.querySelector('.overview-title');
-            if (overviewTitle && !sessionStorage.getItem('fromQuestionScreen')) {
-                overviewTitle.textContent = 'Keep up the momentum';
-            }
                 
             console.log('Study plan synced with home page:', {
                 todayQuestions,
@@ -364,67 +389,80 @@ function updateProgressSummary() {
     
     if (!hasStudyPathData && !hasDailyProgress) {
         console.log('🔍 DEBUG: [STUDY PLAN] No progress data found, resetting overview card');
-        if (progressSummary) {
-            progressSummary.textContent = '0 questions today';
-        }
-        if (trendChange) {
-            trendChange.textContent = '0% complete';
-            trendChange.className = 'daily-change';
-        }
         showCircularProgress();
         return;
     }
     
-    // Update summary text based on context
+    // Always show overall plan progress
+    const overallProgressPercentage = calculateOverallPlanProgress();
     if (progressSummary) {
-        const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
-        if (fromQuestionScreen) {
-            // Show daily questions when coming from question screen
-            const questionText = todayQuestions === 1 ? 'question' : 'questions';
-            progressSummary.textContent = `${todayQuestions} ${questionText} today`;
+        if (overallProgressPercentage === 0) {
+            progressSummary.style.display = 'none'; // Hide for 0% state
         } else {
-            // Show overall plan progress by default
-            const overallProgressPercentage = calculateOverallPlanProgress();
+            progressSummary.style.display = 'block';
             progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
         }
     }
     
-    // Check if user came from question screen to show comparison
-    const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+    // Always show circular progress with overall plan progress
+    showCircularProgress();
     
-    if (fromQuestionScreen) {
-        // Show trend comparison (today vs yesterday)
-        showTrendComparison();
-        // Clear the flag
-        sessionStorage.removeItem('fromQuestionScreen');
-    } else {
-        // Show circular progress (default from home)
-        showCircularProgress();
-    }
-    
-    // Update bottom text based on view
-    if (trendChange) {
-        if (fromQuestionScreen) {
-            // Show comparison when coming from question screen
-            if (yesterdayQuestions > 0) {
-                const change = todayQuestions - yesterdayQuestions;
-                const changeText = change >= 0 ? `+${change}` : `${change}`;
-                trendChange.textContent = `${changeText} vs yesterday`;
-                trendChange.className = change >= 0 ? 'daily-change positive' : 'daily-change negative';
+
+}
+
+// Helper function to format exam date for headlines
+function formatExamDate() {
+    try {
+        const dueDateString = localStorage.getItem('plan_due_date');
+        if (!dueDateString) return null;
+        
+        const dueDate = new Date(dueDateString + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = dayNames[dueDate.getDay()];
+        
+        // Get current week bounds
+        const currentWeekStart = new Date(today);
+        currentWeekStart.setDate(today.getDate() - today.getDay()); // Start of this week (Sunday)
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // End of this week (Saturday)
+        
+        if (diffDays === 0) {
+            return 'today';
+        } else if (diffDays === 1) {
+            return 'tomorrow';
+        } else if (diffDays === -1) {
+            return 'yesterday';
+        } else if (dueDate >= currentWeekStart && dueDate <= currentWeekEnd) {
+            // This week
+            return `this ${dayName}`;
+        } else if (diffDays > 0 && diffDays <= 13) {
+            // Next week or the week after
+            if (diffDays <= 7) {
+                return `${dayName} next week`;
             } else {
-                trendChange.textContent = `+${todayQuestions} today`;
-                trendChange.className = 'daily-change positive';
+                return `on ${dayName}`;
             }
+        } else if (diffDays > 13) {
+            // Further away - just show the day
+            return `on ${dayName}`;
         } else {
-            // Show overall plan progress percentage when coming from home
-            const overallProgressPercentage = calculateOverallPlanProgress();
-            trendChange.textContent = `${overallProgressPercentage}% complete`;
-            trendChange.className = 'daily-change';
+            // Past dates
+            return `on ${dayName}`;
         }
+    } catch (error) {
+        console.error('Error formatting exam date:', error);
+        return null;
     }
 }
 
-// Show circular progress view (from home navigation)
+// Show circular progress view with overall plan progress
 function showCircularProgress() {
     const circularView = document.getElementById('circularProgressView');
     const trendView = document.getElementById('trendGraphView');
@@ -436,107 +474,56 @@ function showCircularProgress() {
     // Calculate and update circular progress based on overall plan progress
     const overallProgressPercentage = calculateOverallPlanProgress();
     
-    // Add/remove zero-state class for styling
+    // Get formatted exam date
+    const examDate = formatExamDate();
+    
+    // Add/remove zero-state class for styling and update content for 0% state
     if (circularView) {
         if (overallProgressPercentage === 0) {
             circularView.classList.add('zero-state');
+            
+            // Update overview card content for 0% state
+            if (overviewTitle) {
+                if (examDate) {
+                    overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
+                } else {
+                    overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+                }
+            }
+            if (progressSummary) {
+                progressSummary.style.display = 'none'; // Hide progress summary for 0% state
+            }
         } else {
             circularView.classList.remove('zero-state');
+            
+            // Restore normal overview card content
+            if (overviewTitle) {
+                if (examDate) {
+                    overviewTitle.textContent = `Keep up the momentum for your test ${examDate}`;
+                } else {
+                    overviewTitle.textContent = 'Keep up the momentum';
+                }
+            }
+            if (progressSummary) {
+                progressSummary.style.display = 'block'; // Show progress summary for non-0% state
+                progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
+            }
         }
     }
     
+    // Check if user came from question screen for special animation
+    const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+    const shouldAnimate = !fromQuestionScreen; // Don't animate when coming from question screen
+    
+    // Don't clear the flag here - let individual progress text animations handle it
+    
     // Animate the progress after a small delay for page load
     setTimeout(() => {
-        updateCircularProgress(overallProgressPercentage, true);
+        updateCircularProgress(overallProgressPercentage, shouldAnimate);
     }, 200);
-    
-    // Keep motivational headline
-    if (overviewTitle) {
-        overviewTitle.textContent = 'Keep up the momentum';
-    }
 }
 
-// Show trend comparison view (from question screen)
-function showTrendComparison() {
-    const circularView = document.getElementById('circularProgressView');
-    const trendView = document.getElementById('trendGraphView');
-    const overviewTitle = document.querySelector('.overview-title');
-    
-    if (circularView) circularView.style.display = 'none';
-    if (trendView) trendView.style.display = 'flex';
-    
-    // Update headline to motivational text when showing trend
-    if (overviewTitle) {
-        overviewTitle.textContent = 'Keep up the momentum';
-    }
-    
-    // Generate today vs yesterday comparison chart
-    generateTodayVsYesterdayChart();
-}
 
-// Generate today vs yesterday comparison chart
-function generateTodayVsYesterdayChart() {
-    const trendChart = document.getElementById('overviewTrendChart');
-    if (!trendChart) return;
-    
-    // Clear existing content
-    trendChart.innerHTML = '';
-    
-    // Get today and yesterday data
-    const dailyData = getDailyProgress();
-    const today = getTodayDateString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayString = yesterday.toISOString().split('T')[0];
-    
-    const todayQuestions = dailyData[today]?.questions || 0;
-    const yesterdayQuestions = dailyData[yesterdayString]?.questions || 0;
-    
-    // Chart dimensions
-    const width = 120;
-    const height = 60;
-    const padding = 16;
-    const plotWidth = width - (padding * 2);
-    const plotHeight = height - (padding * 2);
-    
-    // Find max for scaling
-    const maxQuestions = Math.max(todayQuestions, yesterdayQuestions, 1);
-    
-    // Create points for yesterday and today
-    const yesterdayY = padding + plotHeight - ((yesterdayQuestions / maxQuestions) * plotHeight);
-    const todayY = padding + plotHeight - ((todayQuestions / maxQuestions) * plotHeight);
-    
-    const yesterdayX = padding + 20;
-    const todayX = padding + plotWidth - 20;
-    
-    // Create organic curve between the two points
-    const midX = (yesterdayX + todayX) / 2;
-    const controlY = (yesterdayY + todayY) / 2 + (Math.random() - 0.5) * 10; // Add organic variation
-    
-    // Generate smooth curve path
-    const pathData = `M ${yesterdayX} ${yesterdayY} Q ${midX} ${controlY} ${todayX} ${todayY}`;
-    
-    // Create the trend path
-    const trendPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    trendPath.setAttribute('d', pathData);
-    trendPath.setAttribute('class', 'trend-path');
-    trendChart.appendChild(trendPath);
-    
-    // Add yesterday dot
-    const yesterdayDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    yesterdayDot.setAttribute('cx', yesterdayX);
-    yesterdayDot.setAttribute('cy', yesterdayY);
-    yesterdayDot.setAttribute('r', '3');
-    yesterdayDot.setAttribute('fill', '#9CA3AF');
-    trendChart.appendChild(yesterdayDot);
-    
-    // Add today dot (highlighted)
-    const todayDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    todayDot.setAttribute('cx', todayX);
-    todayDot.setAttribute('cy', todayY);
-    todayDot.setAttribute('class', 'trend-end-dot');
-    trendChart.appendChild(todayDot);
-}
 
 // Refresh progress when returning from study screen
 document.addEventListener('visibilitychange', function() {
@@ -558,20 +545,15 @@ document.addEventListener('visibilitychange', function() {
         const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
         if (!hasProgressData) {
             console.log('Progress data has been reset, updating overview card');
-            // Reset overview card display
+            // Reset overview card display for 0% state
             const progressSummary = document.getElementById('progressSummary');
-            const trendChange = document.getElementById('trendChange');
             const overviewTitle = document.querySelector('.overview-title');
             
             if (progressSummary) {
-                progressSummary.textContent = '0 questions today';
-            }
-            if (trendChange) {
-                trendChange.textContent = '0% complete';
-                trendChange.className = 'daily-change';
+                progressSummary.style.display = 'none'; // Hide progress summary for 0% state
             }
             if (overviewTitle) {
-                overviewTitle.textContent = 'Keep up the momentum';
+                overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
             }
             
             // Reset circular progress (no animation for reset)
@@ -755,8 +737,8 @@ function generatePathStepsHTML() {
             
             if (diagnosticNumber === 2) {
                 diagnosticType = 'mid';
-                diagnosticTitle = 'Mid-Progress Diagnostic';
-                diagnosticDescription = 'Check your progress and identify areas to focus on';
+                diagnosticTitle = 'Quiz 1';
+                diagnosticDescription = 'Rounds 1 – 2';
             } else {
                 diagnosticType = `checkpoint${diagnosticNumber}`;
                 diagnosticTitle = `Checkpoint Diagnostic ${diagnosticNumber - 1}`;
@@ -955,6 +937,20 @@ function updateUI() {
     // Update path steps
     updatePathSteps();
     
+    // Check if we need to trigger progress text animation for current round when coming from question screen
+    const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+    if (fromQuestionScreen) {
+        console.log('🎬 User came from question screen, checking for current round progress text');
+        const currentRoundStep = document.querySelector('.path-step.current');
+        if (currentRoundStep) {
+            const stepProgressText = currentRoundStep.querySelector('.step-progress-text');
+            if (stepProgressText && stepProgressText.textContent.trim() !== '') {
+                console.log('🎬 Triggering progress text animation from updateUI');
+                showProgressTextWithFadeOut(stepProgressText);
+            }
+        }
+    }
+    
     // Ensure new icons are loaded
     initMaterialIcons();
 }
@@ -973,46 +969,76 @@ function checkForRoundCompletion() {
     }
 }
 
+// Initialize progress ring to ensure proper setup
+function initializeProgressRing() {
+    const progressRingFill = document.querySelector('.progress-ring-fill');
+    if (progressRingFill) {
+        const circumference = 2 * Math.PI * 38; // radius = 38
+        const minVisibleProgress = 2; // 2% minimum for the pill indicator
+        const minOffset = circumference - (minVisibleProgress / 100) * circumference;
+        
+        progressRingFill.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressRingFill.style.strokeDashoffset = minOffset; // Start with small pill visible
+        progressRingFill.style.transition = 'none'; // No animation for initial setup
+    }
+}
+
 // Update circular progress ring
 function updateCircularProgress(percentage, animate = true) {
     const progressRingFill = document.querySelector('.progress-ring-fill');
     const progressPercentageText = document.getElementById('progressPercentageText');
     
-    if (progressRingFill) {
-        const radius = 38;
-        const circumference = 2 * Math.PI * radius;
+    if (!progressRingFill) return;
+    
+    const radius = 38;
+    const circumference = 2 * Math.PI * radius; // ≈ 238.76
+    
+    // Minimum visible progress (small pill/dot at 0%)
+    const minVisibleProgress = 2; // 2% minimum for the pill indicator
+    const adjustedPercentage = Math.max(percentage, percentage === 0 ? minVisibleProgress : percentage);
+    
+    // Calculate the target offset for the adjusted percentage
+    const targetOffset = circumference - (adjustedPercentage / 100) * circumference;
+    
+    // Always set the stroke-dasharray (this doesn't animate)
+    progressRingFill.style.strokeDasharray = `${circumference} ${circumference}`;
+    
+    if (animate) {
+        // Temporarily disable transition to set starting position
+        progressRingFill.style.transition = 'none';
         
-        // Set up the stroke-dasharray and stroke-dashoffset for circular progress
-        progressRingFill.style.strokeDasharray = circumference;
+        // Get current offset or start from full circle (0% progress)
+        const currentOffset = parseFloat(progressRingFill.style.strokeDashoffset) || circumference;
+        progressRingFill.style.strokeDashoffset = currentOffset;
         
-        if (animate) {
-            // Start from 0% and animate to target percentage
-            progressRingFill.style.strokeDashoffset = circumference; // Start at 0%
-            
-            // Small delay to ensure the starting position is set before animating
-            setTimeout(() => {
-                const offset = circumference - (percentage / 100) * circumference;
-                progressRingFill.style.strokeDashoffset = offset;
-            }, 50);
-        } else {
-            // Set directly without animation
-            const offset = circumference - (percentage / 100) * circumference;
-            progressRingFill.style.strokeDashoffset = offset;
-        }
+        // Force a reflow to ensure the transition:none takes effect
+        progressRingFill.offsetHeight;
         
-        console.log('🔄 Updating circular progress:', {
-            percentage,
-            radius,
-            circumference,
-            animate,
-            targetOffset: circumference - (percentage / 100) * circumference
-        });
+        // Re-enable transition
+        progressRingFill.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+        
+        // Animate to target position
+        setTimeout(() => {
+            progressRingFill.style.strokeDashoffset = targetOffset;
+        }, 10);
+    } else {
+        // Set directly without animation
+        progressRingFill.style.transition = 'none';
+        progressRingFill.style.strokeDashoffset = targetOffset;
     }
     
     // Update percentage text in the center
     if (progressPercentageText) {
-        progressPercentageText.textContent = `${percentage}%`;
+        progressPercentageText.textContent = `${Math.round(percentage)}%`;
     }
+    
+    console.log('🔄 Updated circular progress:', {
+        percentage: Math.round(percentage),
+        adjustedPercentage: Math.round(adjustedPercentage),
+        circumference,
+        targetOffset,
+        animate
+    });
 }
 
 // Animate progress update for current round
@@ -1057,8 +1083,15 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
             stepProgressText.textContent = `${Math.round(newPercentage)}% complete`;
             stepProgressText.classList.remove('updating');
             
-            // Start fade out animation after showing updated progress
-            startProgressTextFade(stepProgressText);
+            // Check if user came from question screen for special animation
+            const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+            if (fromQuestionScreen) {
+                // Use entry animation when progress updates from question screen
+                showProgressTextWithFadeOut(stepProgressText);
+            } else {
+                // Start fade out animation after showing updated progress
+                startProgressTextFade(stepProgressText);
+            }
         }, 150);
     } else if (stepProgressText && newProgress === 0) {
         // Handle case where progress goes to 0
@@ -1110,6 +1143,34 @@ function updatePathSteps() {
     });
 }
 
+// Helper function to check if a round should be disabled because a diagnostic above it is current
+function isCurrentRoundBelowActiveDiagnostic(roundNumber) {
+    // Check if there's a diagnostic that should be current and is above this round
+    const diagnosticMidUnlocked = studyPathData.completedRounds >= 2;
+    const diagnosticMidCurrent = diagnosticMidUnlocked && studyPathData.currentRound > 2 && !studyPathData.diagnosticMidTaken;
+    
+    // If the mid diagnostic (after round 2) is current, disable rounds 3+
+    if (diagnosticMidCurrent && roundNumber > 2) {
+        console.log(`🔒 Round ${roundNumber} disabled because Quiz 1 (Mid diagnostic) is current`);
+        return true;
+    }
+    
+    // Check for checkpoint diagnostics
+    for (let checkpointNum = 2; checkpointNum <= 10; checkpointNum++) {
+        const requiredRounds = checkpointNum * 2;
+        const diagnosticUnlocked = studyPathData.completedRounds >= requiredRounds;
+        const diagnosticType = `diagnosticCheckpoint${checkpointNum}`;
+        const diagnosticTaken = studyPathData[diagnosticType + 'Taken'];
+        const diagnosticCurrent = diagnosticUnlocked && studyPathData.currentRound > requiredRounds && !diagnosticTaken;
+        
+        if (diagnosticCurrent && roundNumber > requiredRounds) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 // Update diagnostic test steps
 function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
     const isTaken = studyPathData[diagnosticType + 'Taken'];
@@ -1125,7 +1186,9 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
     
     if (isTaken) {
         step.classList.add('completed'); // Add completed class to step
+        step.classList.remove('current', 'next');
         stepCircle.classList.add('completed');
+        stepCircle.classList.remove('in-progress', 'next');
         stepCircle.querySelector('.step-icon').textContent = 'check';
         stepStatus.style.display = 'none'; // Hide button for completed diagnostics
         
@@ -1142,11 +1205,66 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
         }
     } else {
         step.classList.remove('completed'); // Remove completed class from step
-        stepStatus.innerHTML = `<span class="status-text">Skip ahead</span>`;
-        stepStatus.classList.add('skip-ahead');
-        stepStatus.classList.remove('completed');
         
-        // Non-completed diagnostics use default spacer color (gray-200)
+        // Determine which round(s) should be completed to unlock this diagnostic
+        let requiredRounds = 0;
+        if (diagnosticType === 'diagnosticMid') {
+            requiredRounds = 2; // Mid diagnostic unlocks after round 2
+        } else if (diagnosticType.startsWith('diagnosticCheckpoint')) {
+            const checkpointNum = parseInt(diagnosticType.replace('diagnosticCheckpoint', ''));
+            requiredRounds = checkpointNum * 2; // Checkpoint diagnostics unlock after every 2 rounds
+        }
+        
+        // Check if required rounds are completed and if this diagnostic should be current
+        const canTakeDiagnostic = requiredRounds > 0 && studyPathData.completedRounds >= requiredRounds;
+        const isDiagnosticCurrent = canTakeDiagnostic && studyPathData.currentRound > requiredRounds;
+        
+        if (isDiagnosticCurrent) {
+            // This diagnostic is the current step - user should take it
+            console.log(`🎯 Diagnostic ${diagnosticType} is CURRENT - adding pulse animation and twilight500 button`);
+            step.classList.add('current');
+            step.classList.remove('next');
+            stepCircle.classList.add('in-progress');
+            stepCircle.classList.remove('next', 'completed');
+            
+            // Style button like other round buttons (twilight500)
+            stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+            stepStatus.classList.remove('skip-ahead');
+            stepStatus.classList.add('in-progress');
+            
+            // Update spacer color for current diagnostic
+            if (nextSibling && nextSibling.classList.contains('step-vertical-spacer')) {
+                nextSibling.classList.add('current');
+            }
+        } else if (canTakeDiagnostic) {
+            // Diagnostic is available but not current
+            step.classList.remove('current', 'next');
+            stepCircle.classList.add('in-progress');
+            stepCircle.classList.remove('next', 'completed');
+            
+            stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+            stepStatus.classList.remove('skip-ahead');
+            stepStatus.classList.add('in-progress');
+        } else {
+            // Diagnostic not yet available
+            step.classList.remove('current');
+            step.classList.add('next');
+            stepCircle.classList.add('next');
+            stepCircle.classList.remove('in-progress', 'completed');
+            
+            // Show skip ahead button when rounds above are not completed
+            stepStatus.innerHTML = `<span class="status-text">Skip ahead</span>`;
+            stepStatus.classList.add('skip-ahead');
+            stepStatus.classList.remove('in-progress');
+            
+            // Update spacer color for next diagnostic
+            if (nextSibling && nextSibling.classList.contains('step-vertical-spacer')) {
+                nextSibling.classList.add('next');
+            }
+        }
+        
+        stepStatus.classList.remove('completed');
+        stepStatus.style.display = 'flex';
     }
 }
 
@@ -1156,6 +1274,9 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
     const isCompleted = roundNumber <= studyPathData.completedRounds;
     const isCurrent = roundNumber === studyPathData.currentRound;
     const isNext = roundNumber > studyPathData.currentRound;
+    
+    // Check if this round should be disabled because a diagnostic above it is current
+    const shouldBeDisabled = isNext && isCurrentRoundBelowActiveDiagnostic(roundNumber);
     
     // Check if this round has progress from diagnostic tests
     const roundProgress = studyPathData.roundProgress ? studyPathData.roundProgress[roundNumber] || 0 : 0;
@@ -1208,8 +1329,8 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
             nextSibling.classList.add('completed');
         }
         
-    } else if (isCurrent) {
-        // Current round (first non-completed round)
+    } else if (isCurrent && !shouldBeDisabled) {
+        // Current round (first non-completed round) - only if not disabled by diagnostic
         step.classList.add('current');
         stepCircle.classList.add('in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
@@ -1227,10 +1348,19 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
             // Update progress text for current round (only if not currently animating)
             if (stepProgressText && !stepProgressText.classList.contains('updating')) {
                 stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
-                stepProgressText.style.opacity = '1';
                 
-                // Start fade out animation after brief display
-                startProgressTextFade(stepProgressText);
+                // Check if user came from question screen for special animation
+                const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+                if (fromQuestionScreen) {
+                    // Show immediately when coming from question screen
+                    console.log('🎬 Triggering progress text entry animation for current round');
+                    showProgressTextWithFadeOut(stepProgressText);
+                } else {
+                    // Normal visibility for regular updates
+                    stepProgressText.style.opacity = '1';
+                    // Start fade out animation after brief display
+                    startProgressTextFade(stepProgressText);
+                }
             }
         } else {
             stepProgress.classList.remove('has-progress');
@@ -1245,6 +1375,34 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         // Update spacer color for current round
         if (nextSibling && nextSibling.classList.contains('step-vertical-spacer')) {
             nextSibling.classList.add('current');
+        }
+        
+    } else if (shouldBeDisabled) {
+        // Round is disabled because a diagnostic above it is current
+        console.log(`🚫 Round ${roundNumber} is DISABLED (diagnostic above is current) - no pulse animation, gray styling`);
+        step.classList.add('next');
+        step.classList.remove('current');
+        stepCircle.classList.add('next');
+        stepCircle.classList.remove('in-progress');
+        stepCircle.querySelector('.step-icon').textContent = 'star_outline';
+        
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+        stepStatus.classList.add('next');
+        stepStatus.classList.remove('in-progress');
+        stepStatus.style.display = 'flex';
+        
+        stepProgressFill.style.width = '0%';
+        stepProgress.classList.remove('has-progress');
+        
+        // Hide progress text for disabled rounds
+        if (stepProgressText) {
+            stepProgressText.textContent = '';
+        }
+        
+        // Update spacer color for disabled rounds
+        if (nextSibling && nextSibling.classList.contains('step-vertical-spacer')) {
+            nextSibling.classList.add('next');
+            nextSibling.classList.remove('current');
         }
         
     } else if (isNext) {
@@ -1330,35 +1488,62 @@ function animateCompletedSteps() {
 
 // Event Listeners
 function setupEventListeners() {
-    // Path step clicks
-    pathSteps.forEach((step, index) => {
-        step.addEventListener('click', function() {
-            // Prevent clicks on next/future rounds
-            if (step.classList.contains('next')) {
+    // Path step clicks - use event delegation since content is dynamic
+    const pathContainer = document.querySelector('.path-container');
+    if (pathContainer) {
+        pathContainer.addEventListener('click', function(e) {
+            // Find the closest path-step element
+            const step = e.target.closest('.path-step');
+            if (!step) return;
+            
+            const roundType = step.dataset.round;
+            console.log('🖱️ Clicked on step:', { roundType, classes: step.className });
+            
+            // Allow diagnostic steps to be clicked even when they have 'next' class (for "Skip ahead" functionality)
+            const isDiagnostic = roundType && (
+                roundType.startsWith('diagnostic-') || 
+                roundType === 'diagnostic'
+            );
+            
+            console.log('🖱️ Click analysis:', { 
+                roundType, 
+                isDiagnostic, 
+                hasNextClass: step.classList.contains('next'),
+                willBeBlocked: step.classList.contains('next') && !isDiagnostic
+            });
+            
+            // Prevent clicks on next/future rounds, but allow diagnostic steps
+            if (step.classList.contains('next') && !isDiagnostic) {
+                console.log('🚫 Click blocked - next round that is not diagnostic');
                 return;
             }
             
-            const roundType = step.dataset.round;
-            
             if (roundType === 'diagnostic-initial') {
+                console.log('🎯 Starting initial diagnostic test');
                 startDiagnosticTest('initial');
             } else if (roundType === 'diagnostic-mid') {
+                console.log('🎯 Starting mid diagnostic test');
                 startDiagnosticTest('mid');
             } else if (roundType.startsWith('diagnostic-checkpoint')) {
                 const checkpointNum = roundType.replace('diagnostic-checkpoint', '');
+                console.log('🎯 Starting checkpoint diagnostic test:', checkpointNum);
                 startDiagnosticTest(`checkpoint${checkpointNum}`);
             } else if (roundType === 'diagnostic') {
                 // Legacy support for old diagnostic format
+                console.log('🎯 Starting legacy diagnostic test');
                 startDiagnosticTest('initial');
             } else {
                 const roundNumber = parseInt(roundType);
                 // Additional check: only allow current round or earlier
                 if (roundNumber <= studyPathData.currentRound) {
-                startRound(roundNumber);
+                    console.log('🎯 Starting round:', roundNumber);
+                    startRound(roundNumber);
+                } else {
+                    console.log('🚫 Click blocked - future round');
                 }
             }
         });
-    });
+    }
     
     // Keyboard navigation
     document.addEventListener('keydown', function(e) {
