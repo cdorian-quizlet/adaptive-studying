@@ -1190,19 +1190,19 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
         stepCircle.classList.add('completed');
         stepCircle.classList.remove('in-progress', 'next');
         stepCircle.querySelector('.step-icon').textContent = 'check';
-        stepStatus.style.display = 'none'; // Hide button for completed diagnostics
+        
+        // Keep button visible for completed diagnostics so users can retake them
+        stepStatus.innerHTML = `<span class="status-text">Retake</span>`;
+        stepStatus.classList.remove('in-progress', 'skip-ahead');
+        stepStatus.classList.add('completed');
+        stepStatus.style.display = 'flex';
         
         // Update spacer color for completed diagnostics
         if (nextSibling && nextSibling.classList.contains('step-vertical-spacer')) {
             nextSibling.classList.add('completed');
         }
         
-        // Add spacer after completed diagnostic if it doesn't exist
-        if (!step.nextElementSibling || !step.nextElementSibling.classList.contains('step-spacer')) {
-            const spacer = document.createElement('div');
-            spacer.className = 'step-spacer';
-            step.parentNode.insertBefore(spacer, step.nextElementSibling);
-        }
+        // Don't add extra spacers - diagnostics already have step-vertical-spacer elements
     } else {
         step.classList.remove('completed'); // Remove completed class from step
         
@@ -2043,12 +2043,15 @@ function updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRa
         // Dynamic mapping based on questionsPerRound
         const roundNumber = Math.ceil(cardNumber / studyPathData.questionsPerRound);
         if (roundNumber >= 1 && roundNumber <= totalConcepts) {
-            // Add to existing progress rather than overwriting
-            roundProgress[roundNumber] = Math.max(roundProgress[roundNumber] || 0, 
-                                                 (roundProgress[roundNumber] || 0) + 1);
+            // Initialize round progress if it doesn't exist
+            if (!roundProgress[roundNumber]) {
+                roundProgress[roundNumber] = 0;
+            }
             
-            // Ensure we don't exceed questionsPerRound for any round
-            roundProgress[roundNumber] = Math.min(roundProgress[roundNumber], studyPathData.questionsPerRound);
+            // Increment progress for this round (each learned card adds 1 to progress)
+            roundProgress[roundNumber] = Math.min(roundProgress[roundNumber] + 1, studyPathData.questionsPerRound);
+            
+            console.log(`Card ${cardNumber} -> Round ${roundNumber} progress: ${roundProgress[roundNumber]}/${studyPathData.questionsPerRound}`);
         }
     });
     
@@ -2057,7 +2060,13 @@ function updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRa
     
     console.log('Updated round progress:', roundProgress);
     
-    // Don't save here - let the caller handle saving to avoid conflicts
+    // Save the updated round progress to localStorage
+    try {
+        localStorage.setItem('roundProgressData', JSON.stringify(roundProgress));
+        console.log('Round progress data saved to localStorage:', roundProgress);
+    } catch (error) {
+        console.error('Failed to save round progress data:', error);
+    }
 }
 
 // Initialize material icons
