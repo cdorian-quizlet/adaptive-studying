@@ -1193,8 +1193,8 @@ function updateDiagnosticStep(step, stepCircle, stepStatus, diagnosticType) {
         
         // Keep button visible for completed diagnostics so users can retake them
         stepStatus.innerHTML = `<span class="status-text">Retake</span>`;
-        stepStatus.classList.remove('in-progress', 'skip-ahead');
-        stepStatus.classList.add('completed');
+        stepStatus.classList.remove('in-progress');
+        stepStatus.classList.add('skip-ahead'); // Keep skip-ahead styling for proper button appearance
         stepStatus.style.display = 'flex';
         
         // Update spacer color for completed diagnostics
