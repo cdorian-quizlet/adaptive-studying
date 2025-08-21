@@ -647,9 +647,16 @@ function initializeHeader() {
             // Close study session with confirmation
             if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
                 // Save current progress before leaving
+                saveRoundProgress();
+                updateStudyPathData();
+                
                 if (window.StudyPath) {
                     window.StudyPath.updateRoundProgress(currentRoundProgress);
                 }
+                
+                // Set flag that user is coming from question screen for animation
+                sessionStorage.setItem('fromQuestionScreen', 'true');
+                
                 window.location.href = '../html/study-plan.html';
             }
         },
@@ -1136,6 +1143,47 @@ function nextQuestion() {
     }, 150);
 }
 
+// Update studyPathData with current progress 
+function updateStudyPathData() {
+    try {
+        // Load existing studyPathData or create new one
+        let studyPathData = {};
+        const savedData = localStorage.getItem('studyPathData');
+        if (savedData) {
+            studyPathData = JSON.parse(savedData);
+        }
+        
+        // Update current round and progress
+        studyPathData.currentRound = currentRoundNumber;
+        studyPathData.currentRoundProgress = currentRoundProgress;
+        
+        // Update round-specific progress
+        if (!studyPathData.roundProgress) {
+            studyPathData.roundProgress = {};
+        }
+        
+        // Update progress for current round
+        studyPathData.roundProgress[currentRoundNumber] = currentRoundProgress;
+        
+        // Calculate completed rounds based on questions with 'completed' format
+        const completedQuestions = questions.filter(q => q.currentFormat === 'completed').length;
+        const questionsPerRound = studyPathData.questionsPerRound || 7;
+        const completedRounds = Math.floor(completedQuestions / questionsPerRound);
+        studyPathData.completedRounds = Math.max(studyPathData.completedRounds || 0, completedRounds);
+        
+        // Save updated studyPathData
+        localStorage.setItem('studyPathData', JSON.stringify(studyPathData));
+        
+        console.log('Updated studyPathData from study screen:', {
+            currentRound: studyPathData.currentRound,
+            currentRoundProgress: studyPathData.currentRoundProgress,
+            completedRounds: studyPathData.completedRounds
+        });
+    } catch (error) {
+        console.error('Error updating studyPathData:', error);
+    }
+}
+
 // Save current round progress
 function saveRoundProgress() {
     // Calculate overall progress across all questions for home screen
@@ -1158,6 +1206,9 @@ function saveRoundProgress() {
         questionsInRound: questionsInRound.map(q => q.id)
     };
     localStorage.setItem('roundProgressData', JSON.stringify(roundProgressData));
+    
+    // Also update studyPathData to keep it in sync
+    updateStudyPathData();
     
     // Update study path progress
     if (window.StudyPath) {
@@ -1196,9 +1247,15 @@ function completeRound() {
     // Save final progress
     saveRoundProgress();
     
+    // Update studyPathData to mark round as completed
+    updateStudyPathData();
+    
     // Clear round progress data for completed round
     delete roundProgressData[currentRoundNumber];
     localStorage.setItem('roundProgressData', JSON.stringify(roundProgressData));
+    
+    // Set flag that user is coming from question screen for animation
+    sessionStorage.setItem('fromQuestionScreen', 'true');
     
     // Navigate back to study path
     window.location.href = '../html/study-plan.html';
@@ -1249,10 +1306,15 @@ function endStudySession() {
         window.StudyPath.updateRoundProgress(questionsPerRound);
     }
     
+    // Save final progress and update studyPathData
+    saveRoundProgress();
+    updateStudyPathData();
+    
     // Save accuracy to localStorage
     localStorage.setItem('studyAccuracy', accuracy);
     
-
+    // Set flag that user is coming from question screen for animation
+    sessionStorage.setItem('fromQuestionScreen', 'true');
     
     // Navigate to study path screen
     window.location.href = '../html/study-plan.html';

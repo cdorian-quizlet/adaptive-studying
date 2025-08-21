@@ -1723,6 +1723,26 @@ function updateRoundProgressFromStudyData() {
 
 // Save study plan data to localStorage
 function saveStudyPathData() {
+    // Before saving, check if there's newer progress data from the study screen
+    const currentRoundProgressFromStorage = localStorage.getItem('currentRoundProgress');
+    const currentRoundNumberFromStorage = localStorage.getItem('currentRoundNumber');
+    
+    if (currentRoundProgressFromStorage && currentRoundNumberFromStorage) {
+        const storedProgress = parseInt(currentRoundProgressFromStorage);
+        const storedRoundNumber = parseInt(currentRoundNumberFromStorage);
+        
+        // Update our data with the most recent from study screen if it's newer
+        if (storedRoundNumber === studyPathData.currentRound && storedProgress > studyPathData.currentRoundProgress) {
+            console.log(`Merging newer progress from study screen: ${studyPathData.currentRoundProgress} → ${storedProgress}`);
+            studyPathData.currentRoundProgress = storedProgress;
+        }
+        
+        if (storedRoundNumber > studyPathData.currentRound) {
+            console.log(`Updating current round from study screen: ${studyPathData.currentRound} → ${storedRoundNumber}`);
+            studyPathData.currentRound = storedRoundNumber;
+        }
+    }
+    
     localStorage.setItem('studyPathData', JSON.stringify(studyPathData));
 }
 
