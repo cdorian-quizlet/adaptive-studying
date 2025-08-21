@@ -278,70 +278,13 @@ body {
     gap: 8px;
 }
 
-.trend-graph {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
 
-.trend-line-chart {
-    background: transparent;
-    margin-bottom: 4px;
-}
-
-.trend-path {
-    fill: none;
-    stroke: #4A5568;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.trend-end-dot {
-    fill: #4A5568;
-    r: 4;
-}
-
-.trend-labels {
-    display: flex;
-    justify-content: space-between;
-    width: 120px;
-    padding: 0 8px;
-}
-
-.trend-start-label,
-.trend-end-label {
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-caption);
-    font-style: normal;
-    font-weight: 500;
-    line-height: var(--typography-lineHeight-caption);
-    letter-spacing: var(--typography-letterSpacing-none);
-    color: var(--sys-text-secondary);
-}
 
 .daily-stats {
-    display: none; /* Hide the text below progress ring */
+    display: block; /* Always show the progress percentage text */
 }
 
-.daily-change {
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-three);
-    font-style: normal;
-    font-weight: 700;
-    line-height: var(--typography-lineHeight-subheading-three);
-    letter-spacing: var(--typography-letterSpacing-none);
-    color: var(--sys-text-primary);
-}
 
-.daily-change.positive {
-    color: var(--color-mint-500);
-}
-
-.daily-change.negative {
-    color: var(--color-red-500);
-}
 
 /* Circular progress ring styles */
 .progress-ring-bg {
@@ -352,11 +295,14 @@ body {
 .progress-ring-fill {
     stroke: url(#progressGradient);
     fill: none;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-    /* Initialize for circular progress - will be set by JavaScript */
-    stroke-dasharray: 0;
-    stroke-dashoffset: 0;
+    stroke-linecap: round; /* Creates pill shape at start/end */
+    stroke-width: 12;
+    /* Smooth animation with proper easing */
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* stroke-dasharray and stroke-dashoffset will be set by JavaScript */
+    /* Rotate to start from top (12 o'clock) and fill clockwise */
+    transform: rotate(-90deg);
+    transform-origin: center;
 }
 
 /* Progress percentage text in center */
@@ -385,11 +331,46 @@ body {
 
 /* Current round progress text fade animation */
 .step-progress-text {
-    transition: opacity 0.4s ease-out;
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .step-progress-text.fade-out {
     opacity: 0;
+}
+
+/* Progress text entry animation from question screen */
+.step-progress-text.entering {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: progressTextEnter 0.6s ease-out forwards;
+}
+
+.step-progress-text.auto-fade {
+    animation: progressTextAutoFade 3s ease-out forwards;
+}
+
+@keyframes progressTextEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes progressTextAutoFade {
+    0%, 60% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
 }
 
 @keyframes progressTextBriefShow {
@@ -418,13 +399,7 @@ body {
     stroke-width: 12;
 }
 
-.progress-ring-fill {
-    fill: none;
-    stroke: url(#progressGradient);
-    stroke-linecap: round;
-    stroke-width: 12;
-    transition: stroke-dasharray 0.6s ease;
-}
+
 
 .progress-label {
     display: none; /* Remove "Complete" label */
@@ -443,22 +418,44 @@ body {
 
 .path-step {
     position: relative;
-    display: flex;
-    align-items: center; /* Center align step-circle, step-content, and step-status */
-    gap: 16px;
+    display: block;
     padding: 0; /* Remove padding */
     background: transparent;
     border-radius: 0;
     animation: fadeInUp 0.6s ease-out;
     opacity: 0;
     animation-fill-mode: both;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    cursor: default; /* Default cursor for non-interactive rounds */
+    transition: all 0.2s ease, margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none; /* Remove border */
     margin: 0; /* Remove bottom margin */
 }
 
-.path-step:hover {
+/* Only current step gets pointer cursor */
+.path-step.current:not(.diagnostic) {
+    cursor: pointer;
+}
+
+/* Expanded state - add margin to push down subsequent content */
+.path-step.expanded {
+    margin-bottom: var(--accordion-height, 0px);
+}
+
+.path-step-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 0;
+    transition: margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Add extra spacing to step-circle when accordion is expanded */
+.path-step.expanded .path-step-main {
+    margin-bottom: 8px; /* Increases total spacing from 8px to 16px */
+}
+
+/* Only current step gets hover effects - no hover for completed/next rounds */
+.path-step.current:hover .path-step-main {
     transform: translateY(-2px);
     box-shadow: none;
 }
@@ -466,6 +463,21 @@ body {
 /* Subtle star animation on current step - always active */
 .path-step.current .step-circle {
     animation: starPulse 2s ease-in-out infinite;
+}
+
+/* Pause animation when accordion is expanded */
+.path-step.current.expanded .step-circle {
+    animation-play-state: paused;
+}
+
+/* Pulse animation for current diagnostic steps */
+.path-step.current.diagnostic .step-circle {
+    animation: starPulse 2s ease-in-out infinite;
+}
+
+/* Pause diagnostic animation when expanded */
+.path-step.current.diagnostic.expanded .step-circle {
+    animation-play-state: paused;
 }
 
 @keyframes starPulse {
@@ -560,18 +572,28 @@ body {
 }
 
 .step-circle.diagnostic {
-    background: var(--color-sherbert-200);
+    background: var(--color-sherbert-200) !important;
     color: white;
     border-radius: 16px; /* Rounded square like other steps */
-    background-image: url('../images/brand-practice-tests.png');
-    background-size: 40px 40px;
-    background-repeat: no-repeat;
-    background-position: center;
+    background-image: url('../images/brand-practice-tests.png') !important;
+    background-size: 40px 40px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
 }
 
 .step-circle.diagnostic.completed {
     background: var(--color-mint-500);
     color: white;
+}
+
+/* Ensure diagnostic circles always keep their appearance in all states */
+.step-circle.diagnostic.next,
+.step-circle.diagnostic.in-progress {
+    background: var(--color-sherbert-200) !important;
+    background-image: url('../images/brand-practice-tests.png') !important;
+    background-size: 40px 40px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
 }
 
 .step-icon {
@@ -605,6 +627,7 @@ body {
     align-items: center; /* Center align text group and status button */
     gap: 16px;
     position: relative;
+    width: 100%;
 }
 
 .step-text-group {
@@ -645,7 +668,7 @@ body {
 }
 
 .path-step.diagnostic .step-title {
-    margin-bottom: 4px;
+    margin-bottom: 0;
 }
 
 .path-step.diagnostic .step-description {
@@ -675,6 +698,8 @@ body {
     animation: fadeInUp 0.6s ease-out;
     opacity: 0;
     animation-fill-mode: both;
+    overflow: visible;
+    z-index: 0; /* Keep spacer behind accordion content */
 }
 
 .step-vertical-spacer::before {
@@ -686,6 +711,23 @@ body {
     height: 100%;
     background: var(--color-gray-200);
     border-radius: var(--radius-full, 200px);
+    transition: height 0.3s ease;
+    z-index: -2; /* Behind accordion content */
+}
+
+/* Extended vertical line overlay for expanded accordion */
+.path-step.expanded::after {
+    content: '';
+    position: absolute;
+    left: 28px; /* Align with step circle center */
+    top: 72px; /* Start after the step circle (64px height + 8px margin) */
+    width: 8px;
+    height: calc(var(--accordion-height, 0px) + 24px); /* Extend through accordion + spacer */
+    background: var(--color-twilight-200);
+    border-radius: var(--radius-full, 200px);
+    z-index: -3; /* Well behind accordion content */
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none; /* Don't interfere with clicks */
 }
 
 /* Spacer colors for different states */
@@ -747,11 +789,12 @@ body {
     color: var(--color-skyblue-700);
     font-size: 14px;
     font-weight: 600;
-    transform: none;
+    transform: scale(1);
     padding: 8px 16px;
     margin-top: 0;
     align-self: center; /* Center vertically with content and icon */
     margin-left: auto; /* Float to the right */
+    transition: all 0.2s ease;
 }
 
 .status-text {
@@ -760,6 +803,10 @@ body {
 
 .step-status.skip-ahead .status-text {
     display: block; /* Show text for skip-ahead buttons */
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-four);
+    line-height: var(--typography-lineHeight-subheading-four);
+    font-weight: 600;
 }
 
 .step-status:hover {
@@ -768,7 +815,7 @@ body {
 }
 
 .step-status.skip-ahead:hover {
-    transform: none;
+    transform: scale(1.05);
     background: var(--color-skyblue-400);
     color: var(--color-skyblue-800);
 }
@@ -790,15 +837,45 @@ body {
     transform: none;
 }
 
-/* Make next rounds non-interactive */
-.path-step.next {
+/* Make next rounds non-interactive, but allow diagnostic steps to be clickable */
+.path-step.next:not(.diagnostic) {
     cursor: default;
     pointer-events: none;
 }
 
+/* Allow diagnostic steps with "Skip ahead" to be clickable */
+.path-step.next.diagnostic {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* Remove hover effects for all non-current steps */
+.path-step.completed:hover,
 .path-step.next:hover {
     transform: none;
     box-shadow: none;
+}
+
+.path-step.completed:hover .path-step-main,
+.path-step.next:hover .path-step-main {
+    transform: none;
+    background: transparent;
+}
+
+/* Allow diagnostic next steps to have hover effects for skip-ahead functionality */
+.path-step.next.diagnostic:hover {
+    transform: translateY(-2px);
+}
+
+/* Disabled appearance for rounds below current diagnostic - exclude diagnostics */
+.path-step.next .step-circle.next:not(.diagnostic) {
+    background: var(--color-gray-400);
+    color: var(--sys-text-primary);
+    border-radius: 16px;
+    background-image: url('../images/star-filled-disabled.png');
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .step-status.in-progress {
@@ -808,6 +885,20 @@ body {
 .step-status.diagnostic.skip-ahead {
     background: transparent;
     color: var(--color-twilight-500);
+}
+
+.step-status.diagnostic.in-progress {
+    background: var(--color-twilight-500);
+    color: white;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
 }
 
 .status-icon {
@@ -880,8 +971,12 @@ body {
 
 /* Diagnostic Test Styles */
 .path-step.diagnostic .step-circle {
-    background: var(--color-sherbert-400);
-    border-color: var(--color-sherbert-400);
+    background: var(--color-sherbert-200);
+    border-color: var(--color-sherbert-200);
+    background-image: url('../images/brand-practice-tests.png');
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .path-step.diagnostic .step-status {
@@ -895,6 +990,11 @@ body {
 .path-step.diagnostic .step-status:hover {
     background: var(--color-gray-300);
     color: var(--color-twilight-500);
+}
+
+.step-status.diagnostic.in-progress:hover {
+    background: var(--color-twilight-600);
+    transform: scale(1.05);
 }
 
 /* Animations */
@@ -943,4 +1043,197 @@ body {
     outline: 2px solid var(--color-twilight-500);
     outline-offset: 2px;
 }
+
+/* Ensure header button icons use secondary text color on study plan screen */
+.study-path-header .settings-btn,
+.study-path-header button.settings-btn {
+    color: var(--sys-text-secondary);
+}
+
+.study-path-header .back-btn .material-symbols-rounded,
+.study-path-header button.back-btn .material-symbols-rounded {
+    color: var(--sys-text-secondary);
+}
+
+/* Accordion Styles */
+.step-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--sys-surface-base);
+    position: absolute;
+    top: 100%;
+    left: 44px; /* Position to the right of vertical line (28px + 8px + 8px spacing) */
+    right: 20px; /* Right margin for page padding */
+    margin-top: 8px; /* Collapsed spacing */
+    z-index: 10; /* Above all vertical elements */
+}
+
+.path-step.expanded .step-accordion-content {
+    background: var(--sys-surface-raised);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px; /* Expanded spacing */
+}
+
+.accordion-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.accordion-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.accordion-section-title {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-five);
+    font-style: normal;
+    font-weight: 400;
+    line-height: var(--typography-lineHeight-body-five);
+    letter-spacing: var(--typography-letterSpacing-none);
+    color: var(--color-gray-500);
+    margin: 0;
+}
+
+.accordion-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.accordion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.accordion-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.accordion-text {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-five);
+    font-style: normal;
+    font-weight: 400;
+    line-height: var(--typography-lineHeight-body-five);
+    letter-spacing: var(--typography-letterSpacing-none);
+    color: var(--color-gray-500);
+}
+
+/* Completed items (checkmarks) */
+.accordion-item.completed .accordion-icon {
+    background: url('../images/circled-check-filled-gray.png') center/contain no-repeat;
+    color: transparent; /* Hide any text */
+}
+
+/* Planned items (circles) */
+.accordion-item.planned .accordion-icon {
+    background: transparent;
+    color: var(--color-gray-500);
+    border: 2px solid var(--color-gray-500);
+    font-size: 8px;
+}
+
+/* Loading items (spinner) */
+.accordion-item.loading .accordion-icon {
+    background: url('../images/spinner.png') center/contain no-repeat;
+    color: transparent; /* Hide any text */
+    border: none;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Visual indicator for expandable rounds - only current step */
+
+.path-step.current:not(.diagnostic) .path-step-main {
+    border-radius: 12px;
+    padding: 8px;
+    margin: -8px;
+    transition: all 0.2s ease;
+}
+
+.path-step.current:not(.diagnostic):hover .path-step-main {
+    background: var(--color-twilight-50);
+}
+
+/* Expanded state styling */
+.path-step.expanded .path-step-main {
+    background: var(--color-twilight-50);
+}
+
+/* Ensure the accordion content flows properly below the round */
+.path-step .step-content {
+    width: 100%;
+}
+
+.step-accordion-content {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* Ensure play button is still clickable */
+.step-status {
+    position: relative;
+    z-index: 2;
+}
+
+/* Hide accordion content for diagnostic steps */
+.path-step.diagnostic .step-accordion-content {
+    display: none !important;
+}
+
+/* Make a change button */
+.accordion-action {
+    margin-top: 8px;
+}
+
+.make-change-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--color-twilight-100);
+    color: var(--color-twilight-600);
+    border: none;
+    border-radius: 8px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-four);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.make-change-btn:hover {
+    background: var(--color-twilight-200);
+    color: var(--color-twilight-700);
+}
+
+.make-change-icon {
+    font-size: 16px;
+}
+
+.make-change-text {
+    font-weight: 600;
+}
+
+
 

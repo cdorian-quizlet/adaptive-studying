@@ -10,6 +10,18 @@ let questionsPerRound = 7;
 let currentRoundNumber = 1; // Track current round number
 let roundProgressData = {}; // Track progress within each round
 
+// Round themes mapping
+const roundThemes = {
+    1: "Cell Structure & Function",
+    2: "Organelles & Metabolism", 
+    3: "Membrane Biology",
+    4: "Cellular Processes",
+    5: "Advanced Cell Biology",
+    6: "Cell Division & Growth",
+    7: "Specialized Cells",
+    8: "Final Concepts"
+};
+
 
 
 // Question data with adaptive difficulty tracking
@@ -640,9 +652,13 @@ async function fetchAndLoadQuestionsFromApi() {
 
 // Initialize header component
 function initializeHeader() {
+    const roundTheme = roundThemes[currentRoundNumber] || "Study Session";
+    const headerTitle = `Round ${currentRoundNumber}: ${roundTheme}`;
+    
     appHeader = new AppHeader({
         backUrl: '../html/study-plan.html',
         backButtonIcon: 'close',
+        title: headerTitle,
         onBackClick: function() {
             // Close study session with confirmation
             if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
@@ -661,12 +677,20 @@ function initializeHeader() {
             }
         },
         onSettingsClick: function() {
-            console.log('Settings clicked from study screen');
-            window.location.href = '../html/plan-settings.html';
+            showToast('Round settings coming soon!');
         }
     });
     
     appHeader.init();
+}
+
+// Update header title for current round
+function updateHeaderTitle() {
+    if (appHeader) {
+        const roundTheme = roundThemes[currentRoundNumber] || "Study Session";
+        const headerTitle = `Round ${currentRoundNumber}: ${roundTheme}`;
+        appHeader.setTitle(headerTitle);
+    }
 }
 
 // Initialize the study session
@@ -696,6 +720,9 @@ async function initStudySession() {
     // Initialize header component
     initializeHeader();
     
+    // Update header title in case round number was loaded from storage
+    updateHeaderTitle();
+    
     initFirstRound();
     setupEventListeners();
 }
@@ -709,6 +736,9 @@ function startNewRound() {
     
     questionsInRound = [];
     currentRoundNumber++;
+    
+    // Update header title for new round
+    updateHeaderTitle();
     
     // Check if we have saved questions for this round
     const roundData = roundProgressData[currentRoundNumber];
@@ -1275,16 +1305,36 @@ function updateProgress(forceFullProgress = false) {
         roundProgress = (currentQuestionIndex / questionsInRound.length) * 100;
     }
     
-    progressFill.style.width = `${roundProgress}%`;
-    currentQuestionEl.textContent = currentQuestionIndex + 1;
-    
-    // Position the counter at the end of the filled section
+    const progressBar = document.querySelector('.progress-bar');
     const progressCounter = document.getElementById('progressCounter');
-    if (progressCounter) {
-        // Calculate position: right edge of progress bar minus the progress percentage
-        const rightPosition = 100 - roundProgress;
-        progressCounter.style.right = `${rightPosition}%`;
+    
+    // Handle zero state (first question)
+    if (roundProgress === 0) {
+        // Add zero-state class for CSS styling
+        if (progressBar) {
+            progressBar.classList.add('zero-state');
+        }
+        // CSS handles the styling, but we still need to clear any inline styles
+        if (progressFill) {
+            progressFill.style.width = '';
+        }
+        if (progressCounter) {
+            progressCounter.style.left = '';
+        }
+    } else {
+        // Remove zero-state class and use normal progress
+        if (progressBar) {
+            progressBar.classList.remove('zero-state');
+        }
+        if (progressFill) {
+            progressFill.style.width = `${roundProgress}%`;
+        }
+        if (progressCounter) {
+            progressCounter.style.left = `${roundProgress}%`;
+        }
     }
+    
+    currentQuestionEl.textContent = currentQuestionIndex + 1;
     
     // Save progress to localStorage
     saveRoundProgress();

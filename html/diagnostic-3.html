@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diagnostic Test 3 - BIOL 210</title>
+    <title>Quiz 3 - BIOL 210</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/study-styles.css">
+    <link rel="stylesheet" href="../css/components/header.css">
     <link rel="stylesheet" href="../css/components/progress-bar.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -117,10 +118,10 @@
         }
         
         .intro-icon {
-            width: 64px;
-            height: 64px;
+            width: 88px;
+            height: 88px;
             margin: 0 auto 24px;
-            background: url('images/brand-practice-tests.png') no-repeat center;
+            background: url('../images/brand-practice-tests.png') no-repeat center;
             background-size: contain;
         }
         
@@ -128,43 +129,83 @@
             font-size: 28px;
             font-weight: 700;
             color: #1F2937;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         
-        .intro-text {
-            background: #F6F7FB;
+        .intro-subtitle {
+            font-family: var(--typography-fontFamily);
+            font-size: var(--typography-size-subheading-three);
+            font-style: normal;
+            font-weight: 600;
+            line-height: var(--typography-lineHeight-subheading-three);
+            letter-spacing: var(--typography-letterSpacing-none);
+            color: var(--sys-text-secondary);
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        
+        .intro-details {
+            background: var(--sys-surface-raised);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 32px;
             text-align: left;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-xlarge);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
         
-        .intro-text ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+        .detail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
         }
         
-        .intro-text li {
-            color: #4B5563;
-            font-size: 16px;
-            line-height: 1.5;
-            margin-bottom: 8px;
-            padding-left: 20px;
-            position: relative;
+        .detail-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-twilight-500);
+            flex-shrink: 0;
+            margin-top: 2px;
         }
         
-        .intro-text li::before {
-            content: '•';
-            color: #9CA3AF;
-            font-weight: bold;
-            position: absolute;
-            left: 0;
+        .detail-icon .material-symbols-rounded {
+            font-size: 24px;
         }
         
-        .intro-text li:last-child {
-            margin-bottom: 0;
+        .detail-icon img {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .detail-content {
+            flex: 1;
+        }
+        
+        .detail-title {
+            font-family: var(--typography-fontFamily);
+            font-size: var(--typography-size-subheading-four);
+            font-style: normal;
+            font-weight: 600;
+            line-height: var(--typography-lineHeight-subheading-four);
+            letter-spacing: var(--typography-letterSpacing-none);
+            color: var(--sys-text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .detail-description {
+            font-family: var(--typography-fontFamily);
+            font-size: var(--typography-size-body-four);
+            font-style: normal;
+            font-weight: 400;
+            line-height: var(--typography-lineHeight-body-four);
+            letter-spacing: var(--typography-letterSpacing-none);
+            color: var(--sys-text-secondary);
         }
         
         .start-test-btn {
@@ -173,8 +214,12 @@
             border: none;
             padding: 0 40px;
             border-radius: 32px;
-            font-size: 16px;
+            font-family: var(--typography-fontFamily);
+            font-size: var(--typography-size-subheading-three);
+            font-style: normal;
             font-weight: 600;
+            line-height: var(--typography-lineHeight-subheading-three);
+            letter-spacing: var(--typography-letterSpacing-none);
             cursor: pointer;
             transition: all 0.2s ease;
             width: 100%;
@@ -244,11 +289,7 @@
         
 
         
-        /* Override question container for diagnostic tests */
-        .question-container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        /* Use regular study styles for question container */
         
         /* Results screen styling */
         .diagnostic-results {
@@ -322,50 +363,40 @@
             transform: translateY(-1px);
         }
         
-        /* Ensure header is always visible during test */
-        .study-header {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        
-        .header-top {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        
-        .close-btn {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
+        /* Remove custom header overrides - use regular study styles */
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
-        <header class="study-header">
-            <div class="header-top">
-                <button class="close-btn" id="closeBtn">
-                    <span class="material-icons-round">close</span>
-                </button>
-            </div>
-        </header>
+        <!-- Header will be inserted here by AppHeader component -->
 
         <!-- Intro Screen -->
         <div class="intro-screen" id="introScreen">
             <div class="intro-content">
                 <div class="intro-icon"></div>
-                <div class="intro-title">Diagnostic Test 3</div>
-                <div class="intro-text">
-                    <ul>
-                        <li>Samples content from cards 36-50</li>
-                        <li>10 multiple choice and written questions</li>
-                        <li>You got this!</li>
-                    </ul>
+                <div class="intro-title">Let's start with a diagnostic</div>
+                <div class="intro-subtitle">Your study plan will be personalized based on what you already know</div>
+                <div class="intro-details">
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <span class="material-symbols-rounded">web_stories</span>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-title">10 Questions</div>
+                            <div class="detail-description">Sampled across all concepts</div>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <img src="../images/sparkle-twilight.png" alt="" width="24" height="24">
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-title">Question types</div>
+                            <div class="detail-description">Multiple choice and written</div>
+                        </div>
+                    </div>
                 </div>
-                <button class="start-test-btn" id="startTestBtn">Start test</button>
+                <button class="start-test-btn" id="startTestBtn">Start diagnostic test</button>
             </div>
         </div>
 
@@ -409,7 +440,7 @@
         <!-- Results Screen -->
         <div class="diagnostic-results" id="resultsScreen">
             <div class="results-card">
-                <h2 class="results-title">Diagnostic Test Complete!</h2>
+                <h2 class="results-title">Quiz Complete!</h2>
                 <div class="results-stats" id="resultsStats">
                     <!-- Stats will be populated here -->
                 </div>
@@ -418,6 +449,7 @@
         </div>
     </div>
 
+    <script src="../js/components/header.js"></script>
     <script src="../js/diagnostic-3.js"></script>
 </body>
 </html> 

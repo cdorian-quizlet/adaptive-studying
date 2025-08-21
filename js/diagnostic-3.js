@@ -123,6 +123,9 @@ const diagnosticQuestions = [
     }
 ];
 
+// Header component instance
+let appHeader = null;
+
 // DOM elements (will be initialized when DOM loads)
 let questionContainer, questionText, questionPrompt, multipleChoice, textInput, textAnswer, submitBtn;
 let currentQuestionEl, totalQuestionsEl, progressFill, closeBtn;
@@ -168,8 +171,33 @@ function handleIconLoading() {
     }
 }
 
+// Initialize header component
+function initializeHeader() {
+    appHeader = new AppHeader({
+        backUrl: '../html/study-plan.html',
+        backButtonIcon: 'close',
+        title: 'Quiz 3',
+        loadTitleFromStorage: false,
+        onBackClick: function() {
+            if (confirm('Are you sure you want to exit the diagnostic test? Your progress will be lost.')) {
+                window.location.href = '../html/study-plan.html';
+            }
+        },
+        onSettingsClick: function() {
+            if (appHeader) {
+                appHeader.showToast('Quiz settings coming soon!');
+            }
+        }
+    });
+    
+    appHeader.init();
+}
+
 // Initialize the diagnostic test
 async function initDiagnosticTest() {
+    // Initialize header component
+    initializeHeader();
+    
     // Initialize DOM elements
     questionContainer = document.getElementById('questionContainer');
     questionText = document.getElementById('questionText');
@@ -446,17 +474,39 @@ function updateStudyPathProgress() {
 
 // Update progress bar and counter
 function updateProgress() {
-    const progress = ((currentQuestionIndex + 1) / testQuestions.length) * 100;
-    progressFill.style.width = `${progress}%`;
-    currentQuestionEl.textContent = currentQuestionIndex + 1;
+    // Progress fill shows completed questions
+    const fillProgress = (currentQuestionIndex / testQuestions.length) * 100;
     
-    // Position the counter at the end of the filled section
+    const progressBar = document.querySelector('.progress-bar');
     const progressCounter = document.getElementById('progressCounter');
-    if (progressCounter) {
-        // Calculate position: right edge of progress bar minus the progress percentage
-        const rightPosition = 100 - progress;
-        progressCounter.style.right = `${rightPosition}%`;
+    
+    // Handle zero state (first question)
+    if (fillProgress === 0) {
+        // Add zero-state class for CSS styling
+        if (progressBar) {
+            progressBar.classList.add('zero-state');
+        }
+        // CSS handles the styling, but we still need to clear any inline styles
+        if (progressFill) {
+            progressFill.style.width = '';
+        }
+        if (progressCounter) {
+            progressCounter.style.left = '';
+        }
+    } else {
+        // Remove zero-state class and use normal progress
+        if (progressBar) {
+            progressBar.classList.remove('zero-state');
+        }
+        if (progressFill) {
+            progressFill.style.width = `${fillProgress}%`;
+        }
+        if (progressCounter) {
+            progressCounter.style.left = `${fillProgress}%`;
+        }
     }
+    
+    currentQuestionEl.textContent = currentQuestionIndex + 1;
 }
 
 // Setup event listeners
@@ -497,12 +547,7 @@ function setupEventListeners() {
         showQuestion();
     });
     
-    // Navigation buttons
-    closeBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to exit the diagnostic test? Your progress will be lost.')) {
-        window.location.href = '../html/study-plan.html';
-        }
-    });
+    // Navigation is now handled by AppHeader component
     
     continueBtn.addEventListener('click', () => {
         window.location.href = '../html/study-plan.html?diagnostic=3&accuracy=' + testResults.accuracy;

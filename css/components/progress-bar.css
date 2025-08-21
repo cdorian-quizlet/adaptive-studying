@@ -18,7 +18,7 @@
     height: 100%;
     background: var(--color-twilight-400);
     border-radius: 8px;
-    transition: width 0.3s ease;
+    transition: width 0.3s ease, background-color 0.3s ease;
     width: 0%;
     position: absolute;
     left: 0;
@@ -28,7 +28,7 @@
 
 .progress-counter {
     position: absolute;
-    right: 0;
+    left: 0;
     background: var(--color-twilight-500);
     color: white;
     width: 32px;
@@ -43,16 +43,22 @@
     font-weight: 700;
     line-height: var(--typography-lineHeight-header-five);
     letter-spacing: var(--typography-letterSpacing-none);
-    transform: translate(50%, -50%);
+    transform: translate(-50%, -50%);
     top: 50%;
     z-index: 2;
-    transition: right 0.3s ease;
+    transition: left 0.3s ease, background-color 0.3s ease;
     white-space: nowrap;
     text-align: center;
     box-shadow: var(--shadow-small);
 }
 
-/* 0% state styling - keep counter at start */
+/* Zero state styling - first question */
+.progress-bar.zero-state .progress-fill {
+    width: 40px;
+    background: var(--color-twilight-400);
+}
+
 .progress-bar.zero-state .progress-counter {
-    right: calc(100% - 16px);
+    left: 24px; /* 8px from left edge + 16px to center on the small fill */
+    background: var(--color-twilight-500);
 } 

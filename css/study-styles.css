@@ -330,18 +330,22 @@ body {
     background: var(--sys-interactive-bg-primary-default);
     color: white;
     border: none;
-    border-radius: 25px;
+    border-radius: var(--radius-full);
     padding: 16px 32px;
-    font-size: 16px;
-    font-weight: 600;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-three);
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-none);
     cursor: pointer;
     transition: all 0.2s ease;
     position: fixed;
     bottom: 20px;
-    left: 20px;
-    right: 20px;
-    max-width: 480px;
-    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 440px;
     z-index: 100;
     display: block;
     box-shadow: var(--shadow-large);
@@ -453,7 +457,7 @@ body {
     }
     
     .continue-btn {
-        max-width: 520px;
+        max-width: 480px;
     }
     
     .question-card, .feedback-card {
@@ -473,7 +477,7 @@ body {
     }
     
     .continue-btn {
-        max-width: 560px;
+        max-width: 520px;
     }
 }
 

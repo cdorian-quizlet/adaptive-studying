@@ -35,6 +35,18 @@ button.settings-btn,
     appearance: none;
 }
 
+/* Settings button icon uses secondary text color */
+button.settings-btn,
+.settings-btn {
+    color: var(--sys-text-secondary);
+}
+
+/* Close icon (X) in back button uses secondary text color */
+button.back-btn .material-symbols-rounded,
+.back-btn .material-symbols-rounded {
+    color: var(--sys-text-secondary);
+}
+
 button.back-btn:hover,
 button.settings-btn:hover,
 .back-btn:hover,

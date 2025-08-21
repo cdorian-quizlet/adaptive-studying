@@ -658,6 +658,10 @@ function generateDynamicStudyPlan() {
     }
 }
 
+
+
+
+
 // Generate HTML for path steps based on concepts
 function generatePathStepsHTML() {
     let html = '';
@@ -667,20 +671,22 @@ function generatePathStepsHTML() {
     function generateDiagnosticHTML(type, title, description) {
         return `
             <div class="path-step diagnostic" data-round="diagnostic-${type}">
-                <div class="step-indicator">
-                    <div class="step-circle">
-                        <span class="material-icons-round step-icon loaded">quiz</span>
-                    </div>
-                    <div class="step-line"></div>
-                </div>
-                <div class="step-content">
-                    <div class="step-header">
-                        <div>
-                            <h3 class="step-title">${title}</h3>
-                            <p class="step-description">${description}</p>
+                <div class="path-step-main">
+                    <div class="step-indicator">
+                        <div class="step-circle">
+                            <span class="material-icons-round step-icon loaded">quiz</span>
                         </div>
-                        <div class="step-status skip-ahead" id="diagnostic${type.charAt(0).toUpperCase() + type.slice(1)}Status">
-                            <span class="status-text">Skip ahead</span>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-header">
+                            <div>
+                                <h3 class="step-title">${title}</h3>
+                                <p class="step-description">${description}</p>
+                            </div>
+                            <div class="step-status skip-ahead" id="diagnostic${type.charAt(0).toUpperCase() + type.slice(1)}Status">
+                                <span class="status-text">Skip ahead</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -693,26 +699,33 @@ function generatePathStepsHTML() {
     function generateRoundHTML(concept, roundNumber, hasNextStep) {
         return `
             <div class="path-step" data-round="${roundNumber}">
-                <div class="step-indicator">
-                    <div class="step-circle">
-                        <span class="material-icons-round step-icon loaded">star_outline</span>
+                <div class="path-step-main">
+                    <div class="step-indicator">
+                        <div class="step-circle">
+                            <span class="material-icons-round step-icon loaded">star_outline</span>
+                        </div>
+                        ${hasNextStep ? '<div class="step-line"></div>' : ''}
                     </div>
-                    ${hasNextStep ? '<div class="step-line"></div>' : ''}
-                </div>
-                <div class="step-content">
-                    <div class="step-text-group">
-                        <h3 class="step-title">Round ${roundNumber}</h3>
-                        <p class="step-description">${concept}</p>
-                        <div class="step-progress">
-                            <div class="step-progress-bar">
-                                <div class="step-progress-fill" style="width: 0%"></div>
+                    <div class="step-content">
+                        <div class="step-text-group">
+                            <h3 class="step-title">Round ${roundNumber}</h3>
+                            <p class="step-description">${concept}</p>
+                            <div class="step-progress">
+                                <div class="step-progress-bar">
+                                    <div class="step-progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span class="step-progress-text">0/${studyPathData.questionsPerRound}</span>
                             </div>
-                            <span class="step-progress-text">0/${studyPathData.questionsPerRound}</span>
+                        </div>
+                        <div class="step-status" id="round${roundNumber}Status">
+                            <span class="material-icons-round loaded">play_arrow</span>
+                            <span class="status-text">Start</span>
                         </div>
                     </div>
-                    <div class="step-status" id="round${roundNumber}Status">
-                        <span class="material-icons-round loaded">play_arrow</span>
-                        <span class="status-text">Start</span>
+                </div>
+                <div class="step-accordion-content">
+                    <div class="accordion-inner">
+                        ${getAccordionContent(roundNumber)}
                     </div>
                 </div>
             </div>
@@ -1492,55 +1505,82 @@ function setupEventListeners() {
     const pathContainer = document.querySelector('.path-container');
     if (pathContainer) {
         pathContainer.addEventListener('click', function(e) {
-            // Find the closest path-step element
+            // Check if click was on the play button (step-status)
+            const playButton = e.target.closest('.step-status');
+            if (playButton) {
+                // Handle play button click - start round/diagnostic
+                const step = playButton.closest('.path-step');
+                if (!step) return;
+                
+                const roundType = step.dataset.round;
+                console.log('🎯 Play button clicked:', { roundType, classes: step.className });
+                
+                // Allow diagnostic steps to be clicked even when they have 'next' class (for "Skip ahead" functionality)
+                const isDiagnostic = roundType && (
+                    roundType.startsWith('diagnostic-') || 
+                    roundType === 'diagnostic'
+                );
+                
+                // Prevent clicks on next/future rounds, but allow diagnostic steps
+                if (step.classList.contains('next') && !isDiagnostic) {
+                    console.log('🚫 Play button click blocked - next round that is not diagnostic');
+                    return;
+                }
+                
+                if (roundType === 'diagnostic-initial') {
+                    console.log('🎯 Starting initial diagnostic test');
+                    startDiagnosticTest('initial');
+                } else if (roundType === 'diagnostic-mid') {
+                    console.log('🎯 Starting mid diagnostic test');
+                    startDiagnosticTest('mid');
+                } else if (roundType.startsWith('diagnostic-checkpoint')) {
+                    const checkpointNum = roundType.replace('diagnostic-checkpoint', '');
+                    console.log('🎯 Starting checkpoint diagnostic test:', checkpointNum);
+                    startDiagnosticTest(`checkpoint${checkpointNum}`);
+                } else if (roundType === 'diagnostic') {
+                    // Legacy support for old diagnostic format
+                    console.log('🎯 Starting legacy diagnostic test');
+                    startDiagnosticTest('initial');
+                } else {
+                    const roundNumber = parseInt(roundType);
+                    // Additional check: only allow current round or earlier
+                    if (roundNumber <= studyPathData.currentRound) {
+                        console.log('🎯 Starting round:', roundNumber);
+                        startRound(roundNumber);
+                    } else {
+                        console.log('🚫 Play button click blocked - future round');
+                    }
+                }
+                return;
+            }
+            
+            // Check if click was elsewhere on the path-step (accordion toggle)
             const step = e.target.closest('.path-step');
             if (!step) return;
             
             const roundType = step.dataset.round;
-            console.log('🖱️ Clicked on step:', { roundType, classes: step.className });
+            console.log('📋 Accordion click on step:', { roundType, classes: step.className });
             
-            // Allow diagnostic steps to be clicked even when they have 'next' class (for "Skip ahead" functionality)
+            // Don't expand accordion for diagnostic steps
             const isDiagnostic = roundType && (
                 roundType.startsWith('diagnostic-') || 
                 roundType === 'diagnostic'
             );
             
-            console.log('🖱️ Click analysis:', { 
-                roundType, 
-                isDiagnostic, 
-                hasNextClass: step.classList.contains('next'),
-                willBeBlocked: step.classList.contains('next') && !isDiagnostic
-            });
-            
-            // Prevent clicks on next/future rounds, but allow diagnostic steps
-            if (step.classList.contains('next') && !isDiagnostic) {
-                console.log('🚫 Click blocked - next round that is not diagnostic');
+            if (isDiagnostic) {
+                console.log('🚫 Accordion blocked - diagnostic step');
                 return;
             }
             
-            if (roundType === 'diagnostic-initial') {
-                console.log('🎯 Starting initial diagnostic test');
-                startDiagnosticTest('initial');
-            } else if (roundType === 'diagnostic-mid') {
-                console.log('🎯 Starting mid diagnostic test');
-                startDiagnosticTest('mid');
-            } else if (roundType.startsWith('diagnostic-checkpoint')) {
-                const checkpointNum = roundType.replace('diagnostic-checkpoint', '');
-                console.log('🎯 Starting checkpoint diagnostic test:', checkpointNum);
-                startDiagnosticTest(`checkpoint${checkpointNum}`);
-            } else if (roundType === 'diagnostic') {
-                // Legacy support for old diagnostic format
-                console.log('🎯 Starting legacy diagnostic test');
-                startDiagnosticTest('initial');
-            } else {
-                const roundNumber = parseInt(roundType);
-                // Additional check: only allow current round or earlier
-                if (roundNumber <= studyPathData.currentRound) {
-                    console.log('🎯 Starting round:', roundNumber);
-                    startRound(roundNumber);
-                } else {
-                    console.log('🚫 Click blocked - future round');
-                }
+            // Only allow accordion for current round
+            const roundNumber = parseInt(roundType);
+            const isCurrent = step.classList.contains('current');
+            
+            if (roundNumber && isCurrent) {
+                console.log('📋 Toggling accordion for current round:', roundNumber);
+                toggleAccordion(step, roundNumber);
+            } else if (roundNumber && !isCurrent) {
+                console.log('🚫 Accordion blocked - only available for current round');
             }
         });
     }
@@ -1553,6 +1593,114 @@ function setupEventListeners() {
                 break;
         }
     });
+}
+
+// Toggle accordion expansion for path steps
+function toggleAccordion(step, roundNumber) {
+    const accordionContent = step.querySelector('.step-accordion-content');
+    if (!accordionContent) {
+        console.log('🚫 No accordion content found for round:', roundNumber);
+        return;
+    }
+    
+    const isExpanded = step.classList.contains('expanded');
+    
+    // Close all other expanded steps first
+    const allSteps = document.querySelectorAll('.path-step.expanded');
+    allSteps.forEach(otherStep => {
+        if (otherStep !== step) {
+            otherStep.classList.remove('expanded');
+            const otherContent = otherStep.querySelector('.step-accordion-content');
+            if (otherContent) {
+                otherContent.style.maxHeight = '0px';
+            }
+            otherStep.style.setProperty('--accordion-height', '0px');
+        }
+    });
+    
+    // Toggle current step
+    if (isExpanded) {
+        // Collapse
+        step.classList.remove('expanded');
+        accordionContent.style.maxHeight = '0px';
+        step.style.setProperty('--accordion-height', '0px');
+        console.log('📋 Collapsed accordion for round:', roundNumber);
+    } else {
+        // Expand
+        step.classList.add('expanded');
+        // Set max-height to scrollHeight for smooth animation
+        const contentHeight = accordionContent.scrollHeight;
+        accordionContent.style.maxHeight = contentHeight + 'px';
+        
+        // Set accordion height for extended vertical line overlay and margin
+        const totalHeight = contentHeight + 16; // 16px for expanded margin-top
+        step.style.setProperty('--accordion-height', totalHeight + 'px');
+        
+        console.log('📋 Expanded accordion for round:', roundNumber);
+    }
+}
+
+// Generate accordion content based on the mockup design
+function getAccordionContent(roundNumber) {
+    let html = '';
+    
+    // Last round section (only show if not the first round)
+    if (roundNumber > 1) {
+        html += `
+            <div class="accordion-section">
+                <h4 class="accordion-section-title">Last round:</h4>
+                <div class="accordion-items">
+                    <div class="accordion-item completed">
+                        <div class="accordion-icon"></div>
+                        <span class="accordion-text">Medium difficulty questions</span>
+                    </div>
+                    <div class="accordion-item completed">
+                        <div class="accordion-icon"></div>
+                        <span class="accordion-text">Interleaving previous questions</span>
+                    </div>
+                    <div class="accordion-item completed">
+                        <div class="accordion-icon"></div>
+                        <span class="accordion-text">Fun question types for a little break</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Next round section (show for all rounds)
+    const difficulty = roundNumber <= 2 ? 'Medium' : roundNumber <= 4 ? 'Hard' : 'Advanced';
+    
+    html += `
+        <div class="accordion-section">
+            <h4 class="accordion-section-title">Next round:</h4>
+            <div class="accordion-items">
+                <div class="accordion-item completed">
+                    <div class="accordion-icon"></div>
+                    <span class="accordion-text">${difficulty} difficulty questions</span>
+                </div>
+                <div class="accordion-item completed">
+                    <div class="accordion-icon"></div>
+                    <span class="accordion-text">Interleaving previous questions</span>
+                </div>
+                <div class="accordion-item loading">
+                    <div class="accordion-icon"></div>
+                    <span class="accordion-text">Planning next round</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add "Make a change" button at the bottom
+    html += `
+        <div class="accordion-action">
+            <button class="make-change-btn">
+                <span class="make-change-icon">✨</span>
+                <span class="make-change-text">Make a change</span>
+            </button>
+        </div>
+    `;
+    
+    return html;
 }
 
 // Onboarding sheet logic
