@@ -476,7 +476,7 @@ body {
     flex-direction: column;
     gap: 16px;
     width: 100%;
-    height: 65vh; /* Use most of available screen space */
+    height: 80vh; /* Use even more screen space when question is hidden */
     flex: 1;
 }
 

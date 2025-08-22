@@ -914,7 +914,7 @@ function showQuestion() {
     selectedAnswer = null;
     isAnswered = false;
     
-    // Show question container
+    // Show question container (will be hidden for matching questions in their specific handler)
     questionContainer.style.display = 'block';
     questionContainer.classList.remove('fade-out');
 }
@@ -1001,6 +1001,9 @@ function showTrueFalse() {
 function showMatching() {
     matching.style.display = 'flex';
     questionPrompt.textContent = 'Tap items to match them';
+    
+    // Hide question container for matching since terms/definitions are in the grid
+    questionContainer.style.display = 'none';
     
     // Add compact layout class for optimized screen usage
     const studyContent = document.querySelector('.study-content');
