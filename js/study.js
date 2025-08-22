@@ -12,9 +12,8 @@ let roundProgressData = {}; // Track progress within each round
 
 // Matching question state
 let matchingPairs = [];
-let selectedTermIndex = null;
-let selectedDefinitionIndex = null;
-let matchingQuestions = []; // Store 6 questions for matching
+let selectedItems = []; // Store up to 2 selected items
+let matchingItems = []; // Store all 12 items (6 terms + 6 definitions) for matching
 
 // Round themes mapping
 const roundThemes = {
@@ -548,8 +547,7 @@ const studyAgainBtn = document.getElementById('studyAgainBtn');
 const textAnswer = document.getElementById('textAnswer');
 const submitBtn = document.getElementById('submitBtn');
 const matching = document.getElementById('matching');
-const matchingTerms = document.getElementById('matchingTerms');
-const matchingDefinitions = document.getElementById('matchingDefinitions');
+const matchingGrid = document.getElementById('matchingGrid');
 const matchingSubmitBtn = document.getElementById('matchingSubmitBtn');
 const currentQuestionEl = document.getElementById('currentQuestion');
 const totalQuestionsEl = document.getElementById('totalQuestions');
@@ -996,23 +994,22 @@ function showTrueFalse() {
 // Show matching exercise
 function showMatching() {
     matching.style.display = 'flex';
-    questionPrompt.textContent = 'Match each term with its correct definition';
+    questionPrompt.textContent = 'Tap items to match them';
     
     // Reset matching state
     matchingPairs = [];
-    selectedTermIndex = null;
-    selectedDefinitionIndex = null;
+    selectedItems = [];
     
     // Generate 6 questions for matching (current question + 5 random others)
-    generateMatchingQuestions();
+    generateMatchingItems();
     
-    // Render terms and definitions
-    renderMatchingItems();
+    // Render all items in grid
+    renderMatchingGrid();
 }
 
-// Generate 6 questions for matching exercise
-function generateMatchingQuestions() {
-    matchingQuestions = [currentQuestion];
+// Generate 6 questions for matching and create 12 items (6 terms + 6 definitions)
+function generateMatchingItems() {
+    const matchingQuestions = [currentQuestion];
     
     // Get 5 other questions randomly
     const otherQuestions = questions.filter(q => q.id !== currentQuestion.id);
@@ -1021,114 +1018,142 @@ function generateMatchingQuestions() {
     
     matchingQuestions.push(...selected);
     
-    // Shuffle the array to randomize positions
-    matchingQuestions.sort(() => 0.5 - Math.random());
+    // Create array of all items (terms and definitions)
+    matchingItems = [];
+    
+    matchingQuestions.forEach((question, questionIndex) => {
+        // Add term (question)
+        matchingItems.push({
+            id: `term-${questionIndex}`,
+            text: question.question,
+            type: 'term',
+            pairId: `def-${questionIndex}`,
+            questionIndex: questionIndex
+        });
+        
+        // Add definition (answer)
+        matchingItems.push({
+            id: `def-${questionIndex}`,
+            text: question.correctAnswer,
+            type: 'definition', 
+            pairId: `term-${questionIndex}`,
+            questionIndex: questionIndex
+        });
+    });
+    
+    // Shuffle all items for random positioning
+    matchingItems.sort(() => 0.5 - Math.random());
 }
 
-// Render matching items
-function renderMatchingItems() {
+// Render all matching items in a single grid
+function renderMatchingGrid() {
     // Clear existing items
-    matchingTerms.innerHTML = '';
-    matchingDefinitions.innerHTML = '';
+    matchingGrid.innerHTML = '';
     
-    // Create arrays of terms and definitions
-    const terms = matchingQuestions.map(q => q.question);
-    const definitions = matchingQuestions.map(q => q.correctAnswer);
-    
-    // Shuffle definitions independently of terms
-    const shuffledDefinitions = [...definitions].sort(() => 0.5 - Math.random());
-    
-    // Render terms
-    terms.forEach((term, index) => {
-        const termItem = document.createElement('div');
-        termItem.className = 'matching-item';
-        termItem.textContent = term;
-        termItem.dataset.termIndex = index;
-        termItem.addEventListener('click', () => handleTermClick(index));
-        setSourceBadge(termItem);
-        matchingTerms.appendChild(termItem);
+    // Render all items
+    matchingItems.forEach((item, index) => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'matching-item';
+        itemElement.textContent = item.text;
+        itemElement.dataset.itemId = item.id;
+        itemElement.dataset.itemIndex = index;
+        itemElement.addEventListener('click', () => handleItemClick(index));
+        setSourceBadge(itemElement);
+        matchingGrid.appendChild(itemElement);
     });
     
-    // Render definitions
-    shuffledDefinitions.forEach((definition, index) => {
-        const defItem = document.createElement('div');
-        defItem.className = 'matching-item';
-        defItem.textContent = definition;
-        defItem.dataset.definitionIndex = index;
-        defItem.addEventListener('click', () => handleDefinitionClick(index));
-        setSourceBadge(defItem);
-        matchingDefinitions.appendChild(defItem);
-    });
+    // Disable submit button initially
+    matchingSubmitBtn.disabled = true;
+    matchingSubmitBtn.textContent = 'Make 6 matches to continue';
 }
 
-// Handle term selection
-function handleTermClick(termIndex) {
+// Handle item selection in matching grid
+function handleItemClick(itemIndex) {
     if (isAnswered) return;
     
-    // Clear previous term selection
-    const termItems = matchingTerms.querySelectorAll('.matching-item');
-    termItems.forEach(item => item.classList.remove('selected'));
+    const item = matchingItems[itemIndex];
+    const itemElement = matchingGrid.children[itemIndex];
     
-    // Select this term
-    selectedTermIndex = termIndex;
-    termItems[termIndex].classList.add('selected');
+    // Can't select already matched items
+    if (itemElement.classList.contains('matched')) return;
     
-    // If both term and definition are selected, create a match
-    if (selectedDefinitionIndex !== null) {
-        createMatch();
+    // If item is already selected, deselect it
+    if (selectedItems.includes(itemIndex)) {
+        selectedItems = selectedItems.filter(i => i !== itemIndex);
+        itemElement.classList.remove('selected');
+        return;
+    }
+    
+    // Can only select 2 items at a time
+    if (selectedItems.length >= 2) {
+        // Clear previous selections
+        selectedItems.forEach(index => {
+            matchingGrid.children[index].classList.remove('selected');
+        });
+        selectedItems = [];
+    }
+    
+    // Select this item
+    selectedItems.push(itemIndex);
+    itemElement.classList.add('selected');
+    
+    // If 2 items are selected, try to create a match
+    if (selectedItems.length === 2) {
+        setTimeout(() => createMatch(), 300); // Small delay for better UX
     }
 }
 
-// Handle definition selection
-function handleDefinitionClick(definitionIndex) {
-    if (isAnswered) return;
-    
-    // Clear previous definition selection
-    const defItems = matchingDefinitions.querySelectorAll('.matching-item');
-    defItems.forEach(item => item.classList.remove('selected'));
-    
-    // Select this definition
-    selectedDefinitionIndex = definitionIndex;
-    defItems[definitionIndex].classList.add('selected');
-    
-    // If both term and definition are selected, create a match
-    if (selectedTermIndex !== null) {
-        createMatch();
-    }
-}
-
-// Create a match between selected term and definition
+// Create a match between two selected items
 function createMatch() {
-    const termItem = matchingTerms.children[selectedTermIndex];
-    const defItem = matchingDefinitions.children[selectedDefinitionIndex];
+    if (selectedItems.length !== 2) return;
     
-    // Store the match
-    const matchNumber = matchingPairs.length + 1;
-    matchingPairs.push({
-        termIndex: selectedTermIndex,
-        definitionIndex: selectedDefinitionIndex,
-        matchNumber: matchNumber
-    });
+    const [firstIndex, secondIndex] = selectedItems;
+    const firstItem = matchingItems[firstIndex];
+    const secondItem = matchingItems[secondIndex];
+    const firstElement = matchingGrid.children[firstIndex];
+    const secondElement = matchingGrid.children[secondIndex];
     
-    // Update UI
-    termItem.classList.remove('selected');
-    termItem.classList.add('matched');
-    termItem.dataset.matchNumber = matchNumber;
+    // Check if these items form a correct pair
+    const isCorrectMatch = firstItem.pairId === secondItem.id || secondItem.pairId === firstItem.id;
     
-    defItem.classList.remove('selected');
-    defItem.classList.add('matched');
-    defItem.dataset.matchNumber = matchNumber;
+    if (isCorrectMatch) {
+        // Valid match - store it
+        const matchNumber = matchingPairs.length + 1;
+        matchingPairs.push({
+            firstIndex: firstIndex,
+            secondIndex: secondIndex,
+            matchNumber: matchNumber,
+            isCorrect: true
+        });
+        
+        // Update UI for matched items
+        firstElement.classList.remove('selected');
+        firstElement.classList.add('matched');
+        firstElement.dataset.matchNumber = matchNumber;
+        
+        secondElement.classList.remove('selected');
+        secondElement.classList.add('matched');
+        secondElement.dataset.matchNumber = matchNumber;
+        
+        // Check if all pairs are matched (6 total)
+        if (matchingPairs.length === 6) {
+            // Enable submit button
+            matchingSubmitBtn.disabled = false;
+            matchingSubmitBtn.textContent = 'Submit Matches';
+        }
+    } else {
+        // Invalid match - briefly show as incorrect then deselect
+        firstElement.classList.add('incorrect');
+        secondElement.classList.add('incorrect');
+        
+        setTimeout(() => {
+            firstElement.classList.remove('selected', 'incorrect');
+            secondElement.classList.remove('selected', 'incorrect');
+        }, 800);
+    }
     
     // Reset selections
-    selectedTermIndex = null;
-    selectedDefinitionIndex = null;
-    
-    // Check if all pairs are matched (6 total)
-    if (matchingPairs.length === 6) {
-        // Enable submit button
-        matchingSubmitBtn.disabled = false;
-        matchingSubmitBtn.textContent = 'Submit Matches';
-    }
+    selectedItems = [];
 }
 
 // Get a random wrong answer for true/false questions
@@ -1204,10 +1229,7 @@ function checkAnswer() {
         let correctMatches = 0;
         
         matchingPairs.forEach(pair => {
-            const termQuestion = matchingQuestions[pair.termIndex];
-            const definitionText = matchingDefinitions.children[pair.definitionIndex].textContent;
-            
-            if (termQuestion.correctAnswer === definitionText) {
+            if (pair.isCorrect) {
                 correctMatches++;
             }
         });
@@ -1314,18 +1336,16 @@ function showFeedback(isCorrect) {
     } else if (currentQuestion.currentFormat === 'matching') {
         // Show feedback for matching questions
         matchingPairs.forEach(pair => {
-            const termItem = matchingTerms.children[pair.termIndex];
-            const defItem = matchingDefinitions.children[pair.definitionIndex];
-            const termQuestion = matchingQuestions[pair.termIndex];
-            const definitionText = defItem.textContent;
+            const firstElement = matchingGrid.children[pair.firstIndex];
+            const secondElement = matchingGrid.children[pair.secondIndex];
             
-            // Check if this specific match is correct
-            if (termQuestion.correctAnswer === definitionText) {
-                termItem.classList.add('correct-match');
-                defItem.classList.add('correct-match');
+            // Visual feedback based on correctness
+            if (pair.isCorrect) {
+                firstElement.classList.add('correct-match');
+                secondElement.classList.add('correct-match');
             } else {
-                termItem.classList.add('incorrect');
-                defItem.classList.add('incorrect');
+                firstElement.classList.add('incorrect');
+                secondElement.classList.add('incorrect');
             }
         });
     }
