@@ -874,9 +874,13 @@ function initFirstRound() {
 // Show the current question
 function showQuestion() {
     currentQuestion = questionsInRound[currentQuestionIndex];
-    questionText.textContent = currentQuestion.question;
-    // Add source badge next to the question text
-    setSourceBadge(questionText);
+    
+    // Only set question text for non-matching questions
+    if (currentQuestion.currentFormat !== 'matching') {
+        questionText.textContent = currentQuestion.question;
+        // Add source badge next to the question text
+        setSourceBadge(questionText);
+    }
     
     // Hide all answer types
     multipleChoice.style.display = 'none';
