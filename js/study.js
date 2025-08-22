@@ -776,6 +776,9 @@ function startNewRound() {
         const availableQuestions = questions.filter(q => q.currentFormat !== 'completed');
         const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
         questionsInRound = shuffled.slice(0, Math.min(7, availableQuestions.length));
+        
+        // Assign varied question formats for better experience
+        assignVariedQuestionFormats();
     }
     
     if (questionsInRound.length === 0) {
@@ -789,6 +792,37 @@ function startNewRound() {
     
     updateProgress();
     showQuestion();
+}
+
+// Assign varied question formats to questions in round for better experience
+function assignVariedQuestionFormats() {
+    if (questionsInRound.length === 0) return;
+    
+    // Define the distribution of question types (total should be <= 7)
+    const formatDistribution = [
+        'multiple_choice',  // 2 multiple choice
+        'multiple_choice',
+        'written',          // 2 written
+        'written', 
+        'matching',         // 2 matching
+        'matching',
+        'flashcard'         // 1 flashcard
+    ];
+    
+    // Shuffle the distribution for variety
+    const shuffledFormats = formatDistribution.sort(() => 0.5 - Math.random());
+    
+    // Assign formats to questions
+    questionsInRound.forEach((question, index) => {
+        if (index < shuffledFormats.length) {
+            question.currentFormat = shuffledFormats[index];
+        } else {
+            // Fallback to multiple choice for extra questions
+            question.currentFormat = 'multiple_choice';
+        }
+    });
+    
+    console.log('Assigned varied question formats:', questionsInRound.map(q => q.currentFormat));
 }
 
 // Initialize the first round (called on session start)
@@ -821,6 +855,9 @@ function initFirstRound() {
         const availableQuestions = questions.filter(q => q.currentFormat !== 'completed');
         const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
         questionsInRound = shuffled.slice(0, Math.min(7, availableQuestions.length));
+        
+        // Assign varied question formats for better experience
+        assignVariedQuestionFormats();
     }
     
     if (questionsInRound.length === 0) {
