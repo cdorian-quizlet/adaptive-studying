@@ -431,10 +431,7 @@ body {
     margin: 0; /* Remove bottom margin */
 }
 
-/* Only current step gets pointer cursor */
-.path-step.current:not(.diagnostic) {
-    cursor: pointer;
-}
+/* Remove pointer cursor from path-step since only progress bar is clickable */
 
 /* Expanded state - add margin to push down subsequent content */
 .path-step.expanded {
@@ -445,20 +442,16 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 0;
+    margin-bottom: 8px; /* Default 8px spacing - consistent for all path steps including accordions */
     transition: margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Add extra spacing to step-circle when accordion is expanded */
 .path-step.expanded .path-step-main {
-    margin-bottom: 8px; /* Increases total spacing from 8px to 16px */
+    margin-bottom: 16px; /* Expanded 16px spacing */
 }
 
-/* Only current step gets hover effects - no hover for completed/next rounds */
-.path-step.current:hover .path-step-main {
-    transform: translateY(-2px);
-    box-shadow: none;
-}
+/* Remove hover effects since only progress bar is clickable for accordion */
 
 /* Subtle star animation on current step - always active */
 .path-step.current .step-circle {
@@ -678,6 +671,14 @@ body {
     line-height: 1.4;
 }
 
+/* Truncate diagnostic concepts with ellipsis */
+.step-description.diagnostic-concepts {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 280px; /* Increased space for more concept text */
+}
+
 /* Hide progress bar for completed steps */
 .path-step.completed .step-progress {
     display: none !important;
@@ -694,7 +695,7 @@ body {
     height: 24px;
     width: 100%;
     position: relative;
-    margin: 8px 0 16px 0; /* 8px top, 16px bottom */
+    margin: 0 0 16px 0; /* 0px top, 16px bottom */
     animation: fadeInUp 0.6s ease-out;
     opacity: 0;
     animation-fill-mode: both;
@@ -711,22 +712,24 @@ body {
     height: 100%;
     background: var(--color-gray-200);
     border-radius: var(--radius-full, 200px);
-    transition: height 0.3s ease;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: -2; /* Behind accordion content */
 }
+
+/* Remove this rule since we're hiding the spacer after expanded accordions */
 
 /* Extended vertical line overlay for expanded accordion */
 .path-step.expanded::after {
     content: '';
     position: absolute;
     left: 28px; /* Align with step circle center */
-    top: 72px; /* Start after the step circle (64px height + 8px margin) */
+    top: 88px; /* Start 16px below the step circle with proper expanded spacing (64px + 24px spacing) */
     width: 8px;
-    height: calc(var(--accordion-height, 0px) + 24px); /* Extend through accordion + spacer */
+    height: var(--dynamic-line-height, 0px); /* Dynamic height controlled by JavaScript */
     background: var(--color-twilight-200);
     border-radius: var(--radius-full, 200px);
     z-index: -3; /* Well behind accordion content */
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth height transitions */
     pointer-events: none; /* Don't interfere with clicks */
 }
 
@@ -749,6 +752,11 @@ body {
 
 /* Hide vertical spacer after the last step */
 .path-container .step-vertical-spacer:last-child {
+    display: none;
+}
+
+/* Hide vertical spacer immediately after expanded accordion to prevent extra space */
+.path-step.expanded + .step-vertical-spacer {
     display: none;
 }
 
@@ -963,6 +971,16 @@ body {
     transition: opacity 0.3s ease;
 }
 
+/* Make step-progress clickable when it has progress */
+.step-progress.has-progress {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.step-progress.has-progress:hover {
+    opacity: 0.8;
+}
+
 /* Animation for progress text changes */
 .step-progress-text.updating {
     opacity: 0.7;
@@ -1059,33 +1077,39 @@ body {
 .step-accordion-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: var(--sys-surface-base);
     position: absolute;
-    top: 100%;
-    left: 44px; /* Position to the right of vertical line (28px + 8px + 8px spacing) */
+    top: 88px; /* Align with where vertical rule starts (same as vertical rule top position) */
+    left: 36px; /* Position directly against vertical line (28px + 8px width = 36px) */
     right: 20px; /* Right margin for page padding */
-    margin-top: 8px; /* Collapsed spacing */
+    margin-top: 0; /* No top margin */
     z-index: 10; /* Above all vertical elements */
 }
 
 .path-step.expanded .step-accordion-content {
     background: var(--sys-surface-raised);
     border-radius: 12px;
-    padding: 20px;
-    margin-top: 16px; /* Expanded spacing */
-}
-
-.accordion-inner {
+    padding: 0 0 0 16px; /* 16px left padding, no right padding */
+    margin-top: 0; /* No top margin */
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow: visible; /* Allow button to extend outside accordion bounds */
 }
 
 .accordion-section {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.accordion-section:first-child {
+    margin-top: 0; /* Align to top of accordion container */
+}
+
+.accordion-section:last-of-type {
+    margin-bottom: 16px;
 }
 
 .accordion-section-title {
@@ -1112,8 +1136,8 @@ body {
 }
 
 .accordion-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1121,6 +1145,7 @@ body {
     font-size: 12px;
     font-weight: 600;
     flex-shrink: 0;
+    transition: all 0.3s ease; /* Smooth transition for icon changes */
 }
 
 .accordion-text {
@@ -1131,6 +1156,7 @@ body {
     line-height: var(--typography-lineHeight-body-five);
     letter-spacing: var(--typography-letterSpacing-none);
     color: var(--color-gray-500);
+    transition: opacity 0.3s ease; /* Smooth transition for text changes */
 }
 
 /* Completed items (checkmarks) */
@@ -1141,10 +1167,9 @@ body {
 
 /* Planned items (circles) */
 .accordion-item.planned .accordion-icon {
-    background: transparent;
-    color: var(--color-gray-500);
-    border: 2px solid var(--color-gray-500);
-    font-size: 8px;
+    background: url('../images/circle.png') center/contain no-repeat;
+    color: transparent; /* Hide any text */
+    border: none;
 }
 
 /* Loading items (spinner) */
@@ -1152,6 +1177,10 @@ body {
     background: url('../images/spinner.png') center/contain no-repeat;
     color: transparent; /* Hide any text */
     border: none;
+}
+
+/* Spinning animation - only applied when .spinning class is added */
+.accordion-icon.spinning {
     animation: spin 1s linear infinite;
 }
 
@@ -1160,23 +1189,7 @@ body {
     to { transform: rotate(360deg); }
 }
 
-/* Visual indicator for expandable rounds - only current step */
-
-.path-step.current:not(.diagnostic) .path-step-main {
-    border-radius: 12px;
-    padding: 8px;
-    margin: -8px;
-    transition: all 0.2s ease;
-}
-
-.path-step.current:not(.diagnostic):hover .path-step-main {
-    background: var(--color-twilight-50);
-}
-
-/* Expanded state styling */
-.path-step.expanded .path-step-main {
-    background: var(--color-twilight-50);
-}
+/* Remove visual indicator since only progress bar is clickable now */
 
 /* Ensure the accordion content flows properly below the round */
 .path-step .step-content {
@@ -1201,25 +1214,33 @@ body {
 
 /* Make a change button */
 .accordion-action {
-    margin-top: 8px;
+    margin-top: 24px; /* Add space above the button */
+    margin-bottom: 23px; /* Add space below the button to separate from next path step */
+    margin-left: -24px; /* Align button with vertical rule (28px - 52px content start = -24px) */
+    display: flex;
+    justify-content: flex-start; /* Align button to the left */
+    position: relative;
+    z-index: 15; /* Ensure button container is above other elements */
 }
 
 .make-change-btn {
     display: flex;
-    align-items: center;
+    padding: 12px 16px; /* 12px top/bottom, 16px left/right */
     justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
-    background: var(--color-twilight-100);
+    align-items: center;
+    gap: var(--spacing-none, 0);
+    width: auto; /* Hug contents */
+    background: var(--interactive-bg-secondary-default, #EDEFFF);
     color: var(--color-twilight-600);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-full, 200px);
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-subheading-four);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 20; /* Ensure button appears above all other elements */
 }
 
 .make-change-btn:hover {
@@ -1228,11 +1249,79 @@ body {
 }
 
 .make-change-icon {
-    font-size: 16px;
+    width: var(--size-small, 16px);
+    height: var(--size-small, 16px);
+    max-width: var(--size-small, 16px);
+    max-height: var(--size-small, 16px);
+    background: url('../images/sparkle-twilight.png') center/contain no-repeat;
+    display: inline-block;
+    margin-right: 8px; /* Add spacing between icon and text since gap is 0 */
 }
 
 .make-change-text {
     font-weight: 600;
+}
+
+/* Make a change input state */
+.make-change-input {
+    display: flex;
+    padding: 10px 16px 10px 40px; /* Reduced by 2px top/bottom to account for 2px border */
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 300px;
+    background: var(--sys-surface-base);
+    border: 2px solid var(--color-twilight-200);
+    border-radius: var(--radius-full, 200px);
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-four);
+    font-weight: 600;
+    color: var(--sys-text-primary);
+    outline: none;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 20;
+    background-image: url('../images/sparkle-twilight.png');
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    background-position: 16px center; /* Position icon 16px from left, centered vertically */
+}
+
+.make-change-input::placeholder {
+    color: var(--color-gray-500);
+    font-weight: 600;
+}
+
+.make-change-input:focus {
+    border-color: var(--color-twilight-200);
+}
+
+/* Smooth transition positioning */
+.accordion-action {
+    position: relative;
+}
+
+.accordion-action .make-change-btn,
+.accordion-action .make-change-input {
+    position: relative;
+    display: block;
+}
+
+/* When both elements exist during transition, position them in the same space */
+.accordion-action .make-change-btn + .make-change-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.accordion-action .make-change-input + .make-change-btn {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: auto; /* Maintain natural width */
+    min-width: fit-content; /* Prevent shrinking smaller than content */
 }
 
 

@@ -668,7 +668,8 @@ function generatePathStepsHTML() {
     let stepCount = 0;
     
     // Helper function to generate diagnostic test HTML
-    function generateDiagnosticHTML(type, title, description) {
+    function generateDiagnosticHTML(type, title, description, conceptsCovered = []) {
+        const conceptsText = conceptsCovered.length > 0 ? conceptsCovered.join(', ') : description;
         return `
             <div class="path-step diagnostic" data-round="diagnostic-${type}">
                 <div class="path-step-main">
@@ -682,7 +683,7 @@ function generatePathStepsHTML() {
                         <div class="step-header">
                             <div>
                                 <h3 class="step-title">${title}</h3>
-                                <p class="step-description">${description}</p>
+                                <p class="step-description diagnostic-concepts">${conceptsText}</p>
                             </div>
                             <div class="step-status skip-ahead" id="diagnostic${type.charAt(0).toUpperCase() + type.slice(1)}Status">
                                 <span class="status-text">Skip ahead</span>
@@ -708,8 +709,7 @@ function generatePathStepsHTML() {
                     </div>
                     <div class="step-content">
                         <div class="step-text-group">
-                            <h3 class="step-title">Round ${roundNumber}</h3>
-                            <p class="step-description">${concept}</p>
+                            <h3 class="step-title">${concept}</h3>
                             <div class="step-progress">
                                 <div class="step-progress-bar">
                                     <div class="step-progress-fill" style="width: 0%"></div>
@@ -724,9 +724,7 @@ function generatePathStepsHTML() {
                     </div>
                 </div>
                 <div class="step-accordion-content">
-                    <div class="accordion-inner">
-                        ${getAccordionContent(roundNumber)}
-                    </div>
+                    ${getAccordionContent(roundNumber)}
                 </div>
             </div>
             <div class="step-vertical-spacer"></div>
@@ -746,20 +744,23 @@ function generatePathStepsHTML() {
         // Add diagnostic test every 2 rounds (but not after the last concept)
         if (roundNumber % 2 === 0 && !isLastConcept) {
             const diagnosticNumber = Math.floor(roundNumber / 2) + 1;
-            let diagnosticType, diagnosticTitle, diagnosticDescription;
+            let diagnosticType, diagnosticTitle, diagnosticDescription, conceptsCovered;
             
             if (diagnosticNumber === 2) {
                 diagnosticType = 'mid';
                 diagnosticTitle = 'Quiz 1';
                 diagnosticDescription = 'Rounds 1 – 2';
+                // Get the first 2 concepts for Quiz 1
+                conceptsCovered = studyPathData.concepts.slice(0, roundNumber);
             } else {
                 diagnosticType = `checkpoint${diagnosticNumber}`;
                 diagnosticTitle = `Checkpoint Diagnostic ${diagnosticNumber - 1}`;
                 diagnosticDescription = 'Assess your learning and adjust your study path';
+                conceptsCovered = [];
             }
             
             const hasNextStepAfterDiagnostic = index < studyPathData.concepts.length - 1;
-            html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, diagnosticDescription);
+            html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, diagnosticDescription, conceptsCovered);
             
             // Update the step line for the diagnostic
             if (hasNextStepAfterDiagnostic) {
@@ -1505,6 +1506,14 @@ function setupEventListeners() {
     const pathContainer = document.querySelector('.path-container');
     if (pathContainer) {
         pathContainer.addEventListener('click', function(e) {
+            // Check if click was on the "Make a change" button
+            const makeChangeBtn = e.target.closest('.make-change-btn');
+            if (makeChangeBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                transformButtonToInput(makeChangeBtn);
+                return;
+            }
             // Check if click was on the play button (step-status)
             const playButton = e.target.closest('.step-status');
             if (playButton) {
@@ -1554,12 +1563,15 @@ function setupEventListeners() {
                 return;
             }
             
-            // Check if click was elsewhere on the path-step (accordion toggle)
-            const step = e.target.closest('.path-step');
+            // Check if click was on step-progress with has-progress class (accordion toggle)
+            const stepProgress = e.target.closest('.step-progress.has-progress');
+            if (!stepProgress) return;
+            
+            const step = stepProgress.closest('.path-step');
             if (!step) return;
             
             const roundType = step.dataset.round;
-            console.log('📋 Accordion click on step:', { roundType, classes: step.className });
+            console.log('📋 Accordion click on step-progress:', { roundType, classes: step.className });
             
             // Don't expand accordion for diagnostic steps
             const isDiagnostic = roundType && (
@@ -1615,6 +1627,9 @@ function toggleAccordion(step, roundNumber) {
                 otherContent.style.maxHeight = '0px';
             }
             otherStep.style.setProperty('--accordion-height', '0px');
+            otherStep.style.setProperty('--dynamic-line-height', '0px');
+            // Clear any existing animation timers for other steps
+            clearAccordionAnimations(otherStep);
         }
     });
     
@@ -1624,6 +1639,9 @@ function toggleAccordion(step, roundNumber) {
         step.classList.remove('expanded');
         accordionContent.style.maxHeight = '0px';
         step.style.setProperty('--accordion-height', '0px');
+        step.style.setProperty('--dynamic-line-height', '0px');
+        // Clear animation timers
+        clearAccordionAnimations(step);
         console.log('📋 Collapsed accordion for round:', roundNumber);
     } else {
         // Expand
@@ -1633,11 +1651,363 @@ function toggleAccordion(step, roundNumber) {
         accordionContent.style.maxHeight = contentHeight + 'px';
         
         // Set accordion height for extended vertical line overlay and margin
-        const totalHeight = contentHeight + 16; // 16px for expanded margin-top
+        const totalHeight = contentHeight + 16 + 24 + 16; // 16px for expanded margin-top + 24px for accordion-action margin-top + 16px for accordion-action margin-bottom
         step.style.setProperty('--accordion-height', totalHeight + 'px');
+        
+        // Set initial dynamic line height for normal accordion expansion
+        // Calculate height to reach the bottom of the last text line
+        setTimeout(() => {
+            // Find the "Next round:" section using the same reliable method as re-planning
+            const allSections = accordionContent.querySelectorAll('.accordion-section');
+            let nextRoundSection = null;
+            allSections.forEach(section => {
+                const title = section.querySelector('.accordion-section-title');
+                if (title && title.textContent.includes('Next round:')) {
+                    nextRoundSection = section;
+                }
+            });
+            
+            if (nextRoundSection) {
+                const nextRoundItems = nextRoundSection.querySelector('.accordion-items');
+                if (nextRoundItems) {
+                    const items = nextRoundItems.querySelectorAll('.accordion-item');
+                    if (items.length > 0) {
+                        const lastItem = items[items.length - 1];
+                        
+                        // Calculate height from accordion start to bottom of last item
+                        const accordionTop = accordionContent.getBoundingClientRect().top;
+                        const lastItemBottom = lastItem.getBoundingClientRect().bottom;
+                        const lineHeight = lastItemBottom - accordionTop;
+                        
+                        step.style.setProperty('--dynamic-line-height', `${lineHeight}px`);
+                    }
+                }
+            }
+        }, 100);
+        
+        // Start the planning animation sequence
+        startPlanningAnimation(step);
         
         console.log('📋 Expanded accordion for round:', roundNumber);
     }
+}
+
+// Start the planning animation sequence when accordion opens
+function startPlanningAnimation(step) {
+    const loadingItem = step.querySelector('.accordion-item.loading');
+    const loadingIcon = loadingItem?.querySelector('.accordion-icon');
+    const loadingText = loadingItem?.querySelector('.accordion-text');
+    
+    if (!loadingItem || !loadingIcon || !loadingText) return;
+    
+    // Set initial state with ellipsis
+    loadingText.textContent = 'Planning next round...';
+    loadingIcon.classList.add('spinning');
+    
+    // Store the animation timer on the step element
+    step.planningTimer = setTimeout(() => {
+        // After 3 seconds, stop animation and change content
+        loadingIcon.classList.remove('spinning');
+        loadingIcon.style.background = 'url("../images/circle.png") center/contain no-repeat';
+        loadingText.textContent = 'Fun question types for a little break';
+        
+        // Clear the timer reference
+        step.planningTimer = null;
+    }, 3000);
+}
+
+// Clear accordion animations
+function clearAccordionAnimations(step) {
+    if (step.planningTimer) {
+        clearTimeout(step.planningTimer);
+        step.planningTimer = null;
+    }
+    
+    // Reset loading item to initial state
+    const loadingItem = step.querySelector('.accordion-item.loading');
+    const loadingIcon = loadingItem?.querySelector('.accordion-icon');
+    const loadingText = loadingItem?.querySelector('.accordion-text');
+    
+    if (loadingIcon && loadingText) {
+        loadingIcon.classList.remove('spinning');
+        loadingIcon.style.background = 'url("../images/spinner.png") center/contain no-repeat';
+        loadingText.textContent = 'Planning next round';
+    }
+}
+
+// Transform "Make a change" button into input field
+function transformButtonToInput(button) {
+    const accordionAction = button.parentElement;
+    if (!accordionAction) return;
+    
+    // Create input element
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'make-change-input';
+    input.placeholder = 'Make a change';
+    input.value = '';
+    input.style.opacity = '0';
+    input.style.transform = 'scale(0.95)';
+    
+    // Add input to container (both button and input visible temporarily)
+    accordionAction.appendChild(input);
+    
+    // Animate button out and input in
+    button.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    input.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    
+    // Start transition
+    setTimeout(() => {
+        button.style.opacity = '0';
+        button.style.transform = 'scale(0.95)';
+        input.style.opacity = '1';
+        input.style.transform = 'scale(1)';
+    }, 10);
+    
+    // Remove button and focus input after transition
+    setTimeout(() => {
+        button.remove();
+        input.focus();
+    }, 220);
+    
+    // Handle input events
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            handleInputSubmit(input);
+        } else if (e.key === 'Escape') {
+            restoreButton(accordionAction);
+        }
+    });
+    
+    input.addEventListener('blur', function() {
+        // Small delay to allow for potential enter key press
+        setTimeout(() => {
+            if (input.value.trim()) {
+                handleInputSubmit(input);
+            } else {
+                restoreButton(accordionAction);
+            }
+        }, 100);
+    });
+}
+
+// Handle input submission
+function handleInputSubmit(input) {
+    const value = input.value.trim();
+    if (value) {
+        // Find the accordion content container
+        const accordionContent = input.closest('.step-accordion-content');
+        
+        if (accordionContent) {
+            // Start the re-planning animation
+            startReplanningAnimation(accordionContent, value);
+        }
+    }
+    
+    const accordionAction = input.parentElement;
+    restoreButton(accordionAction);
+}
+
+// Restore the "Make a change" button
+function restoreButton(accordionAction) {
+    if (!accordionAction) return;
+    
+    const currentInput = accordionAction.querySelector('.make-change-input');
+    
+    // Create button element with explicit width to prevent expansion
+    const buttonHTML = `
+        <button class="make-change-btn" style="opacity: 0; transform: scale(0.95); transition: opacity 0.2s ease, transform 0.2s ease; width: auto; min-width: fit-content;">
+            <span class="make-change-icon"></span>
+            <span class="make-change-text">Make a change</span>
+        </button>
+    `;
+    
+    // Add button to container
+    accordionAction.insertAdjacentHTML('beforeend', buttonHTML);
+    const newButton = accordionAction.querySelector('.make-change-btn');
+    
+    if (currentInput) {
+        // Animate input out and button in
+        currentInput.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        
+        setTimeout(() => {
+            currentInput.style.opacity = '0';
+            currentInput.style.transform = 'scale(0.95)';
+            newButton.style.opacity = '1';
+            newButton.style.transform = 'scale(1)';
+        }, 10);
+        
+        // Remove input after transition
+        setTimeout(() => {
+            currentInput.remove();
+            // Clean up button transition styles but keep width properties
+            newButton.style.transition = '';
+            newButton.style.width = '';
+            newButton.style.minWidth = '';
+        }, 220);
+    } else {
+        // No input found, just show button immediately
+        newButton.style.opacity = '1';
+        newButton.style.transform = 'scale(1)';
+        newButton.style.transition = '';
+        newButton.style.width = '';
+        newButton.style.minWidth = '';
+    }
+}
+
+// Start the re-planning animation sequence
+function startReplanningAnimation(accordionContent, userRequest) {
+    // Find the "Next round:" section by looking for the section title
+    const allSections = accordionContent.querySelectorAll('.accordion-section');
+    
+    let nextRoundSection = null;
+    allSections.forEach(section => {
+        const title = section.querySelector('.accordion-section-title');
+        if (title && title.textContent.includes('Next round:')) {
+            nextRoundSection = section;
+        }
+    });
+    
+    if (!nextRoundSection) return;
+    
+    const nextRoundItems = nextRoundSection.querySelector('.accordion-items');
+    if (!nextRoundItems) return;
+    
+    // Get the current round number for difficulty calculation
+    const step = accordionContent.closest('.path-step');
+    const roundNumber = parseInt(step?.dataset.round) || 1;
+    
+    // Reset vertical line height to 0 first
+    step.style.setProperty('--dynamic-line-height', '0px');
+    
+    // Animate vertical line to the bottom of the first line below "Next round:" text
+    setTimeout(() => {
+        if (nextRoundSection) {
+            const firstItem = nextRoundItems.querySelector('.accordion-item:first-child');
+            if (firstItem) {
+                const accordionTop = accordionContent.getBoundingClientRect().top;
+                const firstItemBottom = firstItem.getBoundingClientRect().bottom;
+                const lineHeight = firstItemBottom - accordionTop;
+                
+                step.style.setProperty('--dynamic-line-height', `${lineHeight}px`);
+            }
+        }
+    }, 50);
+    
+    // Store original items data
+    const originalItems = getNextRoundItemsData(roundNumber);
+    
+    // Fade out existing items
+    const items = nextRoundItems.querySelectorAll('.accordion-item');
+    
+    items.forEach((item, index) => {
+        setTimeout(() => {
+            item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(-10px)';
+        }, index * 100);
+    });
+    
+    // After fade out and line animation to title, start loading sequence
+    setTimeout(() => {
+        animateItemsWithLoading(nextRoundItems, originalItems, step);
+    }, items.length * 100 + 400); // Extra time for line to animate to title level
+}
+
+// Get the data for next round items based on round number
+function getNextRoundItemsData(roundNumber) {
+    const difficulty = roundNumber <= 2 ? 'Medium' : roundNumber <= 4 ? 'Hard' : 'Advanced';
+    
+    return [
+        { text: `${difficulty} difficulty questions`, type: 'planned' },
+        { text: 'Interleaving previous questions', type: 'planned' },
+        { text: 'Fun question types for a little break', type: 'planned' }
+    ];
+}
+
+// Animate items back in with loading states
+function animateItemsWithLoading(container, itemsData, step) {
+    // Clear container
+    container.innerHTML = '';
+    
+    // Add items one by one with loading animation
+    // Each item appears only after the previous one completes its full cycle
+    itemsData.forEach((itemData, index) => {
+        setTimeout(() => {
+            addLoadingItem(container, itemData, index, step);
+        }, index * 2500); // Full cycle time: 2000ms loading + 500ms for text transition
+    });
+}
+
+// Add a single item with loading state, then transition to final state
+function addLoadingItem(container, itemData, index, step) {
+    // Create loading item
+    const item = document.createElement('div');
+    item.className = 'accordion-item loading';
+    item.innerHTML = `
+        <div class="accordion-icon spinning"></div>
+        <span class="accordion-text">Planning next round...</span>
+    `;
+    
+    // Add with fade-in animation
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(10px)';
+    container.appendChild(item);
+    
+    // Update vertical line height to accommodate this new item
+    // Only grow the line starting from the second item (index 1+)
+    if (index > 0) {
+        setTimeout(() => {
+            if (step) {
+                const accordionContent = step.querySelector('.step-accordion-content');
+                if (accordionContent) {
+                    const accordionTop = accordionContent.getBoundingClientRect().top;
+                    const itemBottom = item.getBoundingClientRect().bottom;
+                    const lineHeight = itemBottom - accordionTop;
+                    
+                    step.style.setProperty('--dynamic-line-height', `${lineHeight}px`);
+                }
+            }
+        }, 100); // Small delay to ensure item is fully rendered
+    }
+    
+    // Animate in
+    setTimeout(() => {
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+    }, 50);
+    
+    // After 2 seconds, transition to final state
+    setTimeout(() => {
+        transitionToFinalState(item, itemData);
+    }, 2000);
+}
+
+// Transition item from loading to final state
+function transitionToFinalState(item, itemData) {
+    const icon = item.querySelector('.accordion-icon');
+    const text = item.querySelector('.accordion-text');
+    
+    if (!icon || !text) return;
+    
+    // Remove spinning animation and loading class
+    icon.classList.remove('spinning');
+    item.classList.remove('loading');
+    item.classList.add(itemData.type);
+    
+    // Update icon based on type
+    if (itemData.type === 'planned') {
+        icon.style.background = 'url("../images/circle.png") center/contain no-repeat';
+    }
+    
+    // Update text with slight fade effect
+    text.style.opacity = '0.5';
+    setTimeout(() => {
+        text.textContent = itemData.text;
+        text.style.transition = 'opacity 0.3s ease';
+        text.style.opacity = '1';
+    }, 150);
 }
 
 // Generate accordion content based on the mockup design
@@ -1674,11 +2044,11 @@ function getAccordionContent(roundNumber) {
         <div class="accordion-section">
             <h4 class="accordion-section-title">Next round:</h4>
             <div class="accordion-items">
-                <div class="accordion-item completed">
+                <div class="accordion-item planned">
                     <div class="accordion-icon"></div>
                     <span class="accordion-text">${difficulty} difficulty questions</span>
                 </div>
-                <div class="accordion-item completed">
+                <div class="accordion-item planned">
                     <div class="accordion-icon"></div>
                     <span class="accordion-text">Interleaving previous questions</span>
                 </div>
@@ -1694,7 +2064,7 @@ function getAccordionContent(roundNumber) {
     html += `
         <div class="accordion-action">
             <button class="make-change-btn">
-                <span class="make-change-icon">✨</span>
+                <span class="make-change-icon"></span>
                 <span class="make-change-text">Make a change</span>
             </button>
         </div>
