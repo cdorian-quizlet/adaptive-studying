@@ -1147,18 +1147,22 @@ function createMatch() {
         // Immediate positive feedback
         firstElement.classList.remove('selected');
         firstElement.classList.add('correct-match');
-        firstElement.dataset.matchNumber = matchNumber;
         
         secondElement.classList.remove('selected');
         secondElement.classList.add('correct-match');
-        secondElement.dataset.matchNumber = matchNumber;
         
-        // Add matched class after brief green flash
+        // Add fade-out animation after brief green flash
         setTimeout(() => {
             firstElement.classList.remove('correct-match');
-            firstElement.classList.add('matched');
+            firstElement.classList.add('matched', 'fade-out');
             secondElement.classList.remove('correct-match');
-            secondElement.classList.add('matched');
+            secondElement.classList.add('matched', 'fade-out');
+            
+            // Hide completely after fade animation
+            setTimeout(() => {
+                firstElement.classList.add('hidden');
+                secondElement.classList.add('hidden');
+            }, 400); // Matches CSS transition duration
         }, 600);
         
         // Update prompt with progress
@@ -1382,20 +1386,8 @@ function showFeedback(isCorrect) {
             }
         });
     } else if (currentQuestion.currentFormat === 'matching') {
-        // Show feedback for matching questions
-        matchingPairs.forEach(pair => {
-            const firstElement = matchingGrid.children[pair.firstIndex];
-            const secondElement = matchingGrid.children[pair.secondIndex];
-            
-            // Visual feedback based on correctness
-            if (pair.isCorrect) {
-                firstElement.classList.add('correct-match');
-                secondElement.classList.add('correct-match');
-            } else {
-                firstElement.classList.add('incorrect');
-                secondElement.classList.add('incorrect');
-            }
-        });
+        // Feedback for matching questions is handled in real-time during createMatch()
+        // No additional feedback needed here since items fade out immediately
     }
     
     // Handle flashcard feedback

@@ -536,6 +536,20 @@ body {
     pointer-events: none;
 }
 
+.matching-item.fade-out {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+    transition: all 0.4s ease-out;
+}
+
+.matching-item.hidden {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+    visibility: hidden;
+}
+
 .matching-item.incorrect {
     border-color: var(--color-sherbert-400);
     background: var(--color-sherbert-100);
@@ -548,23 +562,9 @@ body {
     color: var(--color-mint-800);
 }
 
-/* Match indicator number */
+/* Match indicator number - hidden since items fade out */
 .matching-item.matched::before {
-    content: attr(data-match-number);
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: var(--color-mint-500);
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    border: 2px solid var(--sys-surface-base);
+    display: none; /* Hide number badge since items disappear */
 }
 
 .matching-submit {
