@@ -450,6 +450,116 @@ body {
     background: var(--color-gray-700);
 }
 
+/* Matching Styles */
+.matching-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.matching-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+}
+
+.matching-section-title {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-weight: 600;
+    color: var(--sys-text-primary);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.matching-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.matching-item {
+    background: var(--sys-surface-base);
+    border: 2px solid var(--color-gray-300);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-four);
+    font-weight: 500;
+    color: var(--sys-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    user-select: none;
+}
+
+.matching-item:hover {
+    border-color: var(--color-gray-500);
+    background: var(--color-gray-100);
+}
+
+.matching-item.selected {
+    border-color: var(--color-twilight-500);
+    background: var(--color-twilight-100);
+    color: var(--color-twilight-700);
+}
+
+.matching-item.matched {
+    border-color: var(--color-mint-500);
+    background: var(--color-mint-100);
+    color: var(--color-mint-700);
+    pointer-events: none;
+}
+
+.matching-item.incorrect {
+    border-color: var(--color-sherbert-400);
+    background: var(--color-sherbert-100);
+    color: var(--color-sherbert-700);
+}
+
+.matching-item.correct-match {
+    border-color: var(--color-mint-600);
+    background: var(--color-mint-200);
+    color: var(--color-mint-800);
+}
+
+/* Match indicator number */
+.matching-item.matched::before {
+    content: attr(data-match-number);
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--color-mint-500);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.matching-submit {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 16px;
+}
+
+.matching-submit .submit-btn {
+    width: 100%;
+    max-width: 280px;
+}
+
 /* Responsive Design */
 @media (min-width: 768px) {
     .app-container {

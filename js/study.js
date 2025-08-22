@@ -10,6 +10,12 @@ let questionsPerRound = 7;
 let currentRoundNumber = 1; // Track current round number
 let roundProgressData = {}; // Track progress within each round
 
+// Matching question state
+let matchingPairs = [];
+let selectedTermIndex = null;
+let selectedDefinitionIndex = null;
+let matchingQuestions = []; // Store 6 questions for matching
+
 // Round themes mapping
 const roundThemes = {
     1: "Cell Structure & Function",
@@ -541,6 +547,10 @@ const gotItBtn = document.getElementById('gotItBtn');
 const studyAgainBtn = document.getElementById('studyAgainBtn');
 const textAnswer = document.getElementById('textAnswer');
 const submitBtn = document.getElementById('submitBtn');
+const matching = document.getElementById('matching');
+const matchingTerms = document.getElementById('matchingTerms');
+const matchingDefinitions = document.getElementById('matchingDefinitions');
+const matchingSubmitBtn = document.getElementById('matchingSubmitBtn');
 const currentQuestionEl = document.getElementById('currentQuestion');
 const totalQuestionsEl = document.getElementById('totalQuestions');
 const progressFill = document.getElementById('progressFill');
@@ -838,6 +848,7 @@ function showQuestion() {
     textInput.style.display = 'none';
     trueFalse.style.display = 'none';
     flashcard.style.display = 'none';
+    matching.style.display = 'none';
     
     // Show the appropriate answer type based on current format
     switch (currentQuestion.currentFormat) {
@@ -852,6 +863,9 @@ function showQuestion() {
             break;
         case 'true_false':
             showTrueFalse();
+            break;
+        case 'matching':
+            showMatching();
             break;
     }
     
@@ -942,6 +956,144 @@ function showTrueFalse() {
     });
 }
 
+// Show matching exercise
+function showMatching() {
+    matching.style.display = 'flex';
+    questionPrompt.textContent = 'Match each term with its correct definition';
+    
+    // Reset matching state
+    matchingPairs = [];
+    selectedTermIndex = null;
+    selectedDefinitionIndex = null;
+    
+    // Generate 6 questions for matching (current question + 5 random others)
+    generateMatchingQuestions();
+    
+    // Render terms and definitions
+    renderMatchingItems();
+}
+
+// Generate 6 questions for matching exercise
+function generateMatchingQuestions() {
+    matchingQuestions = [currentQuestion];
+    
+    // Get 5 other questions randomly
+    const otherQuestions = questions.filter(q => q.id !== currentQuestion.id);
+    const shuffled = otherQuestions.sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 5);
+    
+    matchingQuestions.push(...selected);
+    
+    // Shuffle the array to randomize positions
+    matchingQuestions.sort(() => 0.5 - Math.random());
+}
+
+// Render matching items
+function renderMatchingItems() {
+    // Clear existing items
+    matchingTerms.innerHTML = '';
+    matchingDefinitions.innerHTML = '';
+    
+    // Create arrays of terms and definitions
+    const terms = matchingQuestions.map(q => q.question);
+    const definitions = matchingQuestions.map(q => q.correctAnswer);
+    
+    // Shuffle definitions independently of terms
+    const shuffledDefinitions = [...definitions].sort(() => 0.5 - Math.random());
+    
+    // Render terms
+    terms.forEach((term, index) => {
+        const termItem = document.createElement('div');
+        termItem.className = 'matching-item';
+        termItem.textContent = term;
+        termItem.dataset.termIndex = index;
+        termItem.addEventListener('click', () => handleTermClick(index));
+        setSourceBadge(termItem);
+        matchingTerms.appendChild(termItem);
+    });
+    
+    // Render definitions
+    shuffledDefinitions.forEach((definition, index) => {
+        const defItem = document.createElement('div');
+        defItem.className = 'matching-item';
+        defItem.textContent = definition;
+        defItem.dataset.definitionIndex = index;
+        defItem.addEventListener('click', () => handleDefinitionClick(index));
+        setSourceBadge(defItem);
+        matchingDefinitions.appendChild(defItem);
+    });
+}
+
+// Handle term selection
+function handleTermClick(termIndex) {
+    if (isAnswered) return;
+    
+    // Clear previous term selection
+    const termItems = matchingTerms.querySelectorAll('.matching-item');
+    termItems.forEach(item => item.classList.remove('selected'));
+    
+    // Select this term
+    selectedTermIndex = termIndex;
+    termItems[termIndex].classList.add('selected');
+    
+    // If both term and definition are selected, create a match
+    if (selectedDefinitionIndex !== null) {
+        createMatch();
+    }
+}
+
+// Handle definition selection
+function handleDefinitionClick(definitionIndex) {
+    if (isAnswered) return;
+    
+    // Clear previous definition selection
+    const defItems = matchingDefinitions.querySelectorAll('.matching-item');
+    defItems.forEach(item => item.classList.remove('selected'));
+    
+    // Select this definition
+    selectedDefinitionIndex = definitionIndex;
+    defItems[definitionIndex].classList.add('selected');
+    
+    // If both term and definition are selected, create a match
+    if (selectedTermIndex !== null) {
+        createMatch();
+    }
+}
+
+// Create a match between selected term and definition
+function createMatch() {
+    const termItem = matchingTerms.children[selectedTermIndex];
+    const defItem = matchingDefinitions.children[selectedDefinitionIndex];
+    
+    // Store the match
+    const matchNumber = matchingPairs.length + 1;
+    matchingPairs.push({
+        termIndex: selectedTermIndex,
+        definitionIndex: selectedDefinitionIndex,
+        matchNumber: matchNumber
+    });
+    
+    // Update UI
+    termItem.classList.remove('selected');
+    termItem.classList.add('matched');
+    termItem.dataset.matchNumber = matchNumber;
+    
+    defItem.classList.remove('selected');
+    defItem.classList.add('matched');
+    defItem.dataset.matchNumber = matchNumber;
+    
+    // Reset selections
+    selectedTermIndex = null;
+    selectedDefinitionIndex = null;
+    
+    // Check if all pairs are matched (6 total)
+    if (matchingPairs.length === 6) {
+        // Enable submit button
+        matchingSubmitBtn.disabled = false;
+        matchingSubmitBtn.textContent = 'Submit Matches';
+    }
+}
+
 // Get a random wrong answer for true/false questions
 function getRandomWrongAnswer() {
     let wrongAnswers = [];
@@ -989,6 +1141,51 @@ function checkAnswer() {
         // User clicked "Study again" on flashcard - treat as incorrect
         isCorrect = false;
         currentQuestion.attempts++;
+    } else if (currentQuestion.currentFormat === 'written') {
+        // For written questions, check if answer contains key words from correct answer
+        const userAnswer = selectedAnswer.toLowerCase().trim();
+        const correctAnswer = currentQuestion.correctAnswer.toLowerCase().trim();
+        
+        // Simple matching: check if user answer contains key words
+        const correctWords = correctAnswer.split(' ').filter(word => word.length > 2);
+        const userWords = userAnswer.split(' ');
+        
+        // Consider correct if user answer contains most key words
+        const matchedWords = correctWords.filter(word => 
+            userWords.some(userWord => userWord.includes(word) || word.includes(userWord))
+        );
+        
+        isCorrect = matchedWords.length >= Math.ceil(correctWords.length * 0.6); // 60% match threshold
+        
+        // Update question statistics
+        currentQuestion.attempts++;
+        if (isCorrect) {
+            currentQuestion.correct++;
+        }
+    } else if (currentQuestion.currentFormat === 'matching') {
+        // For matching questions, check how many pairs are correct
+        let correctMatches = 0;
+        
+        matchingPairs.forEach(pair => {
+            const termQuestion = matchingQuestions[pair.termIndex];
+            const definitionText = matchingDefinitions.children[pair.definitionIndex].textContent;
+            
+            if (termQuestion.correctAnswer === definitionText) {
+                correctMatches++;
+            }
+        });
+        
+        // Consider correct if at least 4 out of 6 matches are right (67% threshold)
+        isCorrect = correctMatches >= 4;
+        
+        // Update question statistics
+        currentQuestion.attempts++;
+        if (isCorrect) {
+            currentQuestion.correct++;
+        }
+        
+        // Store the score for feedback
+        selectedAnswer = `${correctMatches}/6 correct matches`;
     } else {
         isCorrect = selectedAnswer === currentQuestion.correctAnswer;
         
@@ -1020,12 +1217,15 @@ function adaptDifficulty(isCorrect) {
         // Make harder next time in this round
         switch (currentQuestion.currentFormat) {
             case 'multiple_choice':
-                currentQuestion.currentFormat = 'flashcard';
-                break;
-            case 'flashcard':
                 currentQuestion.currentFormat = 'written';
                 break;
             case 'written':
+                currentQuestion.currentFormat = 'matching';
+                break;
+            case 'matching':
+                currentQuestion.currentFormat = 'flashcard';
+                break;
+            case 'flashcard':
                 currentQuestion.currentFormat = 'completed';
                 break;
             case 'true_false':
@@ -1036,16 +1236,19 @@ function adaptDifficulty(isCorrect) {
         // Make easier next time in this round
         switch (currentQuestion.currentFormat) {
             case 'multiple_choice':
-                currentQuestion.currentFormat = 'flashcard';
-                break;
-            case 'flashcard':
-                currentQuestion.currentFormat = 'flashcard'; // Stay at flashcard
+                currentQuestion.currentFormat = 'multiple_choice'; // Stay at multiple choice
                 break;
             case 'written':
-                currentQuestion.currentFormat = 'flashcard';
+                currentQuestion.currentFormat = 'multiple_choice';
+                break;
+            case 'matching':
+                currentQuestion.currentFormat = 'written';
+                break;
+            case 'flashcard':
+                currentQuestion.currentFormat = 'matching';
                 break;
             case 'true_false':
-                currentQuestion.currentFormat = 'flashcard';
+                currentQuestion.currentFormat = 'multiple_choice';
                 break;
         }
     }
@@ -1069,6 +1272,23 @@ function showFeedback(isCorrect) {
             // Show the incorrect selected answer if user got it wrong
             if (btn.dataset.answer === selectedAnswer && !isCorrect) {
                 btn.classList.add('incorrect');
+            }
+        });
+    } else if (currentQuestion.currentFormat === 'matching') {
+        // Show feedback for matching questions
+        matchingPairs.forEach(pair => {
+            const termItem = matchingTerms.children[pair.termIndex];
+            const defItem = matchingDefinitions.children[pair.definitionIndex];
+            const termQuestion = matchingQuestions[pair.termIndex];
+            const definitionText = defItem.textContent;
+            
+            // Check if this specific match is correct
+            if (termQuestion.correctAnswer === definitionText) {
+                termItem.classList.add('correct-match');
+                defItem.classList.add('correct-match');
+            } else {
+                termItem.classList.add('incorrect');
+                defItem.classList.add('incorrect');
             }
         });
     }
@@ -1431,6 +1651,16 @@ function setupEventListeners() {
     textAnswer.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !isAnswered && textAnswer.value.trim()) {
             handleAnswerSelect(textAnswer.value.trim());
+        }
+    });
+    
+    // Matching submit button
+    matchingSubmitBtn.addEventListener('click', () => {
+        if (!isAnswered && matchingPairs.length === 6) {
+            // Set selectedAnswer to trigger checkAnswer logic
+            selectedAnswer = 'matching_complete';
+            isAnswered = true;
+            checkAnswer();
         }
     });
     
