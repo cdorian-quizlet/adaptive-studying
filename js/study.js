@@ -885,6 +885,12 @@ function showQuestion() {
     flashcard.style.display = 'none';
     matching.style.display = 'none';
     
+    // Remove matching layout class
+    const studyContent = document.querySelector('.study-content');
+    if (studyContent) {
+        studyContent.classList.remove('matching-layout');
+    }
+    
     // Show the appropriate answer type based on current format
     switch (currentQuestion.currentFormat) {
         case 'multiple_choice':
@@ -996,6 +1002,12 @@ function showMatching() {
     matching.style.display = 'flex';
     questionPrompt.textContent = 'Tap items to match them';
     
+    // Add compact layout class for optimized screen usage
+    const studyContent = document.querySelector('.study-content');
+    if (studyContent) {
+        studyContent.classList.add('matching-layout');
+    }
+    
     // Reset matching state
     matchingPairs = [];
     selectedItems = [];
@@ -1062,9 +1074,8 @@ function renderMatchingGrid() {
         matchingGrid.appendChild(itemElement);
     });
     
-    // Disable submit button initially
-    matchingSubmitBtn.disabled = true;
-    matchingSubmitBtn.textContent = 'Make 6 matches to continue';
+    // Hide submit button since we auto-advance
+    matchingSubmitBtn.style.display = 'none';
 }
 
 // Handle item selection in matching grid
@@ -1117,7 +1128,7 @@ function createMatch() {
     const isCorrectMatch = firstItem.pairId === secondItem.id || secondItem.pairId === firstItem.id;
     
     if (isCorrectMatch) {
-        // Valid match - store it
+        // Valid match - store it and give immediate positive feedback
         const matchNumber = matchingPairs.length + 1;
         matchingPairs.push({
             firstIndex: firstIndex,
@@ -1126,30 +1137,60 @@ function createMatch() {
             isCorrect: true
         });
         
-        // Update UI for matched items
+        // Immediate positive feedback
         firstElement.classList.remove('selected');
-        firstElement.classList.add('matched');
+        firstElement.classList.add('correct-match');
         firstElement.dataset.matchNumber = matchNumber;
         
         secondElement.classList.remove('selected');
-        secondElement.classList.add('matched');
+        secondElement.classList.add('correct-match');
         secondElement.dataset.matchNumber = matchNumber;
+        
+        // Add matched class after brief green flash
+        setTimeout(() => {
+            firstElement.classList.remove('correct-match');
+            firstElement.classList.add('matched');
+            secondElement.classList.remove('correct-match');
+            secondElement.classList.add('matched');
+        }, 600);
+        
+        // Update prompt with progress
+        questionPrompt.textContent = `Great! ${matchingPairs.length}/6 matches complete`;
+        questionPrompt.classList.add('feedback');
         
         // Check if all pairs are matched (6 total)
         if (matchingPairs.length === 6) {
-            // Enable submit button
-            matchingSubmitBtn.disabled = false;
-            matchingSubmitBtn.textContent = 'Submit Matches';
+            // Auto-advance after all matches complete
+            setTimeout(() => {
+                // Calculate final score for the adaptive system
+                selectedAnswer = 'matching_complete';
+                isAnswered = true;
+                checkAnswer();
+            }, 1000);
+        } else {
+            // Reset prompt after feedback
+            setTimeout(() => {
+                questionPrompt.textContent = 'Tap items to match them';
+                questionPrompt.classList.remove('feedback');
+            }, 1500);
         }
     } else {
-        // Invalid match - briefly show as incorrect then deselect
+        // Invalid match - immediate negative feedback
         firstElement.classList.add('incorrect');
         secondElement.classList.add('incorrect');
+        
+        // Update prompt with negative feedback
+        questionPrompt.textContent = 'Try again!';
+        questionPrompt.classList.add('feedback', 'incorrect');
         
         setTimeout(() => {
             firstElement.classList.remove('selected', 'incorrect');
             secondElement.classList.remove('selected', 'incorrect');
-        }, 800);
+            
+            // Reset prompt
+            questionPrompt.textContent = 'Tap items to match them';
+            questionPrompt.classList.remove('feedback', 'incorrect');
+        }, 1000);
     }
     
     // Reset selections
@@ -1711,15 +1752,7 @@ function setupEventListeners() {
         }
     });
     
-    // Matching submit button
-    matchingSubmitBtn.addEventListener('click', () => {
-        if (!isAnswered && matchingPairs.length === 6) {
-            // Set selectedAnswer to trigger checkAnswer logic
-            selectedAnswer = 'matching_complete';
-            isAnswered = true;
-            checkAnswer();
-        }
-    });
+    // Matching submit button removed - we auto-advance now
     
     // Navigation is now handled by AppHeader component
 }
