@@ -21,7 +21,9 @@
                 <span class="material-icons-round">close</span>
             </button>
             <h1 class="header-title">Plan settings</h1>
-            <div></div> <!-- Spacer for layout -->
+            <button class="settings-gear-btn" id="settingsGearBtn">
+                <span class="material-icons-round">settings</span>
+            </button>
         </header>
 
         <!-- Settings Content -->
@@ -75,6 +77,59 @@
         <!-- Delete Plan Button -->
         <div class="delete-section">
             <button class="delete-btn" id="deletePlanBtn">Delete plan</button>
+        </div>
+
+        <!-- Debug Bottom Sheet -->
+        <div class="bottom-sheet-overlay" id="bottomSheetOverlay">
+            <div class="bottom-sheet" id="bottomSheet">
+                <div class="bottom-sheet-header">
+                    <h3 class="bottom-sheet-title">Debug Options</h3>
+                    <button class="bottom-sheet-close" id="bottomSheetClose">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+                
+                <div class="bottom-sheet-content">
+                    <!-- Question Type -->
+                    <div class="debug-section">
+                        <h4 class="debug-label">Question type</h4>
+                        <div class="debug-options">
+                            <button class="debug-option" data-type="question-type" data-value="flashcard">Flashcards</button>
+                            <button class="debug-option" data-type="question-type" data-value="multiple_choice">Multiple choice</button>
+                            <button class="debug-option" data-type="question-type" data-value="written">Written</button>
+                        </div>
+                    </div>
+
+                    <!-- Question Difficulty -->
+                    <div class="debug-section">
+                        <h4 class="debug-label">Question difficulty</h4>
+                        <div class="debug-options">
+                            <button class="debug-option" data-type="difficulty" data-value="easy">Easy</button>
+                            <button class="debug-option" data-type="difficulty" data-value="medium">Medium</button>
+                            <button class="debug-option" data-type="difficulty" data-value="hard">Hard</button>
+                        </div>
+                    </div>
+
+                    <!-- Question Goal -->
+                    <div class="debug-section">
+                        <h4 class="debug-label">Question goal</h4>
+                        <div class="debug-options">
+                            <button class="debug-option" data-type="goal" data-value="cram">Cram</button>
+                            <button class="debug-option" data-type="goal" data-value="memorize">Memorize</button>
+                            <button class="debug-option" data-type="goal" data-value="apply">Apply</button>
+                        </div>
+                    </div>
+
+                    <!-- Question Feedback -->
+                    <div class="debug-section">
+                        <h4 class="debug-label">Question feedback</h4>
+                        <div class="debug-options">
+                            <button class="debug-option" data-type="feedback" data-value="correct">Correct</button>
+                            <button class="debug-option" data-type="feedback" data-value="incorrect">Incorrect</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

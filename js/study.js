@@ -546,6 +546,8 @@ const gotItBtn = document.getElementById('gotItBtn');
 const studyAgainBtn = document.getElementById('studyAgainBtn');
 const textAnswer = document.getElementById('textAnswer');
 const submitBtn = document.getElementById('submitBtn');
+const writtenFeedback = document.getElementById('writtenFeedback');
+const correctAnswerFeedback = document.getElementById('correctAnswerFeedback');
 const matching = document.getElementById('matching');
 const matchingGrid = document.getElementById('matchingGrid');
 const matchingSubmitBtn = document.getElementById('matchingSubmitBtn');
@@ -661,12 +663,11 @@ async function fetchAndLoadQuestionsFromApi() {
 // Initialize header component
 function initializeHeader() {
     const roundTheme = roundThemes[currentRoundNumber] || "Study Session";
-    const headerTitle = `Round ${currentRoundNumber}: ${roundTheme}`;
     
     appHeader = new AppHeader({
         backUrl: '../html/study-plan.html',
         backButtonIcon: 'close',
-        title: headerTitle,
+        title: roundTheme,
         onBackClick: function() {
             // Close study session with confirmation
             if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
@@ -696,8 +697,7 @@ function initializeHeader() {
 function updateHeaderTitle() {
     if (appHeader) {
         const roundTheme = roundThemes[currentRoundNumber] || "Study Session";
-        const headerTitle = `Round ${currentRoundNumber}: ${roundTheme}`;
-        appHeader.setTitle(headerTitle);
+        appHeader.setTitle(roundTheme);
     }
 }
 
@@ -775,8 +775,8 @@ function startNewRound() {
         const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
         questionsInRound = shuffled.slice(0, Math.min(7, availableQuestions.length));
         
-        // Assign varied question formats for better experience
-        assignVariedQuestionFormats();
+        // Assign random question formats for better experience
+        assignRandomQuestionFormats();
     }
     
     if (questionsInRound.length === 0) {
@@ -792,35 +792,21 @@ function startNewRound() {
     showQuestion();
 }
 
-// Assign varied question formats to questions in round for better experience
-function assignVariedQuestionFormats() {
+// Assign random question formats to questions in round
+function assignRandomQuestionFormats() {
     if (questionsInRound.length === 0) return;
     
-    // Define the distribution of question types (total should be <= 7)
-    const formatDistribution = [
-        'multiple_choice',  // 2 multiple choice
-        'multiple_choice',
-        'written',          // 2 written
-        'written', 
-        'matching',         // 2 matching
-        'matching',
-        'flashcard'         // 1 flashcard
-    ];
+    // Available question types
+    const questionTypes = ['multiple_choice', 'written', 'matching', 'flashcard'];
     
-    // Shuffle the distribution for variety
-    const shuffledFormats = formatDistribution.sort(() => 0.5 - Math.random());
-    
-    // Assign formats to questions
-    questionsInRound.forEach((question, index) => {
-        if (index < shuffledFormats.length) {
-            question.currentFormat = shuffledFormats[index];
-        } else {
-            // Fallback to multiple choice for extra questions
-            question.currentFormat = 'multiple_choice';
-        }
+    // Assign random formats to questions
+    questionsInRound.forEach((question) => {
+        // Randomly select a question type
+        const randomIndex = Math.floor(Math.random() * questionTypes.length);
+        question.currentFormat = questionTypes[randomIndex];
     });
     
-    console.log('Assigned varied question formats:', questionsInRound.map(q => q.currentFormat));
+    console.log('Assigned random question formats:', questionsInRound.map(q => q.currentFormat));
 }
 
 // Initialize the first round (called on session start)
@@ -854,8 +840,8 @@ function initFirstRound() {
         const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
         questionsInRound = shuffled.slice(0, Math.min(7, availableQuestions.length));
         
-        // Assign varied question formats for better experience
-        assignVariedQuestionFormats();
+        // Assign random question formats for better experience
+        assignRandomQuestionFormats();
     }
     
     if (questionsInRound.length === 0) {
@@ -875,8 +861,8 @@ function initFirstRound() {
 function showQuestion() {
     currentQuestion = questionsInRound[currentQuestionIndex];
     
-    // Only set question text for non-matching questions
-    if (currentQuestion.currentFormat !== 'matching') {
+    // Only set question text for question types that need it (not matching or flashcard)
+    if (currentQuestion.currentFormat !== 'matching' && currentQuestion.currentFormat !== 'flashcard') {
         questionText.textContent = currentQuestion.question;
         // Add source badge next to the question text
         setSourceBadge(questionText);
@@ -889,7 +875,7 @@ function showQuestion() {
     flashcard.style.display = 'none';
     matching.style.display = 'none';
     
-    // Remove matching layout class
+    // Remove layout classes
     const studyContent = document.querySelector('.study-content');
     if (studyContent) {
         studyContent.classList.remove('matching-layout');
@@ -918,9 +904,13 @@ function showQuestion() {
     selectedAnswer = null;
     isAnswered = false;
     
-    // Show question container (will be hidden for matching questions in their specific handler)
-    questionContainer.style.display = 'block';
-    questionContainer.classList.remove('fade-out');
+    // Show question container only for question types that need it
+    if (currentQuestion.currentFormat !== 'matching' && currentQuestion.currentFormat !== 'flashcard') {
+        questionContainer.style.display = 'block';
+        questionContainer.classList.remove('fade-out');
+    } else {
+        questionContainer.style.display = 'none';
+    }
 }
 
 // Show multiple choice options
@@ -929,10 +919,14 @@ function showMultipleChoice() {
     questionPrompt.textContent = 'Choose the correct answer';
     const optionBtns = multipleChoice.querySelectorAll('.option-btn');
     
+    // Shuffle the options array to randomize answer position
+    const shuffledOptions = [...currentQuestion.options].sort(() => Math.random() - 0.5);
+    
     optionBtns.forEach((btn, index) => {
-        btn.textContent = currentQuestion.options[index];
-        btn.dataset.answer = currentQuestion.options[index];
-        btn.className = 'option-btn';
+        btn.textContent = shuffledOptions[index];
+        btn.dataset.answer = shuffledOptions[index];
+        btn.className = 'option-btn'; // Reset all classes
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake'); // Explicitly remove any lingering states
         btn.disabled = false;
         btn.style.cursor = 'pointer';
         // Add source badge to each option
@@ -943,23 +937,19 @@ function showMultipleChoice() {
 // Show flashcard
 function showFlashcard() {
     flashcard.style.display = 'flex';
-    questionPrompt.textContent = 'Click the card to reveal the answer';
+    questionPrompt.textContent = 'Tap the card to flip';
     
     // Set flashcard content
     const termEl = flashcard.querySelector('.flashcard-term');
     const definitionEl = flashcard.querySelector('.flashcard-definition');
-    const explanationEl = flashcard.querySelector('.flashcard-explanation');
     
     termEl.textContent = currentQuestion.question;
     definitionEl.textContent = currentQuestion.correctAnswer;
     // Add source badges to flashcard faces
     setSourceBadge(termEl);
     setSourceBadge(definitionEl);
-    // Prefer a helpful hint if available; otherwise keep it subtle
-    const hint = currentQuestion.subcategory || (currentQuestion._raw && (currentQuestion._raw.hint || currentQuestion._raw.topic));
-    explanationEl.textContent = hint ? String(hint) : 'Tap Got it or Study again to continue';
     
-    // Reset flashcard state
+    // Reset flashcard state - hide buttons until card is flipped
     flashcardElement.classList.remove('flipped');
     gotItBtn.style.display = 'none';
     studyAgainBtn.style.display = 'none';
@@ -970,6 +960,13 @@ function showTextInput() {
     textInput.style.display = 'flex';
     questionPrompt.textContent = 'Type your answer';
     textAnswer.value = '';
+    textAnswer.classList.remove('incorrect', 'correct');
+    textInput.classList.remove('incorrect', 'correct');
+    textAnswer.disabled = false;
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('show'); // Hidden until text is entered
+    submitBtn.style.cursor = 'pointer';
+    writtenFeedback.style.display = 'none';
     textAnswer.focus();
 }
 
@@ -996,6 +993,9 @@ function showTrueFalse() {
     
     optionBtns.forEach(btn => {
         btn.className = 'option-btn';
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect'); // Clear any lingering states
+        btn.disabled = false;
+        btn.style.cursor = 'pointer';
         // Add source badge to T/F options (always static today)
         setSourceBadge(btn);
     });
@@ -1004,10 +1004,7 @@ function showTrueFalse() {
 // Show matching exercise
 function showMatching() {
     matching.style.display = 'flex';
-    questionPrompt.textContent = 'Tap items to match them';
-    
-    // Hide question container for matching since terms/definitions are in the grid
-    questionContainer.style.display = 'none';
+    questionPrompt.textContent = 'Match the items below';
     
     // Add compact layout class for optimized screen usage
     const studyContent = document.querySelector('.study-content');
@@ -1026,14 +1023,14 @@ function showMatching() {
     renderMatchingGrid();
 }
 
-// Generate 6 questions for matching and create 12 items (6 terms + 6 definitions)
+// Generate 3 questions for matching and create 6 items (3 terms + 3 definitions)
 function generateMatchingItems() {
     const matchingQuestions = [currentQuestion];
     
-    // Get 5 other questions randomly
+    // Get 2 other questions randomly (reduced from 5)
     const otherQuestions = questions.filter(q => q.id !== currentQuestion.id);
     const shuffled = otherQuestions.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 5);
+    const selected = shuffled.slice(0, 2);
     
     matchingQuestions.push(...selected);
     
@@ -1117,7 +1114,7 @@ function handleItemClick(itemIndex) {
     
     // If 2 items are selected, try to create a match
     if (selectedItems.length === 2) {
-        setTimeout(() => createMatch(), 300); // Small delay for better UX
+        setTimeout(() => createMatch(), 100); // Quick response for better UX
     }
 }
 
@@ -1151,57 +1148,50 @@ function createMatch() {
         secondElement.classList.remove('selected');
         secondElement.classList.add('correct-match');
         
-        // Add fade-out animation after brief green flash
+        // Add lightspeed animation after brief green flash
         setTimeout(() => {
             firstElement.classList.remove('correct-match');
-            firstElement.classList.add('matched', 'fade-out');
+            firstElement.classList.add('matched', 'lightspeed');
             secondElement.classList.remove('correct-match');
-            secondElement.classList.add('matched', 'fade-out');
+            secondElement.classList.add('matched', 'lightspeed');
             
-            // Hide completely after fade animation
-            setTimeout(() => {
-                firstElement.classList.add('hidden');
-                secondElement.classList.add('hidden');
-            }, 400); // Matches CSS transition duration
-        }, 600);
+            // Elements will be hidden automatically by the lightspeed animation
+        }, 400); // Reduced timing for smoother experience
         
-        // Update prompt with progress
-        questionPrompt.textContent = `Great! ${matchingPairs.length}/6 matches complete`;
+        // Update prompt with positive feedback
+        questionPrompt.textContent = 'Excellent!';
         questionPrompt.classList.add('feedback');
         
-        // Check if all pairs are matched (6 total)
-        if (matchingPairs.length === 6) {
-            // Auto-advance after all matches complete
-            setTimeout(() => {
-                // Calculate final score for the adaptive system
-                selectedAnswer = 'matching_complete';
-                isAnswered = true;
-                checkAnswer();
-            }, 1000);
+        // Check if all pairs are matched (3 total)
+        if (matchingPairs.length === 3) {
+            // Immediately advance after all matches complete
+            selectedAnswer = 'matching_complete';
+            isAnswered = true;
+            checkAnswer();
         } else {
             // Reset prompt after feedback
             setTimeout(() => {
-                questionPrompt.textContent = 'Tap items to match them';
+                questionPrompt.textContent = 'Match the items below';
                 questionPrompt.classList.remove('feedback');
-            }, 1500);
+            }, 1200); // Slightly reduced timing for better flow
         }
     } else {
-        // Invalid match - immediate negative feedback
-        firstElement.classList.add('incorrect');
-        secondElement.classList.add('incorrect');
+        // Invalid match - immediate negative feedback with shake
+        firstElement.classList.add('incorrect', 'shake');
+        secondElement.classList.add('incorrect', 'shake');
         
         // Update prompt with negative feedback
-        questionPrompt.textContent = 'Try again!';
+        questionPrompt.textContent = 'Try again';
         questionPrompt.classList.add('feedback', 'incorrect');
         
         setTimeout(() => {
-            firstElement.classList.remove('selected', 'incorrect');
-            secondElement.classList.remove('selected', 'incorrect');
+            firstElement.classList.remove('selected', 'incorrect', 'shake');
+            secondElement.classList.remove('selected', 'incorrect', 'shake');
             
             // Reset prompt
-            questionPrompt.textContent = 'Tap items to match them';
+            questionPrompt.textContent = 'Match the items below';
             questionPrompt.classList.remove('feedback', 'incorrect');
-        }, 1000);
+        }, 800); // Slightly reduced timing
     }
     
     // Reset selections
@@ -1244,7 +1234,7 @@ function handleAnswerSelect(answer) {
     }
     
     // Check answer after a brief delay
-    setTimeout(checkAnswer, 500);
+    setTimeout(checkAnswer, 200);
 }
 
 // Check if the answer is correct
@@ -1286,8 +1276,8 @@ function checkAnswer() {
             }
         });
         
-        // Consider correct if at least 4 out of 6 matches are right (67% threshold)
-        isCorrect = correctMatches >= 4;
+        // Consider correct if at least 2 out of 3 matches are right (67% threshold)
+        isCorrect = correctMatches >= 2;
         
         // Update question statistics
         currentQuestion.attempts++;
@@ -1296,7 +1286,7 @@ function checkAnswer() {
         }
         
         // Store the score for feedback
-        selectedAnswer = `${correctMatches}/6 correct matches`;
+        selectedAnswer = `${correctMatches}/3 correct matches`;
     } else {
         isCorrect = selectedAnswer === currentQuestion.correctAnswer;
         
@@ -1369,22 +1359,54 @@ function adaptDifficulty(isCorrect) {
 function showFeedback(isCorrect) {
     // Update UI to show correct/incorrect answers
     if (currentQuestion.currentFormat === 'multiple_choice' || currentQuestion.currentFormat === 'true_false') {
-        const optionBtns = document.querySelectorAll('.option-btn');
-        optionBtns.forEach(btn => {
-            btn.classList.remove('selected');
-            // Always show the correct answer
-            if (btn.dataset.answer === currentQuestion.correctAnswer) {
-                if (isCorrect) {
-                    btn.classList.add('correct-selected');
-                } else {
-                    btn.classList.add('correct');
+        // Add a small delay for smoother transition
+        setTimeout(() => {
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach(btn => {
+                // Clear all previous states first
+                btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+                
+                // Always show the correct answer
+                if (btn.dataset.answer === currentQuestion.correctAnswer) {
+                    if (isCorrect) {
+                        btn.classList.add('correct-selected');
+                    } else {
+                        btn.classList.add('correct');
+                    }
                 }
-            }
-            // Show the incorrect selected answer if user got it wrong
-            if (btn.dataset.answer === selectedAnswer && !isCorrect) {
-                btn.classList.add('incorrect');
-            }
-        });
+                // Show the incorrect selected answer if user got it wrong
+                if (btn.dataset.answer === selectedAnswer && !isCorrect) {
+                    btn.classList.add('incorrect', 'shake');
+                    
+                    // Remove shake class after animation completes
+                    setTimeout(() => {
+                        btn.classList.remove('shake');
+                    }, 500);
+                }
+            });
+        }, 100); // Quicker feedback transition
+    } else if (currentQuestion.currentFormat === 'written') {
+        // Show feedback for written questions
+        if (isCorrect) {
+            textAnswer.classList.add('correct');
+            textInput.classList.add('correct');
+            // For correct answers, just show the correct answer in green
+            correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
+            setSourceBadge(correctAnswerFeedback);
+            writtenFeedback.style.display = 'flex';
+        } else {
+            textAnswer.classList.add('incorrect');
+            textInput.classList.add('incorrect');
+            // User's incorrect answer stays in the input field with red styling
+            // Just show the correct answer below
+            correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
+            setSourceBadge(correctAnswerFeedback);
+            writtenFeedback.style.display = 'flex';
+        }
+        
+        // Disable input and hide submit button  
+        textAnswer.disabled = true;
+        submitBtn.classList.remove('show');
     } else if (currentQuestion.currentFormat === 'matching') {
         // Feedback for matching questions is handled in real-time during createMatch()
         // No additional feedback needed here since items fade out immediately
@@ -1482,6 +1504,38 @@ function nextQuestion() {
         questionPrompt.classList.remove('feedback', 'incorrect');
         questionPrompt.style.color = '';
         questionPrompt.textContent = 'Choose the answer';
+        
+        // Reset written question state
+        if (textAnswer) {
+            textAnswer.disabled = false;
+            textAnswer.classList.remove('incorrect', 'correct');
+        }
+        if (textInput) {
+            textInput.classList.remove('incorrect', 'correct');
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('show'); // Hide submit button initially
+            submitBtn.style.cursor = 'pointer';
+        }
+        if (writtenFeedback) {
+            writtenFeedback.style.display = 'none';
+        }
+        
+        // Reset flashcard state
+        if (gotItBtn && studyAgainBtn) {
+            gotItBtn.style.display = 'none';
+            studyAgainBtn.style.display = 'none';
+        }
+        
+        // Reset option button states
+        const optionBtns = document.querySelectorAll('.option-btn');
+        optionBtns.forEach(btn => {
+            btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+            btn.disabled = false;
+            btn.style.cursor = 'pointer';
+        });
+        
         showQuestion();
         updateProgress();
         
@@ -1713,10 +1767,13 @@ function setupEventListeners() {
     
     // Flashcard interaction
     flashcardElement.addEventListener('click', () => {
-        if (currentQuestion.currentFormat === 'flashcard' && !isAnswered) {
+        if (currentQuestion.currentFormat === 'flashcard' && !isAnswered && !flashcardElement.classList.contains('flipped')) {
             flashcardElement.classList.add('flipped');
-            gotItBtn.style.display = 'block';
-            studyAgainBtn.style.display = 'block';
+            // Show buttons after card is flipped
+            setTimeout(() => {
+                gotItBtn.style.display = 'block';
+                studyAgainBtn.style.display = 'block';
+            }, 300); // Delay to sync with flip animation
         }
     });
     
@@ -1748,6 +1805,17 @@ function setupEventListeners() {
     textAnswer.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !isAnswered && textAnswer.value.trim()) {
             handleAnswerSelect(textAnswer.value.trim());
+        }
+    });
+    
+    // Text input change - show/hide submit button based on content
+    textAnswer.addEventListener('input', (e) => {
+        if (currentQuestion && currentQuestion.currentFormat === 'written') {
+            if (e.target.value.trim().length > 0) {
+                submitBtn.classList.add('show');
+            } else {
+                submitBtn.classList.remove('show');
+            }
         }
     });
     

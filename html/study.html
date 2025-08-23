@@ -49,6 +49,12 @@
                 <div class="text-input-container" id="textInput" style="display: none;">
                     <input type="text" class="text-input" id="textAnswer" placeholder="Type your answer...">
                     <button class="submit-btn" id="submitBtn">Submit</button>
+                    
+                    <!-- Written question feedback -->
+                    <div class="written-feedback" id="writtenFeedback" style="display: none;">
+                        <div class="correct-answer-label">Correct answer</div>
+                        <div class="correct-answer-feedback" id="correctAnswerFeedback"></div>
+                    </div>
                 </div>
 
                 <!-- True/False -->
@@ -62,23 +68,23 @@
                     <div class="flashcard" id="flashcardElement">
                         <div class="flashcard-front">
                             <h3 class="flashcard-term">Cell Membrane Function</h3>
-                            <p class="flashcard-hint">Click to reveal the answer</p>
                         </div>
                         <div class="flashcard-back">
                             <h3 class="flashcard-definition">Regulate what enters and exits the cell</h3>
-                            <p class="flashcard-explanation">The cell membrane controls the passage of materials in and out of the cell</p>
                         </div>
                     </div>
                     <div class="flashcard-buttons">
-                        <button class="flashcard-btn got-it-btn" id="gotItBtn">Got it</button>
                         <button class="flashcard-btn study-again-btn" id="studyAgainBtn">Study again</button>
+                        <button class="flashcard-btn got-it-btn" id="gotItBtn">
+                            <span class="material-icons-round">check</span>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Matching -->
                 <div class="matching-container" id="matching" style="display: none;">
                     <div class="matching-grid" id="matchingGrid">
-                        <!-- All 12 matching items (6 terms + 6 definitions) will be generated dynamically -->
+                        <!-- All 6 matching items (3 terms + 3 definitions) will be generated dynamically -->
                     </div>
                     <div class="matching-submit">
                         <button class="submit-btn" id="matchingSubmitBtn">Submit Matches</button>

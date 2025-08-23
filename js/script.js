@@ -73,10 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
     
-    // Add animation test buttons to debug bottom sheet (delay to avoid conflicts)
-    setTimeout(() => {
-        addAnimationTestButtons();
-    }, 100);
+
 });
 
 // Event Listeners

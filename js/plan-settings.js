@@ -3,6 +3,9 @@
 // DOM Elements
 const closeBtn = document.getElementById('closeBtn');
 const deletePlanBtn = document.getElementById('deletePlanBtn');
+const settingsGearBtn = document.getElementById('settingsGearBtn');
+const bottomSheetOverlay = document.getElementById('bottomSheetOverlay');
+const bottomSheetClose = document.getElementById('bottomSheetClose');
 
 // Setting value elements
 const courseValue = document.getElementById('courseValue');
@@ -18,9 +21,18 @@ const conceptsSetting = document.getElementById('conceptsSetting');
 const knowledgeSetting = document.getElementById('knowledgeSetting');
 const dateSetting = document.getElementById('dateSetting');
 
+// Debug state
+let debugSettings = {
+    questionType: null,
+    difficulty: null,
+    goal: null,
+    feedback: null
+};
+
 // Initialize the settings screen
 document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
+    loadDebugSettings();
     setupEventListeners();
     initMaterialIcons();
 });
@@ -147,11 +159,38 @@ function setupEventListeners() {
         }
     });
 
+    // Settings gear button
+    settingsGearBtn.addEventListener('click', function() {
+        openBottomSheet();
+    });
+
+    // Bottom sheet close handlers
+    bottomSheetClose.addEventListener('click', function() {
+        closeBottomSheet();
+    });
+
+    bottomSheetOverlay.addEventListener('click', function(e) {
+        if (e.target === bottomSheetOverlay) {
+            closeBottomSheet();
+        }
+    });
+
+    // Debug option handlers
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('debug-option')) {
+            handleDebugOptionClick(e.target);
+        }
+    });
+
     // Keyboard navigation
     document.addEventListener('keydown', function(e) {
         switch(e.key) {
             case 'Escape':
-                closeBtn.click();
+                if (bottomSheetOverlay.classList.contains('show')) {
+                    closeBottomSheet();
+                } else {
+                    closeBtn.click();
+                }
                 break;
         }
     });
@@ -276,4 +315,88 @@ function showToast(message, duration = 3000) {
             }
         }, 300);
     }, duration);
+}
+
+// Load debug settings from localStorage
+function loadDebugSettings() {
+    try {
+        const saved = localStorage.getItem('debugSettings');
+        if (saved) {
+            debugSettings = JSON.parse(saved);
+        }
+        updateDebugUI();
+    } catch (error) {
+        console.error('Error loading debug settings:', error);
+    }
+}
+
+// Save debug settings to localStorage
+function saveDebugSettings() {
+    try {
+        localStorage.setItem('debugSettings', JSON.stringify(debugSettings));
+        console.log('Debug settings saved:', debugSettings);
+    } catch (error) {
+        console.error('Error saving debug settings:', error);
+    }
+}
+
+// Update debug UI to reflect current selections
+function updateDebugUI() {
+    const debugOptions = document.querySelectorAll('.debug-option');
+    debugOptions.forEach(option => {
+        const type = option.dataset.type;
+        const value = option.dataset.value;
+        
+        // Convert type names to match debugSettings structure
+        let settingKey = type;
+        if (type === 'question-type') {
+            settingKey = 'questionType';
+        }
+        
+        option.classList.remove('selected');
+        
+        if (debugSettings[settingKey] === value) {
+            option.classList.add('selected');
+        }
+    });
+}
+
+// Open bottom sheet
+function openBottomSheet() {
+    bottomSheetOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+// Close bottom sheet
+function closeBottomSheet() {
+    bottomSheetOverlay.classList.remove('show');
+    document.body.style.overflow = ''; // Restore scrolling
+}
+
+// Handle debug option selection
+function handleDebugOptionClick(option) {
+    const type = option.dataset.type;
+    const value = option.dataset.value;
+    
+    // Convert type names to match debugSettings structure
+    let settingKey = type;
+    if (type === 'question-type') {
+        settingKey = 'questionType';
+    }
+    
+    // Toggle selection
+    if (debugSettings[settingKey] === value) {
+        // Deselect if already selected
+        debugSettings[settingKey] = null;
+    } else {
+        // Select this option
+        debugSettings[settingKey] = value;
+    }
+    
+    // Update UI and save
+    updateDebugUI();
+    saveDebugSettings();
+    
+    // Show feedback
+    showToast(`Debug ${type}: ${debugSettings[settingKey] || 'None'}`, 1500);
 }
