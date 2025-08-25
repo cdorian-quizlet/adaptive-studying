@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDebugSettings();
     setupEventListeners();
     initMaterialIcons();
+    
+    // Debug: Log that settings gear is available
+    console.log('Settings gear button available:', !!document.getElementById('settingsGearBtn'));
 });
 
 // Load settings from localStorage
@@ -363,6 +366,7 @@ function updateDebugUI() {
 
 // Open bottom sheet
 function openBottomSheet() {
+    console.log('Opening debug bottom sheet');
     bottomSheetOverlay.classList.add('show');
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
 }

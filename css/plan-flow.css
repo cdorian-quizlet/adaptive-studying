@@ -14,6 +14,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   outline: none !important;
   box-shadow: none !important;
   border-radius: 200px !important;
+  color: var(--sys-text-primary) !important;
   /* Keep the sizing and centering properties from header.css */
   display: flex !important;
   justify-content: center !important;
@@ -122,7 +123,7 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   padding: 8px;
   border-radius: 50%;
   cursor: pointer;
-  color: var(--sys-text-secondary);
+  color: var(--sys-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -600,15 +601,42 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 /* Loading */
 .loading-screen {
   min-height: 100vh;
-  padding: 0 20px;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
+  /* Prevent scrolling and zooming */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent zoom and scroll on body when loading screen is active */
+body:has(.loading-screen) {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* Hide header when loading screen is active */
 .app-container:has(.loading-screen) .flow-header {
   display: none;
+}
+
+/* Remove padding/margins from app container when loading screen is active */
+.app-container:has(.loading-screen) {
+  margin: 0;
+  padding: 0;
+  max-width: none;
 }
 
 .loading-content {
@@ -617,8 +645,19 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   align-items: flex-start;
   flex: 1;
   justify-content: center;
-  padding: 80px 0;
+  padding: 80px 20px 308px; /* Bottom padding matches fixed container height */
   position: relative;
+}
+
+/* Fixed bottom container for illustrations and progress */
+.loading-bottom-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 308px; /* Increased by 48px to accommodate bottom spacing */
+  background: var(--sys-surface-base);
 }
 
 .loading-signature {
@@ -629,8 +668,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   background-position: center;
   background-size: contain;
   position: absolute;
-  bottom: 228px; /* 172px (text position) + 56px (gap above text) */
-  left: 0px; /* Moved 4px more to the left from 4px */
+  bottom: 210px; /* Moved down 48px from previous position */
+  left: 20px; /* Align with progress bar */
   overflow: hidden;
 }
 
@@ -661,8 +700,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 
 .loading-spark {
   position: absolute;
-  bottom: 388px; /* Moved up 40px more from 348px */
-  left: 328px; /* Moved 16px to the right from 312px */
+  bottom: 374px; /* Moved down 48px from previous position */
+  left: 340px; /* Moved left 16px from previous position */
   width: 64px;
   height: 56px;
   background-image: url('../images/spark.png');
@@ -683,8 +722,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   margin: 0;
   max-width: 100%;
   position: absolute;
-  bottom: 172px; /* 140px (progress bar from bottom) + 32px (gap above bar) */
-  left: 20px; /* Align with screen margin */
+  bottom: 130px; /* Moved down 48px from previous position */
+  left: 20px;
   right: 20px;
 }
 
@@ -694,8 +733,8 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   border-radius: 8px;
   overflow: hidden;
   position: absolute;
-  bottom: 140px;
-  left: 20px; /* Align with screen margin */
+  bottom: 92px; /* Moved down 48px from previous position */
+  left: 20px;
   right: 20px;
 }
 
@@ -704,9 +743,9 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   height: 100%;
   border-radius: var(--radius-full, 200px);
   background: linear-gradient(90deg, var(--color-other-rosewater, #FDD2CA) 0%, var(--color-twilight-600, #423ED8) 68.4%, var(--color-twilight-400, #7583FF) 100%);
-  background-size: 200% 100%;
-  background-position: -50% 0;
-  animation: load 6s ease-in-out forwards, progressGradientMove 2s ease-in-out infinite;
+  background-size: 100% 100%;
+  background-position: 0% 0;
+  animation: load 6s ease-in-out forwards;
 }
 
 @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
@@ -718,11 +757,6 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
 @keyframes sparkFadeIn { 
   from { opacity: 0; transform: scale(0.8); } 
   to { opacity: 1; transform: scale(1); } 
-}
-@keyframes progressGradientMove {
-  0% { background-position: -50% 0; }
-  50% { background-position: 0% 0; }
-  100% { background-position: 50% 0; }
 }
 
 /* Shimmer loading effect */
@@ -785,5 +819,90 @@ body { font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', system-ui
   height: 100%;
   background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
   animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Search loading state - reuse shimmer pattern */
+.search-loading-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-loading-item {
+  padding: 16px 20px;
+  background: var(--color-gray-200);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.search-loading-item .loading-name {
+  width: 100%;
+  margin-bottom: 4px;
+  height: var(--typography-lineHeight-subheading-three);
+  border-radius: var(--radius-xLarge, 24px);
+  background: var(--color-gray-200);
+  position: relative;
+  overflow: hidden;
+}
+
+.search-loading-item .loading-name::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.search-loading-item .loading-description {
+  width: 60%;
+  height: var(--typography-lineHeight-subheading-four);
+  border-radius: var(--radius-xLarge, 24px);
+  background: var(--color-gray-200);
+  position: relative;
+  overflow: hidden;
+}
+
+.search-loading-item .loading-description::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* No results state */
+.no-results-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.no-results-item {
+  padding: 16px 20px;
+  background: var(--sys-surface-base);
+  border: 2px solid var(--sys-border-primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.no-results-text {
+  font-family: var(--typography-fontFamily);
+  font-size: var(--typography-size-subheading-three);
+  line-height: var(--typography-lineHeight-subheading-three);
+  font-weight: 600;
+  color: var(--sys-text-secondary);
 }
 

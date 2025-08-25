@@ -686,7 +686,8 @@ function initializeHeader() {
             }
         },
         onSettingsClick: function() {
-            showToast('Round settings coming soon!');
+            console.log('Settings button clicked - attempting to open debug sheet');
+            openDebugBottomSheet();
         }
     });
     
@@ -861,6 +862,9 @@ function initFirstRound() {
 function showQuestion() {
     currentQuestion = questionsInRound[currentQuestionIndex];
     
+    // Reset question prompt classes
+    questionPrompt.classList.remove('flashcard-prompt');
+    
     // Only set question text for question types that need it (not matching or flashcard)
     if (currentQuestion.currentFormat !== 'matching' && currentQuestion.currentFormat !== 'flashcard') {
         questionText.textContent = currentQuestion.question;
@@ -938,6 +942,9 @@ function showMultipleChoice() {
 function showFlashcard() {
     flashcard.style.display = 'flex';
     questionPrompt.textContent = 'Tap the card to flip';
+    
+    // Add class for proper spacing
+    questionPrompt.classList.add('flashcard-prompt');
     
     // Set flashcard content
     const termEl = flashcard.querySelector('.flashcard-term');
@@ -1412,32 +1419,10 @@ function showFeedback(isCorrect) {
         // No additional feedback needed here since items fade out immediately
     }
     
-    // Handle flashcard feedback
+    // Handle flashcard feedback - go directly to next question without feedback
     if (currentQuestion.currentFormat === 'flashcard') {
-        if (isCorrect) {
-            questionPrompt.textContent = 'Great job!';
-            questionPrompt.classList.add('feedback');
-            
-            // Auto-advance to next question after 1.0 seconds for correct answers
-            setTimeout(() => {
-                nextQuestion();
-            }, 1000);
-        } else {
-            questionPrompt.textContent = 'Keep studying!';
-            questionPrompt.classList.add('feedback', 'incorrect');
-            
-            // For flashcard incorrect answers, add a continue button
-            const continueBtn = document.createElement('button');
-            continueBtn.textContent = 'Continue';
-            continueBtn.className = 'continue-btn';
-            
-            continueBtn.addEventListener('click', () => {
-                nextQuestion();
-            });
-            
-            // Insert the button into the app container (fixed positioned)
-            document.body.appendChild(continueBtn);
-        }
+        // No feedback, go directly to next question
+        nextQuestion();
         return;
     }
     
@@ -1765,15 +1750,19 @@ function setupEventListeners() {
     // Handle icon loading
     handleIconLoading();
     
-    // Flashcard interaction
+    // Flashcard interaction - allow continuous flipping, show buttons after first flip
     flashcardElement.addEventListener('click', () => {
-        if (currentQuestion.currentFormat === 'flashcard' && !isAnswered && !flashcardElement.classList.contains('flipped')) {
-            flashcardElement.classList.add('flipped');
-            // Show buttons after card is flipped
-            setTimeout(() => {
-                gotItBtn.style.display = 'block';
-                studyAgainBtn.style.display = 'block';
-            }, 300); // Delay to sync with flip animation
+        if (currentQuestion.currentFormat === 'flashcard' && !isAnswered) {
+            // Toggle flip state
+            flashcardElement.classList.toggle('flipped');
+            
+            // Show buttons after first flip (only if they're not already visible)
+            if (gotItBtn.style.display === 'none' || gotItBtn.style.display === '') {
+                setTimeout(() => {
+                    gotItBtn.style.display = 'block';
+                    studyAgainBtn.style.display = 'block';
+                }, 300); // Delay to sync with flip animation
+            }
         }
     });
     
@@ -1822,7 +1811,142 @@ function setupEventListeners() {
     // Matching submit button removed - we auto-advance now
     
     // Navigation is now handled by AppHeader component
+    
+    // Debug bottom sheet event listeners - defer slightly to ensure DOM is ready
+    setTimeout(setupDebugBottomSheetListeners, 100);
 }
+
+// Debug bottom sheet functionality - using home page pattern
+let debugBottomSheet;
+let closeBottomSheetBtn;
+
+function setupDebugBottomSheetListeners() {
+    console.log('Setting up debug bottom sheet listeners...');
+    debugBottomSheet = document.getElementById('debugBottomSheet');
+    closeBottomSheetBtn = document.getElementById('closeBottomSheet');
+    
+    console.log('Debug elements found:', {
+        bottomSheet: !!debugBottomSheet,
+        closeBtn: !!closeBottomSheetBtn
+    });
+    
+    if (!debugBottomSheet || !closeBottomSheetBtn) {
+        console.warn('Debug bottom sheet elements not found');
+        return;
+    }
+    
+    // Close button handler
+    closeBottomSheetBtn.addEventListener('click', closeDebugBottomSheet);
+    
+    // Overlay click handler (close when clicking outside content)
+    debugBottomSheet.addEventListener('click', function(e) {
+        if (e.target === debugBottomSheet) {
+            closeDebugBottomSheet();
+        }
+    });
+    
+    // Debug option handlers
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('debug-option')) {
+            handleDebugOptionClick(e.target);
+        }
+    });
+    
+    // Escape key handler
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && debugBottomSheet.classList.contains('show')) {
+            closeDebugBottomSheet();
+        }
+    });
+}
+
+// Open debug bottom sheet - using home page pattern
+function openDebugBottomSheet() {
+    console.log('openDebugBottomSheet called, bottom sheet exists:', !!debugBottomSheet);
+    
+    if (!debugBottomSheet) {
+        console.error('Debug bottom sheet not found!');
+        // Try to find it again
+        debugBottomSheet = document.getElementById('debugBottomSheet');
+        console.log('Retry found bottom sheet:', !!debugBottomSheet);
+        if (!debugBottomSheet) return;
+    }
+    
+    console.log('Opening debug bottom sheet');
+    debugBottomSheet.classList.add('show');
+    
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Update UI to show current question type
+    updateDebugUI();
+    
+    console.log('Debug bottom sheet should now be visible, classes:', debugBottomSheet.className);
+}
+
+// Close debug bottom sheet - using home page pattern
+function closeDebugBottomSheet() {
+    if (!debugBottomSheet) return;
+    
+    console.log('Closing debug bottom sheet');
+    debugBottomSheet.classList.remove('show');
+    
+    document.body.style.overflow = ''; // Restore scrolling
+}
+
+// Update debug UI to show current selections
+function updateDebugUI() {
+    const debugOptions = document.querySelectorAll('.debug-option');
+    
+    debugOptions.forEach(option => {
+        const type = option.dataset.type;
+        const value = option.dataset.value;
+        
+        option.classList.remove('selected');
+        
+        if (type === 'question-type' && currentQuestion && currentQuestion.currentFormat === value) {
+            option.classList.add('selected');
+        }
+    });
+}
+
+// Handle debug option selection
+function handleDebugOptionClick(option) {
+    const type = option.dataset.type;
+    const value = option.dataset.value;
+    
+    console.log('Debug option clicked:', type, value);
+    
+    if (type === 'question-type' && currentQuestion) {
+        // Change the current question's format
+        currentQuestion.currentFormat = value;
+        
+        // Update debug UI
+        updateDebugUI();
+        
+        // Close the bottom sheet
+        closeDebugBottomSheet();
+        
+        // Re-render the question with new format
+        showQuestion();
+        
+        // Show feedback toast
+        showToast(`Question type changed to: ${getQuestionTypeDisplayName(value)}`, 2000);
+    }
+}
+
+// Helper function to get display name for question types
+function getQuestionTypeDisplayName(type) {
+    const displayNames = {
+        'multiple_choice': 'Multiple choice',
+        'flashcard': 'Flashcard',
+        'written': 'Written',
+        'matching': 'Matching',
+        'true_false': 'True/False'
+    };
+    return displayNames[type] || type;
+}
+
+// No longer needed - bottom sheet is in HTML
 
 // Handle Material Icons loading
 function handleIconLoading() {
@@ -1852,6 +1976,18 @@ function resetQuestionsArray() {
 
 // Make reset function available globally
 window.resetQuestionsArray = resetQuestionsArray;
+
+// Make debug functions available globally for testing
+window.openDebugBottomSheet = openDebugBottomSheet;
+window.testDebugSheet = function() {
+    console.log('Testing debug sheet directly...');
+    const bottomSheet = document.getElementById('debugBottomSheet');
+    console.log('Found bottom sheet element:', !!bottomSheet);
+    if (bottomSheet) {
+        bottomSheet.classList.add('show');
+        console.log('Debug sheet should now be visible');
+    }
+};
 
 // Initialize when DOM is loaded
 // Toast notification system

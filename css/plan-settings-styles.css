@@ -55,15 +55,15 @@ body {
 }
 
 .settings-gear-btn {
-    background: none;
-    border: none;
-    color: var(--sys-text-secondary);
-    font-size: 24px;
+    background: var(--color-gray-100);
+    border: 2px solid var(--color-gray-300);
+    color: var(--sys-text-primary);
+    font-size: 20px;
     padding: 8px;
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.2s ease;
-    display: flex;
+    display: none; /* Hide settings button on settings page */
     align-items: center;
     justify-content: center;
     min-width: 40px;
@@ -71,7 +71,9 @@ body {
 }
 
 .settings-gear-btn:hover {
-    background: rgba(88, 99, 128, 0.1);
+    background: var(--color-gray-200);
+    border-color: var(--color-gray-400);
+    transform: scale(1.05);
 }
 
 .header-title {
@@ -134,10 +136,10 @@ body {
 
 .setting-value {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-four);
+    font-size: var(--typography-size-subheading-three);
     font-style: normal;
     font-weight: 500;
-    line-height: var(--typography-lineHeight-subheading-four);
+    line-height: var(--typography-lineHeight-subheading-three);
     letter-spacing: var(--typography-letterSpacing-none);
     color: var(--color-twilight-500);
     margin: 0;

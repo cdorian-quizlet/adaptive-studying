@@ -51,7 +51,7 @@
   }
 
   // Simple in-memory caches
-  const apiCache = { schools: null, courses: null, coursesBySchool: new Map() };
+  const apiCache = { schools: null, courses: null, coursesBySchool: new Map(), goalsByCourse: new Map(), conceptsByCourse: new Map() };
   
   // Cache will be populated on first API call
 
@@ -242,6 +242,148 @@
     }
   }
 
+  async function fetchGoalsByCourse(courseId, schoolId){
+    const cacheKey = `${schoolId || 'unknown'}-${courseId || 'unknown'}`;
+    if (apiCache.goalsByCourse.has(cacheKey)) return apiCache.goalsByCourse.get(cacheKey);
+    
+    try {
+      console.log('Fetching goals for course:', courseId, 'at school:', schoolId);
+      
+      // Build URL with both course and school parameters
+      const params = new URLSearchParams();
+      if (courseId) params.append('courseId', courseId);
+      if (schoolId) params.append('schoolId', schoolId);
+      params.append('country', 'us');
+      
+      const res = await fetch(`https://getgoalsbycourse-p3vlbtsdwa-uc.a.run.app/?${params.toString()}`);
+      console.log('Goals by course API response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('Goals by course API raw response:', data);
+      
+      // API returns {goals: [...]} not an array directly
+      const goalsArray = data.goals || data;
+      console.log('Goals by course API data received:', goalsArray?.length || 0, 'goals for course', courseId);
+      
+      if (Array.isArray(goalsArray) && goalsArray.length > 0) {
+        // API returned valid data
+        const processedGoals = goalsArray.map(goal => ({
+          id: goal.id || goal.goalId || '',
+          name: goal.name || goal.title || goal.goal || '',
+          type: goal.type || 'exam',
+          date: goal.date || goal.dueDate || null,
+          description: goal.description || '',
+          source: 'api'
+        }));
+        apiCache.goalsByCourse.set(cacheKey, processedGoals);
+        console.log('Using real API data for goals');
+        return processedGoals;
+      } else {
+        // API returned empty or invalid data - use fallback
+        console.log('API returned empty/invalid data, using fallback goals');
+        const fallbackGoals = defaultGoals.map((goal, index) => ({
+          id: `static-${index}`,
+          name: goal,
+          type: 'exam',
+          date: null,
+          description: 'Static fallback data',
+          source: 'static'
+        }));
+        apiCache.goalsByCourse.set(cacheKey, fallbackGoals);
+        return fallbackGoals;
+      }
+    } catch(e) { 
+      console.error('Error fetching goals by course:', e);
+      // API failed - use fallback with STATIC label
+      console.log('API failed, using fallback goals with STATIC label');
+      const fallbackGoals = defaultGoals.map((goal, index) => ({
+        id: `static-${index}`,
+        name: goal,
+        type: 'exam',
+        date: null,
+        description: 'Static fallback data',
+        source: 'static-error'
+      }));
+      apiCache.goalsByCourse.set(cacheKey, fallbackGoals);
+      return fallbackGoals;
+    }
+  }
+
+  async function fetchConceptsByCourse(courseId, schoolId, goals){
+    const cacheKey = `${schoolId || 'unknown'}-${courseId || 'unknown'}-${(goals || []).join(',')}`;
+    if (apiCache.conceptsByCourse.has(cacheKey)) return apiCache.conceptsByCourse.get(cacheKey);
+    
+    try {
+      console.log('Fetching concepts for course:', courseId, 'at school:', schoolId, 'for goals:', goals);
+      
+      // Build URL with course, school, and goals parameters
+      const params = new URLSearchParams();
+      if (courseId) params.append('courseId', courseId);
+      if (schoolId) params.append('schoolId', schoolId);
+      if (goals && goals.length > 0) {
+        goals.forEach(goal => params.append('goals', goal));
+      }
+      params.append('country', 'us');
+      
+      const res = await fetch(`https://getconceptsbycourse-p3vlbtsdwa-uc.a.run.app/?${params.toString()}`);
+      console.log('Concepts by course API response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('Concepts by course API raw response:', data);
+      
+      // API returns {concepts: [...]} not an array directly
+      const conceptsArray = data.concepts || data;
+      console.log('Concepts by course API data received:', conceptsArray?.length || 0, 'concepts for course', courseId);
+      
+      if (Array.isArray(conceptsArray) && conceptsArray.length > 0) {
+        // API returned valid data
+        const processedConcepts = conceptsArray.map(concept => ({
+          id: concept.id || concept.conceptId || '',
+          name: concept.name || concept.title || concept.concept || '',
+          description: concept.description || '',
+          terms: concept.terms || concept.keywords || [],
+          source: 'api'
+        }));
+        apiCache.conceptsByCourse.set(cacheKey, processedConcepts);
+        console.log('Using real API data for concepts');
+        return processedConcepts;
+      } else {
+        // API returned empty or invalid data - use fallback
+        console.log('API returned empty/invalid data, using fallback concepts');
+        const fallbackConcepts = defaultConcepts.map((concept, index) => ({
+          id: `static-${index}`,
+          name: concept,
+          description: 'Static fallback data',
+          terms: [],
+          source: 'static'
+        }));
+        apiCache.conceptsByCourse.set(cacheKey, fallbackConcepts);
+        return fallbackConcepts;
+      }
+    } catch(e) { 
+      console.error('Error fetching concepts by course:', e);
+      // API failed - use fallback with STATIC label
+      console.log('API failed, using fallback concepts with STATIC label');
+      const fallbackConcepts = defaultConcepts.map((concept, index) => ({
+        id: `static-${index}`,
+        name: concept,
+        description: 'Static fallback data',
+        terms: [],
+        source: 'static-error'
+      }));
+      apiCache.conceptsByCourse.set(cacheKey, fallbackConcepts);
+      return fallbackConcepts;
+    }
+  }
+
   const sampleCourses = ['BIOL 210', 'CHEM 101', 'HIST 205', 'PSYC 110', 'MATH 221', 'IBUS 330'];
   const currentCourses = ['BIOL 210', 'IBUS 330'];
   const defaultGoals = ['Exam 1', 'Exam 2', 'Exam 3'];
@@ -326,14 +468,14 @@
     }
   }
 
-  function render() {
+  async function render() {
     updateProgress();
     updateBackButtonIcon();
     switch(stepIndex){
       case 1: return renderCourse();
       case 'addCourse': return renderAddCourse();
-      case 2: return renderGoals();
-      case 3: return renderConcepts();
+      case 2: return await renderGoals();
+      case 3: return await renderConcepts();
       case 4: return renderKnowledge();
       case 5: return renderDate();
       case 6: return renderLoading();
@@ -789,6 +931,13 @@
     }
     
     function showCourseResults(courses) {
+      if (!courses || courses.length === 0) {
+        showNoResults(courseSuggestions, 'No courses found');
+        // Hide popular courses
+        locationSection.style.display = 'none';
+        return;
+      }
+
       courseSuggestions.innerHTML = `
         <div class="location-schools">
           ${courses.slice(0, 8).map(course => {
@@ -920,12 +1069,47 @@
     
     newCourseName.addEventListener('input', persist);
 
+    // Helper functions for search states
+    function showSearchLoading(container) {
+      container.innerHTML = `
+        <div class="search-loading-container">
+          ${Array(3).fill(0).map(() => `
+            <div class="search-loading-item">
+              <div class="loading-name"></div>
+              <div class="loading-description"></div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      container.style.display = 'block';
+    }
+
+    function showNoResults(container, message) {
+      container.innerHTML = `
+        <div class="no-results-container">
+          <div class="no-results-item">
+            <div class="no-results-text">${message}</div>
+          </div>
+        </div>
+      `;
+      container.style.display = 'block';
+    }
+
     function renderList(container, items, nameKey, onSelect, useCardLayout = false){
       console.log('renderList called with:', items.length, 'items');
       if (!items || items.length === 0){ 
-        console.log('No items to display, hiding container');
-        container.style.display = 'none'; 
-        container.innerHTML = ''; 
+        console.log('No items to display, showing no results');
+        const isSchoolSearch = container === schoolSuggestions;
+        const isCourseSearch = container === courseSuggestions;
+        
+        if (isSchoolSearch) {
+          showNoResults(container, 'No schools found');
+        } else if (isCourseSearch) {
+          showNoResults(container, 'No courses found');
+        } else {
+          container.style.display = 'none'; 
+          container.innerHTML = '';
+        }
         return; 
       }
       
@@ -1029,6 +1213,9 @@
         // Hide location section when user is typing
         locationSection.style.display = 'none';
         
+        // Show loading state while fetching
+        showSearchLoading(schoolSuggestions);
+        
         const all = await fetchSchools();
         console.log('Schools loaded:', all.length, 'schools');
         const items = filterByQuery(all, query, 'name');
@@ -1040,6 +1227,7 @@
         }, true); // Use card layout for schools
       } catch (e) {
         console.error('Error in updateSchool:', e);
+        showNoResults(schoolSuggestions, 'Error loading schools');
       }
     }, 250);
     // Clear button functionality
@@ -1126,6 +1314,11 @@
         
         // If there's a query, show course search results
         if (query) {
+          // Show loading state while fetching
+          showSearchLoading(courseSuggestions);
+          // Hide popular courses while searching
+          locationSection.style.display = 'none';
+          
           const list = await fetchCourses();
           console.log('All courses loaded:', list.length, 'courses');
           
@@ -1133,13 +1326,7 @@
           const items = filterCoursesByQuery(list, query);
           console.log('Filtered courses:', items.length, 'matches for:', query);
           
-          if (items.length > 0) {
-            showCourseResults(items);
-          } else {
-            // Hide both sections if no results
-            courseSuggestions.style.display = 'none';
-            locationSection.style.display = 'none';
-          }
+          showCourseResults(items); // This now handles empty results internally
         } else {
           // Hide course suggestions if no query
           courseSuggestions.style.display = 'none';
@@ -1149,6 +1336,8 @@
         }
       } catch (e) {
         console.error('Error in updateCourse:', e);
+        showNoResults(courseSuggestions, 'Error loading courses');
+        locationSection.style.display = 'none';
       }
     }, 250);
     
@@ -1266,13 +1455,19 @@
   }
 
   // Step 2: Goal selection (multi, Continue visible when >=1)
-  function renderGoals(){
-    const goals = [...defaultGoals];
+  async function renderGoals(){
     // Extract course code part (before " - " if present)
     const courseCode = state.course.split(' - ')[0];
+    
+    // Show loading state first
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
-      `<div class="course-list-card" id="goalList"></div>`+
+      `<div class="course-list-card" id="goalList">`+
+      `  <div class="course-row">`+
+      `    <div class="course-check" aria-hidden="true"></div>`+
+      `    <div class="course-text"><div class="course-title">Loading goals...</div></div>`+
+      `  </div>`+
+      `</div>`+
       `<div class="course-list-card" id="addGoalCard">`+
       `  <div class="course-row" id="addGoalRow">`+
       `    <div class="course-check add" aria-hidden="true"></div>`+
@@ -1281,28 +1476,59 @@
       `</div>`+
       `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
 
-    const list = document.getElementById('goalList');
-    function rowHtml(text, attrs){
-      const selected = Array.isArray(state.goals) && state.goals.includes(text);
-      return `<div class="course-row ${selected?'selected':''}" ${attrs}>
-        <div class="course-check" aria-hidden="true"></div>
-        <div class="course-text"><div class="course-title">${escapeHtml(text)}</div></div>
-      </div>`;
-    }
-    function renderList(){
-      const allSelected = state.goals.length === goals.length && goals.length>0;
-      const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
-        <div class="course-check" aria-hidden="true"></div>
-        <div class="course-text"><div class="course-title">All</div></div>
-      </div>`;
-      const items = goals.map(g=> rowHtml(g, `data-goal="${g}"`)).join('');
-      list.innerHTML = allRow + items;
-      const goalsCta = document.getElementById('goalsContinue').parentElement;
-      const disabled = state.goals.length===0;
-      document.getElementById('goalsContinue').disabled = disabled;
-      goalsCta.classList.toggle('hidden', disabled);
-    }
-    renderList();
+    try {
+      // Fetch goals from API using course and school info
+      const courseId = state.course || courseCode;
+      const schoolId = state.schoolId;
+      const apiGoals = await fetchGoalsByCourse(courseId, schoolId);
+      
+      // Keep full goal objects for badge logic, but extract names for compatibility
+      const goalObjects = apiGoals;
+      const goals = apiGoals.map(goal => goal.name);
+      
+      const list = document.getElementById('goalList');
+      function rowHtml(text, attrs, goalId){
+        const selected = Array.isArray(state.goals) && state.goals.includes(text);
+        return `<div class="course-row ${selected?'selected':''}" ${attrs}>
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title" id="goal-title-${goalId}">${escapeHtml(text)}</div></div>
+        </div>`;
+      }
+      function renderList(){
+        const allSelected = state.goals.length === goals.length && goals.length>0;
+        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
+        </div>`;
+        const items = goals.map((g, index) => {
+          const goal = goalObjects[index];
+          return rowHtml(g, `data-goal="${g}"`, goal.id);
+        }).join('');
+        list.innerHTML = allRow + items;
+        
+        // Add badges after DOM is updated
+        goalObjects.forEach((goal, index) => {
+          const titleElement = document.getElementById(`goal-title-${goal.id}`);
+          if (titleElement && goal.source !== 'api') {
+            // Remove any existing badges
+            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
+            // Add appropriate badge
+            if (goal.source === 'static-error') {
+              const badge = createStaticBadge();
+              badge.textContent = 'STATIC';
+              titleElement.appendChild(badge);
+            } else if (goal.source === 'static') {
+              titleElement.appendChild(createStaticBadge());
+            }
+          }
+        });
+        
+        const goalsCta = document.getElementById('goalsContinue').parentElement;
+        const disabled = state.goals.length===0;
+        document.getElementById('goalsContinue').disabled = disabled;
+        goalsCta.classList.toggle('hidden', disabled);
+      }
+      renderList();
 
     list.addEventListener('click', (e)=>{
       const all = e.target.closest('[data-select-all]');
@@ -1325,16 +1551,116 @@
 
     document.getElementById('addGoalRow').addEventListener('click', ()=>{
       const name = prompt('Goal name');
-      if(name){ const trimmed = name.trim(); if(trimmed && !goals.includes(trimmed)){ goals.push(trimmed); }}
+      if(name){ 
+        const trimmed = name.trim(); 
+        if(trimmed && !goals.includes(trimmed)){ 
+          goals.push(trimmed);
+          // Also add to goalObjects for consistency
+          goalObjects.push({
+            id: `custom-${goalObjects.length}`,
+            name: trimmed,
+            type: 'exam',
+            source: 'custom'
+          });
+        }
+      }
       renderList();
     });
 
-    document.getElementById('goalsContinue').addEventListener('click', next);
+      document.getElementById('goalsContinue').addEventListener('click', next);
+      
+    } catch (error) {
+      console.error('Error loading goals:', error);
+      // Fall back to static goals with error badges
+      const list = document.getElementById('goalList');
+      const goalObjects = defaultGoals.map((goal, index) => ({
+        id: `static-error-${index}`,
+        name: goal,
+        type: 'exam',
+        source: 'static-error'
+      }));
+      const goals = goalObjects.map(goal => goal.name);
+      
+      function rowHtml(text, attrs, goalId){
+        const selected = Array.isArray(state.goals) && state.goals.includes(text);
+        return `<div class="course-row ${selected?'selected':''}" ${attrs}>
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title" id="goal-title-${goalId}">${escapeHtml(text)}</div></div>
+        </div>`;
+      }
+      function renderList(){
+        const allSelected = state.goals.length === goals.length && goals.length>0;
+        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
+        </div>`;
+        const items = goals.map((g, index) => {
+          const goal = goalObjects[index];
+          return rowHtml(g, `data-goal="${g}"`, goal.id);
+        }).join('');
+        list.innerHTML = allRow + items;
+        
+        // Add badges after DOM is updated
+        goalObjects.forEach((goal, index) => {
+          const titleElement = document.getElementById(`goal-title-${goal.id}`);
+          if (titleElement) {
+            // Remove any existing badges
+            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
+            // Add static badge
+            titleElement.appendChild(createStaticBadge());
+          }
+        });
+        
+        const goalsCta = document.getElementById('goalsContinue').parentElement;
+        const disabled = state.goals.length===0;
+        document.getElementById('goalsContinue').disabled = disabled;
+        goalsCta.classList.toggle('hidden', disabled);
+      }
+      renderList();
+
+      list.addEventListener('click', (e)=>{
+        const all = e.target.closest('[data-select-all]');
+        if(all){
+          // Toggle all: if everything is selected, clear; otherwise select all
+          if (Array.isArray(state.goals) && state.goals.length === goals.length) {
+            state.goals = [];
+          } else {
+            state.goals = goals.slice();
+          }
+          renderList();
+          return;
+        }
+        const item = e.target.closest('.course-row');
+        if(!item) return; const g = item.getAttribute('data-goal'); if(!g) return;
+        const i = state.goals.indexOf(g);
+        if(i>=0) state.goals.splice(i,1); else state.goals.push(g);
+        renderList();
+      });
+
+      document.getElementById('addGoalRow').addEventListener('click', ()=>{
+        const name = prompt('Goal name');
+        if(name){ 
+          const trimmed = name.trim(); 
+          if(trimmed && !goals.includes(trimmed)){ 
+            goals.push(trimmed);
+            // Also add to goalObjects for consistency
+            goalObjects.push({
+              id: `custom-${goalObjects.length}`,
+              name: trimmed,
+              type: 'exam',
+              source: 'custom'
+            });
+          }
+        }
+        renderList();
+      });
+
+      document.getElementById('goalsContinue').addEventListener('click', next);
+    }
   }
 
   // Step 3: Concept selection (multi with expandable terms)
-  function renderConcepts(){
-    const concepts = [...defaultConcepts];
+  async function renderConcepts(){
     // Extract course code part (before " - " if present) as fallback
     const courseCode = state.course.split(' - ')[0];
     
@@ -1355,9 +1681,15 @@
       goalsText = courseCode;
     }
     
+    // Show loading state first
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
-      `<div class="course-list-card" id="conceptList"></div>`+
+      `<div class="course-list-card" id="conceptList">`+
+      `  <div class="course-row">`+
+      `    <div class="course-check" aria-hidden="true"></div>`+
+      `    <div class="course-text"><div class="course-title">Loading concepts...</div></div>`+
+      `  </div>`+
+      `</div>`+
       `<div class="course-list-card" id="addConceptCard">`+
       `  <div class="course-row" id="addConceptRow">`+
       `    <div class="course-check add" aria-hidden="true"></div>`+
@@ -1366,54 +1698,189 @@
       `</div>`+
       `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
 
-    const list = document.getElementById('conceptList');
-    function rowHtml(text, attrs){
-      const selected = Array.isArray(state.concepts) && state.concepts.includes(text);
-      return `<div class="course-row ${selected?'selected':''}" ${attrs}>
-        <div class="course-check" aria-hidden="true"></div>
-        <div class="course-text"><div class="course-title">${escapeHtml(text)}</div></div>
-      </div>`;
-    }
-    function renderList(){
-      const allSelected = state.concepts.length === concepts.length && concepts.length>0;
-      const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
-        <div class="course-check" aria-hidden="true"></div>
-        <div class="course-text"><div class="course-title">All</div></div>
-      </div>`;
-      const items = concepts.map(c=> rowHtml(c, `data-concept="${c}"`)).join('');
-      list.innerHTML = allRow + items;
-      const cta = document.getElementById('conceptsContinue').parentElement;
-      const disabled = state.concepts.length===0;
-      document.getElementById('conceptsContinue').disabled = disabled;
-      cta.classList.toggle('hidden', disabled);
-    }
-    renderList();
+    try {
+      // Fetch concepts from API using course, school, and goals info
+      const courseId = state.course || courseCode;
+      const schoolId = state.schoolId;
+      const goals = state.goals || [];
+      const apiConcepts = await fetchConceptsByCourse(courseId, schoolId, goals);
+      
+      // Keep full concept objects for badge logic, but extract names for compatibility
+      const conceptObjects = apiConcepts;
+      const concepts = apiConcepts.map(concept => concept.name);
+      
+      const list = document.getElementById('conceptList');
+      function rowHtml(text, attrs, conceptId){
+        const selected = Array.isArray(state.concepts) && state.concepts.includes(text);
+        return `<div class="course-row ${selected?'selected':''}" ${attrs}>
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title" id="concept-title-${conceptId}">${escapeHtml(text)}</div></div>
+        </div>`;
+      }
+      function renderList(){
+        const allSelected = state.concepts.length === concepts.length && concepts.length>0;
+        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
+        </div>`;
+        const items = concepts.map((c, index) => {
+          const concept = conceptObjects[index];
+          return rowHtml(c, `data-concept="${c}"`, concept.id);
+        }).join('');
+        list.innerHTML = allRow + items;
+        
+        // Add badges after DOM is updated
+        conceptObjects.forEach((concept, index) => {
+          const titleElement = document.getElementById(`concept-title-${concept.id}`);
+          if (titleElement && concept.source !== 'api') {
+            // Remove any existing badges
+            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
+            // Add appropriate badge
+            if (concept.source === 'static-error') {
+              const badge = createStaticBadge();
+              badge.textContent = 'STATIC';
+              titleElement.appendChild(badge);
+            } else if (concept.source === 'static') {
+              titleElement.appendChild(createStaticBadge());
+            }
+          }
+        });
+        
+        const cta = document.getElementById('conceptsContinue').parentElement;
+        const disabled = state.concepts.length===0;
+        document.getElementById('conceptsContinue').disabled = disabled;
+        cta.classList.toggle('hidden', disabled);
+      }
+      renderList();
 
-    list.addEventListener('click', (e)=>{
-      const all = e.target.closest('[data-select-all]');
-      if(all){
-        if (Array.isArray(state.concepts) && state.concepts.length === concepts.length) {
-          state.concepts = [];
-        } else {
-          state.concepts = concepts.slice();
+      list.addEventListener('click', (e)=>{
+        const all = e.target.closest('[data-select-all]');
+        if(all){
+          if (Array.isArray(state.concepts) && state.concepts.length === concepts.length) {
+            state.concepts = [];
+          } else {
+            state.concepts = concepts.slice();
+          }
+          renderList();
+          return;
+        }
+        const item = e.target.closest('.course-row');
+        if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
+        const i = state.concepts.indexOf(c);
+        if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
+        renderList();
+      });
+
+      document.getElementById('addConceptRow').addEventListener('click', ()=>{
+        const name = prompt('Concept name');
+        if(name){ 
+          const trimmed = name.trim(); 
+          if(trimmed && !concepts.includes(trimmed)){ 
+            concepts.push(trimmed);
+            // Also add to conceptObjects for consistency
+            conceptObjects.push({
+              id: `custom-${conceptObjects.length}`,
+              name: trimmed,
+              description: 'User-added concept',
+              terms: [],
+              source: 'custom'
+            });
+          }
         }
         renderList();
-        return;
+      });
+
+      document.getElementById('conceptsContinue').addEventListener('click', next);
+      
+    } catch (error) {
+      console.error('Error loading concepts:', error);
+      // Fall back to static concepts with error badges
+      const list = document.getElementById('conceptList');
+      const conceptObjects = defaultConcepts.map((concept, index) => ({
+        id: `static-error-${index}`,
+        name: concept,
+        description: 'Static fallback data',
+        terms: [],
+        source: 'static-error'
+      }));
+      const concepts = conceptObjects.map(concept => concept.name);
+      
+      function rowHtml(text, attrs, conceptId){
+        const selected = Array.isArray(state.concepts) && state.concepts.includes(text);
+        return `<div class="course-row ${selected?'selected':''}" ${attrs}>
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title" id="concept-title-${conceptId}">${escapeHtml(text)}</div></div>
+        </div>`;
       }
-      const item = e.target.closest('.course-row');
-      if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
-      const i = state.concepts.indexOf(c);
-      if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
+      function renderList(){
+        const allSelected = state.concepts.length === concepts.length && concepts.length>0;
+        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
+        </div>`;
+        const items = concepts.map((c, index) => {
+          const concept = conceptObjects[index];
+          return rowHtml(c, `data-concept="${c}"`, concept.id);
+        }).join('');
+        list.innerHTML = allRow + items;
+        
+        // Add badges after DOM is updated
+        conceptObjects.forEach((concept, index) => {
+          const titleElement = document.getElementById(`concept-title-${concept.id}`);
+          if (titleElement) {
+            // Remove any existing badges
+            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
+            // Add static badge
+            titleElement.appendChild(createStaticBadge());
+          }
+        });
+        
+        const cta = document.getElementById('conceptsContinue').parentElement;
+        const disabled = state.concepts.length===0;
+        document.getElementById('conceptsContinue').disabled = disabled;
+        cta.classList.toggle('hidden', disabled);
+      }
       renderList();
-    });
 
-    document.getElementById('addConceptRow').addEventListener('click', ()=>{
-      const name = prompt('Concept name');
-      if(name){ const trimmed = name.trim(); if(trimmed && !concepts.includes(trimmed)){ concepts.push(trimmed); }}
-      renderList();
-    });
+      list.addEventListener('click', (e)=>{
+        const all = e.target.closest('[data-select-all]');
+        if(all){
+          if (Array.isArray(state.concepts) && state.concepts.length === concepts.length) {
+            state.concepts = [];
+          } else {
+            state.concepts = concepts.slice();
+          }
+          renderList();
+          return;
+        }
+        const item = e.target.closest('.course-row');
+        if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
+        const i = state.concepts.indexOf(c);
+        if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
+        renderList();
+      });
 
-    document.getElementById('conceptsContinue').addEventListener('click', next);
+      document.getElementById('addConceptRow').addEventListener('click', ()=>{
+        const name = prompt('Concept name');
+        if(name){ 
+          const trimmed = name.trim(); 
+          if(trimmed && !concepts.includes(trimmed)){ 
+            concepts.push(trimmed);
+            // Also add to conceptObjects for consistency
+            conceptObjects.push({
+              id: `custom-error-${conceptObjects.length}`,
+              name: trimmed,
+              description: 'User-added concept',
+              terms: [],
+              source: 'custom'
+            });
+          }
+        }
+        renderList();
+      });
+
+      document.getElementById('conceptsContinue').addEventListener('click', next);
+    }
   }
 
   // Step 4: Knowledge state (single select)
@@ -1697,11 +2164,14 @@
     flowContent.innerHTML = ''+
       `<div class="loading-screen">
          <div class="loading-content">
-           <div class="loading-signature"></div>
+           <!-- Main content area for future use -->
          </div>
-         <div class="loading-spark"></div>
-         <div class="loading-text">Generating study plan.</div>
-         <div class="loading-bar"><div class="fill"></div></div>
+         <div class="loading-bottom-container">
+           <div class="loading-signature"></div>
+           <div class="loading-spark"></div>
+           <div class="loading-text">Generating study plan.</div>
+           <div class="loading-bar"><div class="fill"></div></div>
+         </div>
        </div>`;
 
     // Persist for bottom sheet
@@ -1725,6 +2195,43 @@
   function cssId(str){ return String(str||'').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9_-]/g,''); }
   function toTitleCase(str){ 
     return String(str||'').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  // Badge helpers for goals
+  function createStaticBadge() {
+    const badge = document.createElement('span');
+    badge.className = 'static-badge';
+    badge.textContent = 'STATIC';
+    badge.style.cssText = `
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 11px;
+        line-height: 1;
+        color: #586380;
+        background: #EDEFF4;
+        vertical-align: middle;
+    `;
+    return badge;
+  }
+
+  function createApiBadge() {
+    const badge = document.createElement('span');
+    badge.className = 'api-badge';
+    badge.textContent = 'API';
+    badge.style.cssText = `
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 11px;
+        line-height: 1;
+        color: #4255FF;
+        background: #EDEFFF;
+        vertical-align: middle;
+    `;
+    return badge;
   }
 
   // Events
