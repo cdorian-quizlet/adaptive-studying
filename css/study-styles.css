@@ -913,4 +913,372 @@ body {
 .debug-option:focus {
     outline: 2px solid var(--color-twilight-500);
     outline-offset: 2px;
-} 
+}
+
+/* Debug info display */
+.debug-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--color-gray-100);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+/* Add bottom margin to last debug section for scrolling */
+.debug-section:last-child {
+    margin-bottom: 16px;
+}
+
+.debug-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.debug-info-label {
+    font-size: 13px;
+    color: var(--sys-text-secondary);
+    font-weight: 500;
+}
+
+.debug-info-value {
+    font-size: 13px;
+    color: var(--sys-text-primary);
+    font-weight: 600;
+    background: var(--sys-surface-base);
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* Distinct styling for correct/incorrect answer previews */
+.debug-section h4.debug-label {
+    margin-bottom: 8px;
+}
+
+/* Correct answer section styling */
+#correctDepth, #correctDifficulty, #correctType {
+    background: var(--color-mint-100);
+    color: var(--color-mint-700);
+    border: 1px solid var(--color-mint-300);
+}
+
+/* Incorrect answer section styling */
+#incorrectDepth, #incorrectDifficulty, #incorrectType {
+    background: var(--color-sherbert-100);
+    color: var(--color-sherbert-700);
+    border: 1px solid var(--color-sherbert-300);
+}
+
+/* Current question styling - neutral */
+#currentDepth, #currentDifficulty, #currentType {
+    background: var(--color-twilight-100);
+    color: var(--color-twilight-700);
+    border: 1px solid var(--color-twilight-300);
+}
+
+/* Debug note styling */
+.debug-note {
+    margin-top: 8px;
+    padding: 6px 8px;
+    background: var(--color-yellow-100);
+    border: 1px solid var(--color-yellow-300);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--color-yellow-700);
+    text-align: center;
+}
+
+.debug-note span {
+    font-weight: 500;
+}
+
+/* Explanation Button and Bottom Sheet Styles */
+.explanation-button {
+    background: linear-gradient(transparent, transparent) padding-box, 
+                linear-gradient(135deg, var(--color-cherry-200), var(--color-gray-100)) border-box;
+    border: 2px solid transparent;
+    border-radius: var(--radius-full);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    z-index: 99;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-medium);
+}
+
+.explanation-button img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+/* Button container for continue and explanation buttons */
+.button-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 440px;
+    z-index: 100;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* Multiple choice button container matches answer options width */
+.button-container.multiple-choice-buttons {
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 440px;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+}
+
+.button-container .continue-btn {
+    position: static;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    max-width: none;
+    transform: none;
+    flex: 1;
+    margin: 0;
+}
+
+/* Multiple choice continue button - takes most of the space */
+.button-container.multiple-choice-buttons .continue-btn {
+    flex: 1;
+    order: 2;
+    min-width: 0; /* Allow button to shrink if needed */
+}
+
+/* Multiple choice explanation button positioned to the left of continue button */
+.button-container.multiple-choice-buttons .explanation-button {
+    order: 1;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.button-container .explanation-button {
+    position: static;
+    bottom: auto;
+    right: auto;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    background: linear-gradient(transparent, transparent) padding-box, 
+                linear-gradient(135deg, var(--color-cherry-200), var(--color-gray-100)) border-box;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow-medium);
+}
+
+.button-container .explanation-button:hover,
+.explanation-button:hover {
+    background: linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1)) padding-box, 
+                linear-gradient(135deg, var(--color-cherry-300), var(--color-gray-200)) border-box;
+    transform: scale(1.05);
+}
+
+.explanation-button:focus {
+    outline: 2px solid var(--color-twilight-500);
+    outline-offset: 2px;
+}
+
+/* Explanation Bottom Sheet Styles */
+.explanation-sheet {
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--sys-surface-base);
+}
+
+.explanation-sheet .bottom-sheet-header {
+    padding: 16px 20px 12px 20px;
+    border-bottom: none;
+    flex-shrink: 0;
+    background: var(--sys-surface-base);
+}
+
+.explanation-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--color-gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-600);
+}
+
+.ai-icon .material-icons-round {
+    font-size: 18px;
+}
+
+/* Bottom sheet body styles */
+.explanation-sheet .bottom-sheet-body {
+    padding: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 0;
+    background: var(--sys-surface-base);
+}
+
+.explanation-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+}
+
+.explanation-image {
+    width: 100%;
+    max-height: 300px;
+    border-radius: 0;
+    overflow: hidden;
+    background: var(--color-gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 24px;
+}
+
+.explanation-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.explanation-text {
+    flex: 1;
+    padding: 0 20px;
+}
+
+.explanation-text p {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-two);
+    font-weight: var(--typography-fontWeight-body-two);
+    line-height: var(--typography-lineHeight-body-two);
+    color: var(--sys-text-primary);
+    margin: 0 0 24px 0;
+}
+
+.formula-section {
+    margin: 32px 20px 0 20px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+}
+
+.formula-section h4 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-two);
+    font-weight: 700;
+    color: var(--sys-text-primary);
+    margin: 0 0 16px 0;
+    letter-spacing: -0.01em;
+}
+
+.formula {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: var(--typography-size-body-three);
+    color: var(--sys-text-primary);
+    background: var(--color-gray-50);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--color-gray-200);
+    overflow-x: auto;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+/* Fixed bottom bar */
+.explanation-bottom-bar {
+    padding: 20px;
+    background: var(--sys-surface-base);
+    border-top: 1px solid var(--color-gray-100);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-shrink: 0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.question-input-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.question-icon {
+    position: absolute;
+    left: 16px;
+    color: var(--color-twilight-500);
+    font-size: 20px;
+    z-index: 1;
+}
+
+.question-input {
+    width: 100%;
+    padding: 14px 16px 14px 48px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-full);
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-three);
+    color: var(--sys-text-primary);
+    background: var(--color-gray-50);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.question-input:focus {
+    border-color: var(--color-twilight-300);
+    background: var(--sys-surface-base);
+}
+
+.question-input::placeholder {
+    color: var(--color-gray-500);
+}
+
+.done-button {
+    background: var(--sys-interactive-bg-primary-default);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 14px 20px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-three);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.done-button:hover {
+    background: var(--sys-interactive-bg-primary-hover);
+}
+
+/* Removed - now using button container approach */

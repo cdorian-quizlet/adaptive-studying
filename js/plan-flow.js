@@ -42,8 +42,19 @@
     goals: [],
     concepts: [],
     knowledge: '',
-    dueDate: ''
+    dueDate: '',
+    goalType: '' // 'study-plan', 'cram', or 'memorize'
   };
+
+  // Read goal type from URL parameter
+  function getGoalTypeFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const goalParam = urlParams.get('goal');
+    return goalParam || 'study-plan'; // Default to study-plan if no parameter
+  }
+  
+  // Initialize goal type from URL
+  state.goalType = getGoalTypeFromURL();
 
   // Debounce helper for typeahead
   function debounce(fn, wait){
@@ -54,6 +65,9 @@
   const apiCache = { schools: null, courses: null, coursesBySchool: new Map(), goalsByCourse: new Map(), conceptsByCourse: new Map() };
   
   // Cache will be populated on first API call
+  
+  // Debug flag to enable/disable API calls - can be toggled in console
+  window.debugApiMode = true; // Set to false to disable API calls for testing
 
   // Helper function to process schools and improve location display
   function expandSchoolLocations(schools) {
@@ -244,7 +258,10 @@
 
   async function fetchGoalsByCourse(courseId, schoolId){
     const cacheKey = `${schoolId || 'unknown'}-${courseId || 'unknown'}`;
-    if (apiCache.goalsByCourse.has(cacheKey)) return apiCache.goalsByCourse.get(cacheKey);
+    if (apiCache.goalsByCourse.has(cacheKey)) {
+      console.log('Returning cached goals for:', cacheKey);
+      return apiCache.goalsByCourse.get(cacheKey);
+    }
     
     try {
       console.log('Fetching goals for course:', courseId, 'at school:', schoolId);
@@ -255,7 +272,10 @@
       if (schoolId) params.append('schoolId', schoolId);
       params.append('country', 'us');
       
-      const res = await fetch(`https://getgoalsbycourse-p3vlbtsdwa-uc.a.run.app/?${params.toString()}`);
+      const apiUrl = `https://getgoalsbycourse-p3vlbtsdwa-uc.a.run.app/?${params.toString()}`;
+      console.log('Goals by course API URL:', apiUrl);
+      
+      const res = await fetch(apiUrl);
       console.log('Goals by course API response status:', res.status);
       
       if (!res.ok) {
@@ -264,38 +284,27 @@
       
       const data = await res.json();
       console.log('Goals by course API raw response:', data);
+      console.log('Goals by course API response type:', typeof data, 'is array:', Array.isArray(data));
       
       // API returns {goals: [...]} not an array directly
       const goalsArray = data.goals || data;
       console.log('Goals by course API data received:', goalsArray?.length || 0, 'goals for course', courseId);
+      console.log('Goals array type:', typeof goalsArray, 'is array:', Array.isArray(goalsArray));
       
-      if (Array.isArray(goalsArray) && goalsArray.length > 0) {
-        // API returned valid data
-        const processedGoals = goalsArray.map(goal => ({
-          id: goal.id || goal.goalId || '',
-          name: goal.name || goal.title || goal.goal || '',
-          type: goal.type || 'exam',
-          date: goal.date || goal.dueDate || null,
-          description: goal.description || '',
-          source: 'api'
-        }));
-        apiCache.goalsByCourse.set(cacheKey, processedGoals);
-        console.log('Using real API data for goals');
-        return processedGoals;
-      } else {
-        // API returned empty or invalid data - use fallback
-        console.log('API returned empty/invalid data, using fallback goals');
-        const fallbackGoals = defaultGoals.map((goal, index) => ({
-          id: `static-${index}`,
-          name: goal,
-          type: 'exam',
-          date: null,
-          description: 'Static fallback data',
-          source: 'static'
-        }));
-        apiCache.goalsByCourse.set(cacheKey, fallbackGoals);
-        return fallbackGoals;
-      }
+      // Process API response - use whatever data we get
+      const processedGoals = Array.isArray(goalsArray) ? goalsArray.map(goal => ({
+        id: goal.id || goal.goalId || `api-${Math.random().toString(36).substr(2, 9)}`,
+        name: goal.name || goal.title || goal.goal || 'Unnamed Goal',
+        type: goal.type || 'exam',
+        date: goal.date || goal.dueDate || null,
+        description: goal.description || '',
+        source: 'api'
+      })) : [];
+      
+      // If API returned data, use it; if empty, that's still valid API response
+      apiCache.goalsByCourse.set(cacheKey, processedGoals);
+      console.log(`API returned ${processedGoals.length} goals for course ${courseId} at school ${schoolId}`);
+      return processedGoals;
     } catch(e) { 
       console.error('Error fetching goals by course:', e);
       // API failed - use fallback with STATIC label
@@ -315,7 +324,10 @@
 
   async function fetchConceptsByCourse(courseId, schoolId, goals){
     const cacheKey = `${schoolId || 'unknown'}-${courseId || 'unknown'}-${(goals || []).join(',')}`;
-    if (apiCache.conceptsByCourse.has(cacheKey)) return apiCache.conceptsByCourse.get(cacheKey);
+    if (apiCache.conceptsByCourse.has(cacheKey)) {
+      console.log('Returning cached concepts for:', cacheKey);
+      return apiCache.conceptsByCourse.get(cacheKey);
+    }
     
     try {
       console.log('Fetching concepts for course:', courseId, 'at school:', schoolId, 'for goals:', goals);
@@ -338,36 +350,26 @@
       
       const data = await res.json();
       console.log('Concepts by course API raw response:', data);
+      console.log('Concepts by course API response type:', typeof data, 'is array:', Array.isArray(data));
       
       // API returns {concepts: [...]} not an array directly
       const conceptsArray = data.concepts || data;
       console.log('Concepts by course API data received:', conceptsArray?.length || 0, 'concepts for course', courseId);
+      console.log('Concepts array type:', typeof conceptsArray, 'is array:', Array.isArray(conceptsArray));
       
-      if (Array.isArray(conceptsArray) && conceptsArray.length > 0) {
-        // API returned valid data
-        const processedConcepts = conceptsArray.map(concept => ({
-          id: concept.id || concept.conceptId || '',
-          name: concept.name || concept.title || concept.concept || '',
-          description: concept.description || '',
-          terms: concept.terms || concept.keywords || [],
-          source: 'api'
-        }));
-        apiCache.conceptsByCourse.set(cacheKey, processedConcepts);
-        console.log('Using real API data for concepts');
-        return processedConcepts;
-      } else {
-        // API returned empty or invalid data - use fallback
-        console.log('API returned empty/invalid data, using fallback concepts');
-        const fallbackConcepts = defaultConcepts.map((concept, index) => ({
-          id: `static-${index}`,
-          name: concept,
-          description: 'Static fallback data',
-          terms: [],
-          source: 'static'
-        }));
-        apiCache.conceptsByCourse.set(cacheKey, fallbackConcepts);
-        return fallbackConcepts;
-      }
+      // Process API response - use whatever data we get
+      const processedConcepts = Array.isArray(conceptsArray) ? conceptsArray.map(concept => ({
+        id: concept.id || concept.conceptId || `api-${Math.random().toString(36).substr(2, 9)}`,
+        name: concept.name || concept.title || concept.concept || 'Unnamed Concept',
+        description: concept.description || '',
+        terms: concept.terms || concept.keywords || [],
+        source: 'api'
+      })) : [];
+      
+      // If API returned data, use it; if empty, that's still valid API response
+      apiCache.conceptsByCourse.set(cacheKey, processedConcepts);
+      console.log(`API returned ${processedConcepts.length} concepts for course ${courseId} at school ${schoolId}`);
+      return processedConcepts;
     } catch(e) { 
       console.error('Error fetching concepts by course:', e);
       // API failed - use fallback with STATIC label
@@ -386,7 +388,7 @@
 
   const sampleCourses = ['BIOL 210', 'CHEM 101', 'HIST 205', 'PSYC 110', 'MATH 221', 'IBUS 330'];
   const currentCourses = ['BIOL 210', 'IBUS 330'];
-  const defaultGoals = ['Exam 1', 'Exam 2', 'Exam 3'];
+  const defaultGoals = ['Exam 1', 'Exam 2', 'Exam 3', 'Final exam'];
   const defaultConcepts = ['Anatomy & Physiology', 'Cells & Tissues', 'Integumentary System', 'Muscular System'];
   
   // Store course descriptions by course name
@@ -487,8 +489,16 @@
 
   // Step 1: Course selection (single select, auto next)
   function renderCourse(){
+    // Get the appropriate headline based on goal type
+    let headline = 'Let\'s make a plan. What are you studying?'; // Default
+    if (state.goalType === 'cram') {
+      headline = 'Let\'s cram. What are you studying?';
+    } else if (state.goalType === 'memorize') {
+      headline = 'Let\'s memorize terms. What are you studying?';
+    }
+    
     flowContent.innerHTML = ''+
-      `<h1 class="flow-title">Let’s make a plan. What are you studying?</h1>`+
+      `<h1 class="flow-title">${headline}</h1>`+
       `<div class="search-row">`+
       `  <div class="search-field">`+
       `    <img class="search-icon" src="../images/search.png" alt="Search" aria-hidden="true" />`+
@@ -1181,15 +1191,36 @@
         displayName: `${course.code || ''} - ${course.name || ''}`.trim()
       }));
       
-      if (!s) return coursesWithDisplay.slice(0, 20); // Show first 20 items when no query
-      
       // Filter by either code or name
-      return coursesWithDisplay.filter(course => {
-        const code = String(course.code || '').toLowerCase();
-        const name = String(course.name || '').toLowerCase();
-        const subject = String(course.subject || '').toLowerCase();
-        return code.includes(s) || name.includes(s) || subject.includes(s);
-      });
+      let filteredCourses;
+      if (!s) {
+        filteredCourses = coursesWithDisplay.slice(0, 20); // Show first 20 items when no query
+      } else {
+        filteredCourses = coursesWithDisplay.filter(course => {
+          const code = String(course.code || '').toLowerCase();
+          const name = String(course.name || '').toLowerCase();
+          const subject = String(course.subject || '').toLowerCase();
+          return code.includes(s) || name.includes(s) || subject.includes(s);
+        });
+      }
+      
+      // Deduplicate courses by code (keep first occurrence)
+      const seenCodes = new Set();
+      const deduplicatedCourses = [];
+      
+      for (const course of filteredCourses) {
+        const courseCode = String(course.code || '').trim().toUpperCase();
+        if (courseCode && !seenCodes.has(courseCode)) {
+          seenCodes.add(courseCode);
+          deduplicatedCourses.push(course);
+        } else if (!courseCode) {
+          // Keep courses without codes (but they're less likely to be duplicates)
+          deduplicatedCourses.push(course);
+        }
+      }
+      
+      console.log(`Course filtering: ${courses.length} total → ${filteredCourses.length} filtered → ${deduplicatedCourses.length} deduplicated`);
+      return deduplicatedCourses;
     };
 
     // Schools
@@ -1301,7 +1332,7 @@
       // Don't show typeahead results until user starts typing
     });
 
-    // Courses - always load all courses
+    // Courses - use school-specific courses when school is selected
     const updateCourse = debounce(async ()=>{
       try {
         const query = newCourseName.value.trim();
@@ -1319,12 +1350,21 @@
           // Hide popular courses while searching
           locationSection.style.display = 'none';
           
-          const list = await fetchCourses();
-          console.log('All courses loaded:', list.length, 'courses');
+          // Use school-specific courses if school is selected, otherwise use general courses
+          let list;
+          if (state.schoolId) {
+            console.log('🏫 Using school-specific courses for:', state.school, '(ID:', state.schoolId, ')');
+            list = await fetchCoursesBySchool(state.schoolId);
+            console.log('🏫 School-specific courses loaded:', list.length, 'courses');
+          } else {
+            console.log('🌐 Using general courses (no school selected)');
+            list = await fetchCourses();
+            console.log('🌐 All courses loaded:', list.length, 'courses');
+          }
           
           // Filter courses that match the query in either code or name
           const items = filterCoursesByQuery(list, query);
-          console.log('Filtered courses:', items.length, 'matches for:', query);
+          console.log('🔍 Filtered courses:', items.length, 'matches for:', query);
           
           showCourseResults(items); // This now handles empty results internally
         } else {
@@ -1480,11 +1520,65 @@
       // Fetch goals from API using course and school info
       const courseId = state.course || courseCode;
       const schoolId = state.schoolId;
+      
+      console.log('Step 2: Fetching goals/exams from API with params:', {
+        courseId, 
+        schoolId, 
+        originalCourse: state.course,
+        extractedCode: courseCode
+      });
+      
       const apiGoals = await fetchGoalsByCourse(courseId, schoolId);
       
+      console.log('Step 2: API returned goals:', apiGoals);
+      console.log('Step 2: Number of goals from API:', apiGoals.length);
+      
       // Keep full goal objects for badge logic, but extract names for compatibility
-      const goalObjects = apiGoals;
-      const goals = apiGoals.map(goal => goal.name);
+      let goalObjects = apiGoals;
+      let goals = apiGoals.map(goal => goal.name);
+      
+      console.log('Step 2: Processed goal names:', goals);
+      
+      // If no goals returned from API, show common exam suggestions
+      if (goals.length === 0) {
+        console.log('Step 2: No goals returned from API, showing common exam suggestions');
+        
+        // Use default goals as suggestions since API returned no data
+        goalObjects = defaultGoals.map((goal, index) => ({
+          id: `suggested-${index}`,
+          name: goal,
+          type: 'exam',
+          source: 'suggested'
+        }));
+        goals = goalObjects.map(goal => goal.name);
+        
+        flowContent.innerHTML = ''+
+          `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+          `<div style="margin-bottom: 16px;">`+
+          `  <div style="color: var(--sys-text-secondary); font-size: 14px; font-weight: 600; margin-bottom: 16px;">Common exams</div>`+
+          `</div>`+
+          `<div class="course-list-card" id="goalList"></div>`+
+          `<div class="course-list-card" id="addGoalCard">`+
+          `  <div class="course-row" id="addGoalRow">`+
+          `    <div class="course-check add" aria-hidden="true"></div>`+
+          `    <div class="course-text"><div class="course-title">Add custom exam or goal</div></div>`+
+          `  </div>`+
+          `</div>`+
+          `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
+      } else {
+        console.log('Step 2: Successfully loaded', goals.length, 'goals from API, rendering list');
+        // Show regular goal list with API data
+        flowContent.innerHTML = ''+
+          `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+          `<div class="course-list-card" id="goalList"></div>`+
+          `<div class="course-list-card" id="addGoalCard">`+
+          `  <div class="course-row" id="addGoalRow">`+
+          `    <div class="course-check add" aria-hidden="true"></div>`+
+          `    <div class="course-text"><div class="course-title">Add exam or goal</div></div>`+
+          `  </div>`+
+          `</div>`+
+          `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
+      }
       
       const list = document.getElementById('goalList');
       function rowHtml(text, attrs, goalId){
@@ -1528,7 +1622,11 @@
         document.getElementById('goalsContinue').disabled = disabled;
         goalsCta.classList.toggle('hidden', disabled);
       }
-      renderList();
+      
+      // Render the list if we have goals (from API or suggested)
+      if (goals.length > 0) {
+        renderList();
+      }
 
     list.addEventListener('click', (e)=>{
       const all = e.target.closest('[data-select-all]');
@@ -1570,17 +1668,37 @@
       document.getElementById('goalsContinue').addEventListener('click', next);
       
     } catch (error) {
-      console.error('Error loading goals:', error);
-      // Fall back to static goals with error badges
-      const list = document.getElementById('goalList');
+      console.error('Step 2: Error loading goals from API:', error);
+      console.log('Step 2: Falling back to manual goal entry only');
+      
+      // Show common exam suggestions as fallback when API fails
+      console.log('Step 2: API failed, showing common exam suggestions as fallback');
+      
+      // Use default goals as fallback suggestions when API fails  
       const goalObjects = defaultGoals.map((goal, index) => ({
-        id: `static-error-${index}`,
+        id: `fallback-${index}`,
         name: goal,
         type: 'exam',
-        source: 'static-error'
+        source: 'fallback'
       }));
       const goals = goalObjects.map(goal => goal.name);
       
+      flowContent.innerHTML = ''+
+        `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+        `<div style="margin-bottom: 16px;">`+
+        `  <div style="color: var(--sys-text-secondary); font-size: 14px; font-weight: 600; margin-bottom: 16px;">Common exams</div>`+
+        `</div>`+
+        `<div class="course-list-card" id="goalList"></div>`+
+        `<div class="course-list-card" id="addGoalCard">`+
+        `  <div class="course-row" id="addGoalRow">`+
+        `    <div class="course-check add" aria-hidden="true"></div>`+
+        `    <div class="course-text"><div class="course-title">Add custom exam or goal</div></div>`+
+        `  </div>`+
+        `</div>`+
+        `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
+      
+      // Set up the same render logic as other cases
+      const list = document.getElementById('goalList');
       function rowHtml(text, attrs, goalId){
         const selected = Array.isArray(state.goals) && state.goals.includes(text);
         return `<div class="course-row ${selected?'selected':''}" ${attrs}>
@@ -1600,14 +1718,13 @@
         }).join('');
         list.innerHTML = allRow + items;
         
-        // Add badges after DOM is updated
+        // Add badges for fallback goals
         goalObjects.forEach((goal, index) => {
           const titleElement = document.getElementById(`goal-title-${goal.id}`);
-          if (titleElement) {
-            // Remove any existing badges
-            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
-            // Add static badge
-            titleElement.appendChild(createStaticBadge());
+          if (titleElement && goal.source === 'fallback') {
+            const badge = createStaticBadge();
+            badge.textContent = 'FALLBACK';
+            titleElement.appendChild(badge);
           }
         });
         
@@ -1616,12 +1733,16 @@
         document.getElementById('goalsContinue').disabled = disabled;
         goalsCta.classList.toggle('hidden', disabled);
       }
-      renderList();
+      
+      // Render the fallback goals list
+      if (goals.length > 0) {
+        renderList();
+      }
 
+      // Set up event handlers
       list.addEventListener('click', (e)=>{
         const all = e.target.closest('[data-select-all]');
         if(all){
-          // Toggle all: if everything is selected, clear; otherwise select all
           if (Array.isArray(state.goals) && state.goals.length === goals.length) {
             state.goals = [];
           } else {
@@ -1638,14 +1759,14 @@
       });
 
       document.getElementById('addGoalRow').addEventListener('click', ()=>{
-        const name = prompt('Goal name');
+        const name = prompt('Exam or goal name (e.g. "Exam 1", "Final Exam", "Quiz 3")');
         if(name){ 
           const trimmed = name.trim(); 
           if(trimmed && !goals.includes(trimmed)){ 
             goals.push(trimmed);
             // Also add to goalObjects for consistency
             goalObjects.push({
-              id: `custom-${goalObjects.length}`,
+              id: `custom-fallback-${goalObjects.length}`,
               name: trimmed,
               type: 'exam',
               source: 'custom'
@@ -1708,6 +1829,40 @@
       // Keep full concept objects for badge logic, but extract names for compatibility
       const conceptObjects = apiConcepts;
       const concepts = apiConcepts.map(concept => concept.name);
+      
+      // If no concepts returned from API, show a message and allow manual addition
+      if (concepts.length === 0) {
+        flowContent.innerHTML = ''+
+          `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
+          `<div class="course-list-card" id="conceptList">`+
+          `  <div class="course-row">`+
+          `    <div class="course-check" aria-hidden="true"></div>`+
+          `    <div class="course-text">`+
+          `      <div class="course-title">No concepts found for this course</div>`+
+          `      <div class="course-subtitle">Add your own concepts below</div>`+
+          `    </div>`+
+          `  </div>`+
+          `</div>`+
+          `<div class="course-list-card" id="addConceptCard">`+
+          `  <div class="course-row" id="addConceptRow">`+
+          `    <div class="course-check add" aria-hidden="true"></div>`+
+          `    <div class="course-text"><div class="course-title">Add new concept</div></div>`+
+          `  </div>`+
+          `</div>`+
+          `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
+      } else {
+        // Show regular concept list with API data
+        flowContent.innerHTML = ''+
+          `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
+          `<div class="course-list-card" id="conceptList"></div>`+
+          `<div class="course-list-card" id="addConceptCard">`+
+          `  <div class="course-row" id="addConceptRow">`+
+          `    <div class="course-check add" aria-hidden="true"></div>`+
+          `    <div class="course-text"><div class="course-title">Add new concept</div></div>`+
+          `  </div>`+
+          `</div>`+
+          `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
+      }
       
       const list = document.getElementById('conceptList');
       function rowHtml(text, attrs, conceptId){
@@ -2161,6 +2316,10 @@
 
   // Step 6: Loading
   function renderLoading(){
+    // Hide the header with progress bar
+    const header = document.querySelector('.flow-header');
+    if (header) header.style.display = 'none';
+    
     flowContent.innerHTML = ''+
       `<div class="loading-screen">
          <div class="loading-content">
@@ -2185,6 +2344,7 @@
       if(state.goals && state.goals.length>0) localStorage.setItem('onboarding_goals', JSON.stringify(state.goals));
       if(state.concepts && state.concepts.length>0) localStorage.setItem('onboarding_concepts', JSON.stringify(state.concepts));
       if(state.dueDate) localStorage.setItem('plan_due_date', state.dueDate);
+      if(state.goalType) localStorage.setItem('onboarding_goal_type', state.goalType);
     } catch(_){}
 
     setTimeout(()=>{ window.location.href = '../html/study-plan.html'; }, 6000);
@@ -2233,6 +2393,263 @@
     `;
     return badge;
   }
+
+  // Debug functions for testing API responses in console
+  window.testGoalsAPI = async function(courseId, schoolId) {
+    console.log('Testing goals API with:', { courseId, schoolId });
+    try {
+      const goals = await fetchGoalsByCourse(courseId, schoolId);
+      console.log('Goals API test result:', goals);
+      return goals;
+    } catch (error) {
+      console.error('Goals API test failed:', error);
+      return null;
+    }
+  };
+
+  window.testConceptsAPI = async function(courseId, schoolId, goals) {
+    console.log('Testing concepts API with:', { courseId, schoolId, goals });
+    try {
+      const concepts = await fetchConceptsByCourse(courseId, schoolId, goals);
+      console.log('Concepts API test result:', concepts);
+      return concepts;
+    } catch (error) {
+      console.error('Concepts API test failed:', error);
+      return null;
+    }
+  };
+
+  // Clear API cache for testing
+  window.clearAPICache = function() {
+    apiCache.goalsByCourse.clear();
+    apiCache.conceptsByCourse.clear();
+    console.log('API cache cleared');
+  };
+
+  // Test step 2 specifically with current state
+  window.testStep2API = function() {
+    console.log('Testing Step 2 API call with current state...');
+    console.log('Current state:', { 
+      course: state.course, 
+      schoolId: state.schoolId,
+      school: state.school 
+    });
+    
+    const courseId = state.course || state.course?.split(' - ')[0];
+    const schoolId = state.schoolId;
+    
+    console.log('Will call API with:', { courseId, schoolId });
+    
+    return window.testGoalsAPI(courseId, schoolId);
+  };
+
+  // Test course deduplication
+  window.testCourseDuplicates = async function(query = '') {
+    console.log('Testing course duplicates for query:', query || '(empty)');
+    try {
+      const allCourses = await fetchCourses();
+      console.log('Total courses from API:', allCourses.length);
+      
+      // Show duplicates by code
+      const codeCount = {};
+      allCourses.forEach(course => {
+        const code = String(course.code || '').trim().toUpperCase();
+        if (code) {
+          codeCount[code] = (codeCount[code] || 0) + 1;
+        }
+      });
+      
+      const duplicates = Object.entries(codeCount).filter(([code, count]) => count > 1);
+      console.log('Duplicate course codes found:', duplicates);
+      
+      // Test filtering with the query
+      const filtered = filterCoursesByQuery(allCourses, query);
+      console.log('Filtered and deduplicated results:', filtered.length);
+      
+      return { allCourses, duplicates, filtered };
+    } catch (error) {
+      console.error('Error testing course duplicates:', error);
+      return null;
+    }
+  };
+
+  // Debug specific course visibility
+  window.findCourse = async function(courseCode) {
+    console.log(`🔍 Searching for course: "${courseCode}"`);
+    try {
+      // Step 1: Check raw API data
+      const allCourses = await fetchCourses();
+      console.log('📡 Step 1: Raw API courses loaded:', allCourses.length);
+      
+      // Find exact matches in raw data
+      const exactMatches = allCourses.filter(course => {
+        const code = String(course.code || '').trim().toUpperCase();
+        return code === courseCode.toUpperCase();
+      });
+      console.log('📡 Exact matches in raw API:', exactMatches.length);
+      if (exactMatches.length > 0) {
+        console.log('📡 Raw API matches:', exactMatches);
+      }
+      
+      // Find partial matches in raw data
+      const partialMatches = allCourses.filter(course => {
+        const code = String(course.code || '').trim().toUpperCase();
+        const name = String(course.name || '').trim().toUpperCase();
+        const searchTerm = courseCode.toUpperCase();
+        return code.includes(searchTerm) || name.includes(searchTerm);
+      });
+      console.log('📡 Partial matches in raw API:', partialMatches.length);
+      
+      // Step 2: Test filtering pipeline
+      console.log('🔄 Step 2: Testing filtering pipeline...');
+      const filtered = filterCoursesByQuery(allCourses, courseCode);
+      console.log('🔄 After filtering and deduplication:', filtered.length);
+      
+      const filteredMatches = filtered.filter(course => {
+        const code = String(course.code || '').trim().toUpperCase();
+        return code === courseCode.toUpperCase();
+      });
+      console.log('🔄 Exact matches after filtering:', filteredMatches.length);
+      if (filteredMatches.length > 0) {
+        console.log('🔄 Filtered matches:', filteredMatches);
+      }
+      
+      // Step 3: Check course data structure
+      if (partialMatches.length > 0) {
+        console.log('📋 Step 3: Course data structure analysis:');
+        console.log('📋 Sample course object:', partialMatches[0]);
+        console.log('📋 Available fields:', Object.keys(partialMatches[0]));
+      }
+      
+      return {
+        rawApiTotal: allCourses.length,
+        exactInRaw: exactMatches,
+        partialInRaw: partialMatches,
+        filteredTotal: filtered.length,
+        exactInFiltered: filteredMatches,
+        sampleStructure: partialMatches[0] || null
+      };
+    } catch (error) {
+      console.error('❌ Error searching for course:', error);
+      return null;
+    }
+  };
+
+  // Test the entire course search pipeline
+  window.debugCourseSearch = async function(searchTerm = 'NURS') {
+    console.log(`🧪 Testing complete course search pipeline for: "${searchTerm}"`);
+    
+    try {
+      // Simulate the exact process that happens in the UI
+      console.log('🔄 Step 1: Fetching all courses...');
+      const allCourses = await fetchCourses();
+      
+      console.log('🔄 Step 2: Applying course filter...');
+      const filtered = filterCoursesByQuery(allCourses, searchTerm);
+      
+      console.log('🔄 Step 3: Checking what would be displayed...');
+      console.log(`Results that would show in UI:`, filtered.slice(0, 8));
+      
+      return filtered;
+    } catch (error) {
+      console.error('❌ Error in course search pipeline:', error);
+      return null;
+    }
+  };
+
+  // Debug school-specific courses
+  window.debugSchoolCourses = async function(schoolName, searchTerm = '') {
+    console.log(`🏫 Testing school-specific courses for: "${schoolName}"`);
+    
+    try {
+      // Step 1: Find the school ID
+      console.log('🔍 Step 1: Finding school...');
+      const allSchools = await fetchSchools();
+      
+      const schoolMatches = allSchools.filter(school => {
+        const name = String(school.name || '').toLowerCase();
+        return name.includes(schoolName.toLowerCase());
+      });
+      
+      console.log('🔍 School matches found:', schoolMatches.length);
+      if (schoolMatches.length > 0) {
+        console.log('🔍 School matches:', schoolMatches);
+      } else {
+        console.log('❌ No schools found matching:', schoolName);
+        return null;
+      }
+      
+      // Step 2: Get courses for each matching school
+      for (const school of schoolMatches) {
+        console.log(`\n🏫 Testing courses for: ${school.name} (ID: ${school.id})`);
+        
+        const schoolCourses = await fetchCoursesBySchool(school.id);
+        console.log(`📚 Total courses for ${school.name}:`, schoolCourses.length);
+        
+        if (searchTerm) {
+          const nurseCourses = schoolCourses.filter(course => {
+            const code = String(course.code || '').toUpperCase();
+            const name = String(course.name || '').toUpperCase();
+            const subject = String(course.subject || '').toUpperCase();
+            const term = searchTerm.toUpperCase();
+            return code.includes(term) || name.includes(term) || subject.includes(term);
+          });
+          console.log(`📚 ${searchTerm} courses for ${school.name}:`, nurseCourses.length);
+          if (nurseCourses.length > 0) {
+            console.log(`📚 ${searchTerm} course details:`, nurseCourses);
+          }
+        } else {
+          console.log(`📚 Sample courses:`, schoolCourses.slice(0, 5));
+        }
+      }
+      
+      return schoolMatches;
+    } catch (error) {
+      console.error('❌ Error testing school courses:', error);
+      return null;
+    }
+  };
+
+  // Test specific school course filtering (matches UI behavior)
+  window.testSchoolCourseFiltering = async function(schoolId, searchTerm = 'NURS') {
+    console.log(`🧪 Testing school course filtering for schoolId: ${schoolId}, search: "${searchTerm}"`);
+    
+    try {
+      // This matches the exact logic used in the Add Course screen
+      console.log('🔄 Step 1: Fetching courses by school...');
+      const schoolCourses = await fetchCoursesBySchool(schoolId);
+      console.log('📚 Raw school courses:', schoolCourses.length);
+      
+      console.log('🔄 Step 2: Applying general course filter...');
+      const generalCourses = await fetchCourses();
+      const filtered = filterCoursesByQuery(generalCourses, searchTerm);
+      console.log('📚 General filtered courses:', filtered.length);
+      
+      console.log('🔄 Step 3: Checking if school-specific courses are used...');
+      // The current logic uses general courses, not school-specific ones
+      console.log('⚠️  Current implementation uses general courses API, not school-specific courses');
+      console.log('⚠️  School-specific courses are fetched but not used in search');
+      
+      return {
+        schoolSpecific: schoolCourses,
+        generalFiltered: filtered,
+        schoolId: schoolId
+      };
+    } catch (error) {
+      console.error('❌ Error testing school course filtering:', error);
+      return null;
+    }
+  };
+
+  // Force reload step 2 to test API
+  window.forceReloadStep2 = function() {
+    if (stepIndex === 2) {
+      console.log('Forcing reload of step 2...');
+      render();
+    } else {
+      console.log('Navigate to step 2 first, then call this function');
+    }
+  };
 
   // Events
   backBtn.addEventListener('click', prev);

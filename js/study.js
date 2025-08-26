@@ -9,6 +9,7 @@ let totalRoundsCompleted = 0;
 let questionsPerRound = 7;
 let currentRoundNumber = 1; // Track current round number
 let roundProgressData = {}; // Track progress within each round
+let lastShownQuestionFormat = null; // Track last shown format to prevent consecutive matching/flashcard
 
 // Matching question state
 let matchingPairs = [];
@@ -39,7 +40,10 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "The cell membrane, also called the plasma membrane, acts as a selective barrier that controls what substances can enter and leave the cell. It's made of a phospholipid bilayer with embedded proteins that help transport specific molecules. This selective permeability is crucial for maintaining the cell's internal environment and allowing it to respond to external changes.",
+        conceptImage: "../images/thumbnails.png",
+        formula: "Selective Permeability = f(concentration gradient, membrane proteins, lipid solubility)"
     },
     {
         id: 2,
@@ -49,7 +53,10 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "Mitochondria are often called the 'powerhouses of the cell' because they generate most of the cell's ATP (adenosine triphosphate) through cellular respiration. They have a unique double-membrane structure with inner folds called cristae that increase the surface area for energy production. Interestingly, mitochondria have their own DNA and likely evolved from ancient bacteria that formed a symbiotic relationship with early eukaryotic cells.",
+        conceptImage: "../images/upward-graph.png",
+        formula: "C6H12O6 + 6O2 → 6CO2 + 6H2O + ~30-38 ATP"
     },
     {
         id: 3,
@@ -59,7 +66,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "The nucleus is the control center of eukaryotic cells, containing most of the cell's DNA organized into chromosomes. It's surrounded by a double membrane called the nuclear envelope, which has pores that regulate what can enter and exit. The nucleus controls gene expression and coordinates cellular activities like growth, metabolism, and reproduction. Think of it as the cell's 'brain' that gives instructions to the rest of the cell."
     },
     {
         id: 4,
@@ -69,7 +77,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "The endoplasmic reticulum (ER) is a network of membranes involved in protein and lipid synthesis, as well as detoxification processes. However, energy production (ATP synthesis) is primarily the function of mitochondria, not the ER. The rough ER synthesizes proteins, the smooth ER makes lipids and detoxifies substances, but neither produces energy."
     },
     {
         id: 5,
@@ -79,7 +88,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "Lysosomes are membrane-bound organelles that function as the cell's 'digestive system.' They contain powerful digestive enzymes that break down worn-out organelles, cellular waste, and harmful substances that enter the cell. Think of them as the cell's recycling center and cleanup crew, keeping the cell healthy by removing damaged components and toxic materials."
     },
     {
         id: 6,
@@ -539,7 +549,7 @@ const questionText = document.getElementById('questionText');
 const questionPrompt = document.getElementById('questionPrompt');
 const multipleChoice = document.getElementById('multipleChoice');
 const textInput = document.getElementById('textInput');
-const trueFalse = document.getElementById('trueFalse');
+
 const flashcard = document.getElementById('flashcard');
 const flashcardElement = document.getElementById('flashcardElement');
 const gotItBtn = document.getElementById('gotItBtn');
@@ -702,6 +712,35 @@ function updateHeaderTitle() {
     }
 }
 
+// Initialize adaptive learning engine
+function initializeAdaptiveLearning() {
+    if (!window.AdaptiveLearning) {
+        console.warn('Adaptive learning engine not available');
+        return;
+    }
+    
+    // Get user type from goal type (stored during onboarding)
+    const goalType = localStorage.getItem('onboarding_goal_type') || 'study-plan';
+    const userType = window.AdaptiveLearning.constructor.getUserTypeFromGoal(goalType);
+    
+    // Get readiness from knowledge level (stored during onboarding)
+    const knowledgeLevel = localStorage.getItem('onboarding_knowledge_pill') || 'Somewhat confident';
+    const readiness = window.AdaptiveLearning.constructor.getReadinessFromKnowledge(knowledgeLevel);
+    
+    // Load any existing state first
+    window.AdaptiveLearning.loadState();
+    
+    // Initialize with user type and readiness
+    window.AdaptiveLearning.initialize(userType, readiness);
+    
+    console.log('Adaptive learning initialized:', {
+        goalType,
+        userType,
+        knowledgeLevel,
+        readiness
+    });
+}
+
 // Initialize the study session
 async function initStudySession() {
     // Load current round number from localStorage
@@ -715,6 +754,10 @@ async function initStudySession() {
     if (savedRoundProgress) {
         roundProgressData = JSON.parse(savedRoundProgress);
     }
+    
+    // Initialize adaptive learning engine
+    initializeAdaptiveLearning();
+    
     // Try to load content from API
     await fetchAndLoadQuestionsFromApi();
     
@@ -745,6 +788,9 @@ function startNewRound() {
     
     questionsInRound = [];
     currentRoundNumber++;
+    
+    // Reset consecutive format tracking for new round
+    lastShownQuestionFormat = null;
     
     // Update header title for new round
     updateHeaderTitle();
@@ -777,7 +823,7 @@ function startNewRound() {
         questionsInRound = shuffled.slice(0, Math.min(7, availableQuestions.length));
         
         // Assign random question formats for better experience
-        assignRandomQuestionFormats();
+        assignAdaptiveQuestionFormats();
     }
     
     if (questionsInRound.length === 0) {
@@ -793,26 +839,67 @@ function startNewRound() {
     showQuestion();
 }
 
-// Assign random question formats to questions in round
-function assignRandomQuestionFormats() {
+// Assign adaptive question formats to questions in round
+function assignAdaptiveQuestionFormats() {
     if (questionsInRound.length === 0) return;
     
-    // Available question types
-    const questionTypes = ['multiple_choice', 'written', 'matching', 'flashcard'];
+    let previousFormat = null;
     
-    // Assign random formats to questions
-    questionsInRound.forEach((question) => {
-        // Randomly select a question type
-        const randomIndex = Math.floor(Math.random() * questionTypes.length);
-        question.currentFormat = questionTypes[randomIndex];
+    // Use adaptive learning engine to assign formats with consecutive matching/flashcard prevention
+    questionsInRound.forEach((question, index) => {
+        if (window.AdaptiveLearning) {
+            let recommendedFormat = window.AdaptiveLearning.getQuestionFormat(question.id);
+            
+            // Check if we need to avoid consecutive matching/flashcard questions
+            if (index > 0 && previousFormat && 
+                (previousFormat === 'matching' || previousFormat === 'flashcard') &&
+                (recommendedFormat === 'matching' || recommendedFormat === 'flashcard')) {
+                
+                console.log(`Preventing consecutive ${previousFormat} -> ${recommendedFormat} for question ${question.id}`);
+                
+                // Try to get an alternative format that's not matching or flashcard
+                const alternatives = ['multiple_choice', 'written'];
+                let alternativeFound = false;
+                
+                // Simulate processing a correct answer to see what the next format would be
+                const currentState = window.AdaptiveLearning.getDebugInfo(question.id);
+                
+                // Try multiple choice first as it's usually the most accessible format
+                for (const altFormat of alternatives) {
+                    // Check if this alternative makes sense for the current adaptive state
+                    // For now, use multiple choice as the safest fallback
+                    recommendedFormat = 'multiple_choice';
+                    alternativeFound = true;
+                    break;
+                }
+                
+                if (!alternativeFound) {
+                    // If no alternative found, keep the original but log it
+                    console.log(`No alternative found for question ${question.id}, keeping ${recommendedFormat}`);
+                }
+            }
+            
+            question.currentFormat = recommendedFormat;
+            previousFormat = recommendedFormat;
+        } else {
+            // Fallback to multiple choice if adaptive learning not available
+            question.currentFormat = 'multiple_choice';
+            previousFormat = 'multiple_choice';
+        }
     });
     
-    console.log('Assigned random question formats:', questionsInRound.map(q => q.currentFormat));
+    console.log('Assigned adaptive question formats with consecutive prevention:', questionsInRound.map(q => ({ 
+        id: q.id, 
+        format: q.currentFormat 
+    })));
 }
 
 // Initialize the first round (called on session start)
 function initFirstRound() {
     questionsInRound = [];
+    
+    // Reset consecutive format tracking for session start
+    lastShownQuestionFormat = null;
     
     // Check if we have saved questions for this round
     const roundData = roundProgressData[currentRoundNumber];
@@ -842,7 +929,7 @@ function initFirstRound() {
         questionsInRound = shuffled.slice(0, Math.min(7, availableQuestions.length));
         
         // Assign random question formats for better experience
-        assignRandomQuestionFormats();
+        assignAdaptiveQuestionFormats();
     }
     
     if (questionsInRound.length === 0) {
@@ -862,6 +949,20 @@ function initFirstRound() {
 function showQuestion() {
     currentQuestion = questionsInRound[currentQuestionIndex];
     
+    // Apply consecutive matching/flashcard prevention when showing questions
+    if (lastShownQuestionFormat && 
+        (lastShownQuestionFormat === 'matching' || lastShownQuestionFormat === 'flashcard') &&
+        (currentQuestion.currentFormat === 'matching' || currentQuestion.currentFormat === 'flashcard')) {
+        
+        console.log(`Preventing consecutive ${lastShownQuestionFormat} -> ${currentQuestion.currentFormat} when showing question ${currentQuestion.id}`);
+        
+        // Override with multiple choice as the safest alternative
+        currentQuestion.currentFormat = 'multiple_choice';
+    }
+    
+    // Update tracking variable
+    lastShownQuestionFormat = currentQuestion.currentFormat;
+    
     // Reset question prompt classes
     questionPrompt.classList.remove('flashcard-prompt');
     
@@ -875,7 +976,7 @@ function showQuestion() {
     // Hide all answer types
     multipleChoice.style.display = 'none';
     textInput.style.display = 'none';
-    trueFalse.style.display = 'none';
+
     flashcard.style.display = 'none';
     matching.style.display = 'none';
     
@@ -896,9 +997,6 @@ function showQuestion() {
         case 'written':
             showTextInput();
             break;
-        case 'true_false':
-            showTrueFalse();
-            break;
         case 'matching':
             showMatching();
             break;
@@ -907,6 +1005,9 @@ function showQuestion() {
     // Reset state
     selectedAnswer = null;
     isAnswered = false;
+    
+    // Update debug info for new question
+    updateAdaptiveLearningDebugInfo();
     
     // Show question container only for question types that need it
     if (currentQuestion.currentFormat !== 'matching' && currentQuestion.currentFormat !== 'flashcard') {
@@ -977,36 +1078,7 @@ function showTextInput() {
     textAnswer.focus();
 }
 
-// Show true/false options
-function showTrueFalse() {
-    trueFalse.style.display = 'flex';
-    const optionBtns = trueFalse.querySelectorAll('.option-btn');
-    
-    // Create a true/false question based on the original
-    const isCorrect = Math.random() > 0.5;
-    const falseAnswer = getRandomWrongAnswer();
-    
-    if (isCorrect) {
-        optionBtns[0].textContent = `The capital is ${currentQuestion.correctAnswer}`;
-        optionBtns[0].dataset.answer = 'true';
-        optionBtns[1].textContent = `The capital is ${falseAnswer}`;
-        optionBtns[1].dataset.answer = 'false';
-    } else {
-        optionBtns[0].textContent = `The capital is ${falseAnswer}`;
-        optionBtns[0].dataset.answer = 'true';
-        optionBtns[1].textContent = `The capital is ${currentQuestion.correctAnswer}`;
-        optionBtns[1].dataset.answer = 'false';
-    }
-    
-    optionBtns.forEach(btn => {
-        btn.className = 'option-btn';
-        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect'); // Clear any lingering states
-        btn.disabled = false;
-        btn.style.cursor = 'pointer';
-        // Add source badge to T/F options (always static today)
-        setSourceBadge(btn);
-    });
-}
+
 
 // Show matching exercise
 function showMatching() {
@@ -1231,7 +1303,7 @@ function handleAnswerSelect(answer) {
     isAnswered = true;
     
     // Update UI to show selection
-    if (currentQuestion.currentFormat === 'multiple_choice' || currentQuestion.currentFormat === 'true_false') {
+    if (currentQuestion.currentFormat === 'multiple_choice') {
         const optionBtns = document.querySelectorAll('.option-btn');
         optionBtns.forEach(btn => {
             if (btn.dataset.answer === answer) {
@@ -1306,6 +1378,13 @@ function checkAnswer() {
     
 
     
+    console.log('checkAnswer result:', {
+        isCorrect: isCorrect,
+        questionFormat: currentQuestion.currentFormat,
+        questionId: currentQuestion.id,
+        hasExplanation: !!currentQuestion.explanation
+    });
+    
     // Show feedback BEFORE adapting difficulty
     showFeedback(isCorrect);
     
@@ -1319,45 +1398,94 @@ function checkAnswer() {
     saveRoundProgress();
 }
 
-// Adapt question difficulty based on performance
+// Adapt question difficulty based on performance using adaptive learning engine
 function adaptDifficulty(isCorrect) {
-    if (isCorrect) {
-        // Make harder next time in this round
-        switch (currentQuestion.currentFormat) {
-            case 'multiple_choice':
-                currentQuestion.currentFormat = 'written';
-                break;
-            case 'written':
-                currentQuestion.currentFormat = 'matching';
-                break;
-            case 'matching':
-                currentQuestion.currentFormat = 'flashcard';
-                break;
-            case 'flashcard':
-                currentQuestion.currentFormat = 'completed';
-                break;
-            case 'true_false':
-                currentQuestion.currentFormat = 'multiple_choice';
-                break;
+    if (window.AdaptiveLearning && currentQuestion) {
+        // Store the current format to check for consecutive prevention
+        const previousFormat = currentQuestion.currentFormat;
+        
+        console.log(`🔄 ADAPT DIFFICULTY: Question ${currentQuestion.id}`, {
+            wasCorrect: isCorrect,
+            currentFormat: previousFormat,
+            beforeProcessing: window.AdaptiveLearning.getDebugInfo(currentQuestion.id)
+        });
+        
+        // Use adaptive learning engine to process answer
+        window.AdaptiveLearning.processAnswer(currentQuestion.id, isCorrect);
+        
+        // Check if question is completed
+        if (window.AdaptiveLearning.isQuestionCompleted(currentQuestion.id)) {
+            currentQuestion.currentFormat = 'completed';
+            console.log(`✅ Question ${currentQuestion.id} completed!`);
+        } else {
+            // Get updated format for next time
+            let newFormat = window.AdaptiveLearning.getQuestionFormat(currentQuestion.id);
+            const rawNewFormat = newFormat; // Store original recommendation
+            
+            // Apply consecutive matching/flashcard prevention for the same question
+            // This prevents a question from becoming matching->flashcard or flashcard->matching
+            if (previousFormat && 
+                (previousFormat === 'matching' || previousFormat === 'flashcard') &&
+                (newFormat === 'matching' || newFormat === 'flashcard') &&
+                previousFormat !== newFormat) {
+                
+                console.log(`🚫 PREVENTION: Consecutive ${previousFormat} -> ${newFormat} adaptation for question ${currentQuestion.id}`);
+                
+                // Use multiple choice as a safe alternative for adaptive progression
+                newFormat = 'multiple_choice';
+                console.log(`🔀 OVERRIDE: Changed to ${newFormat} instead`);
+            }
+            
+            currentQuestion.currentFormat = newFormat;
+            
+            console.log(`🎯 ADAPTATION RESULT:`, {
+                questionId: currentQuestion.id,
+                wasCorrect: isCorrect,
+                previousFormat: previousFormat,
+                rawRecommendation: rawNewFormat,
+                finalFormat: newFormat,
+                wasOverridden: rawNewFormat !== newFormat,
+                afterProcessing: window.AdaptiveLearning.getDebugInfo(currentQuestion.id)
+            });
         }
+        
+        // Save adaptive learning state
+        window.AdaptiveLearning.saveState();
+        
+        // Update debug info after adaptation
+        updateAdaptiveLearningDebugInfo();
+        
     } else {
-        // Make easier next time in this round
-        switch (currentQuestion.currentFormat) {
-            case 'multiple_choice':
-                currentQuestion.currentFormat = 'multiple_choice'; // Stay at multiple choice
-                break;
-            case 'written':
-                currentQuestion.currentFormat = 'multiple_choice';
-                break;
-            case 'matching':
-                currentQuestion.currentFormat = 'written';
-                break;
-            case 'flashcard':
-                currentQuestion.currentFormat = 'matching';
-                break;
-            case 'true_false':
-                currentQuestion.currentFormat = 'multiple_choice';
-                break;
+        // Fallback to simple logic if adaptive learning not available
+        console.log(`⚠️ FALLBACK: Adaptive learning not available, using simple logic`);
+        if (isCorrect) {
+            switch (currentQuestion.currentFormat) {
+                case 'multiple_choice':
+                    currentQuestion.currentFormat = 'written';
+                    break;
+                case 'written':
+                    currentQuestion.currentFormat = 'matching';
+                    break;
+                case 'matching':
+                    currentQuestion.currentFormat = 'flashcard';
+                    break;
+                case 'flashcard':
+                    currentQuestion.currentFormat = 'completed';
+                    break;
+            }
+        } else {
+            switch (currentQuestion.currentFormat) {
+                case 'written':
+                    currentQuestion.currentFormat = 'multiple_choice';
+                    break;
+                case 'matching':
+                    currentQuestion.currentFormat = 'written';
+                    break;
+                case 'flashcard':
+                    currentQuestion.currentFormat = 'matching';
+                    break;
+                // multiple_choice stays the same
+            }
         }
     }
 }
@@ -1365,7 +1493,7 @@ function adaptDifficulty(isCorrect) {
 // Show feedback
 function showFeedback(isCorrect) {
     // Update UI to show correct/incorrect answers
-    if (currentQuestion.currentFormat === 'multiple_choice' || currentQuestion.currentFormat === 'true_false') {
+    if (currentQuestion.currentFormat === 'multiple_choice') {
         // Add a small delay for smoother transition
         setTimeout(() => {
             const optionBtns = document.querySelectorAll('.option-btn');
@@ -1439,18 +1567,8 @@ function showFeedback(isCorrect) {
         questionPrompt.textContent = 'No worries, learning is a process!';
         questionPrompt.classList.add('feedback', 'incorrect');
         
-        // For incorrect answers, add a manual continue option immediately
-        // Add a continue button for incorrect answers immediately
-        const continueBtn = document.createElement('button');
-        continueBtn.textContent = 'Continue';
-        continueBtn.className = 'continue-btn';
-        
-        continueBtn.addEventListener('click', () => {
-            nextQuestion();
-        });
-        
-        // Insert the button into the body (fixed positioned)
-        document.body.appendChild(continueBtn);
+        // For incorrect answers, create button container with continue and explanation buttons
+        createIncorrectAnswerButtons();
     }
     
     // Disable all option buttons
@@ -1474,11 +1592,18 @@ function nextQuestion() {
         return;
     }
     
-    // Remove any continue buttons that might have been added
+    // Remove any button containers that might have been added
+    const buttonContainer = document.querySelector('.button-container');
+    if (buttonContainer) {
+        buttonContainer.remove();
+    }
+    
+    // Also remove any standalone buttons (legacy cleanup)
     const continueBtn = document.querySelector('.continue-btn');
     if (continueBtn) {
         continueBtn.remove();
     }
+    removeExplanationButton();
     
     // Smooth transition to next question
     const questionContainer = document.querySelector('.question-container');
@@ -1814,11 +1939,18 @@ function setupEventListeners() {
     
     // Debug bottom sheet event listeners - defer slightly to ensure DOM is ready
     setTimeout(setupDebugBottomSheetListeners, 100);
+    
+    // Explanation bottom sheet event listeners
+    setTimeout(setupExplanationBottomSheetListeners, 100);
 }
 
 // Debug bottom sheet functionality - using home page pattern
 let debugBottomSheet;
 let closeBottomSheetBtn;
+
+// Explanation bottom sheet functionality
+let explanationBottomSheet;
+let closeExplanationSheetBtn;
 
 function setupDebugBottomSheetListeners() {
     console.log('Setting up debug bottom sheet listeners...');
@@ -1893,7 +2025,7 @@ function closeDebugBottomSheet() {
     document.body.style.overflow = ''; // Restore scrolling
 }
 
-// Update debug UI to show current selections
+// Update debug UI to show current selections and adaptive learning info
 function updateDebugUI() {
     const debugOptions = document.querySelectorAll('.debug-option');
     
@@ -1907,6 +2039,147 @@ function updateDebugUI() {
             option.classList.add('selected');
         }
     });
+    
+    // Update adaptive learning debug info
+    updateAdaptiveLearningDebugInfo();
+}
+
+// Update adaptive learning debug information
+function updateAdaptiveLearningDebugInfo() {
+    if (!window.AdaptiveLearning || !currentQuestion) {
+        // Clear debug info if no adaptive learning or question
+        const debugElements = [
+            'currentDepth', 'currentDifficulty', 'currentType',
+            'correctDepth', 'correctDifficulty', 'correctType',
+            'incorrectDepth', 'incorrectDifficulty', 'incorrectType'
+        ];
+        debugElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = '-';
+        });
+        return;
+    }
+    
+    console.log(`🔍 UPDATING DEBUG INFO for question ${currentQuestion.id} (format: ${currentQuestion.currentFormat})`);
+    
+    // Get current question debug info
+    const currentInfo = window.AdaptiveLearning.getDebugInfo(currentQuestion.id);
+    
+    // Update current question info
+    const currentDepthEl = document.getElementById('currentDepth');
+    const currentDifficultyEl = document.getElementById('currentDifficulty');
+    const currentTypeEl = document.getElementById('currentType');
+    
+    if (currentDepthEl) currentDepthEl.textContent = currentInfo.depth;
+    if (currentDifficultyEl) currentDifficultyEl.textContent = currentInfo.difficulty;
+    if (currentTypeEl) currentTypeEl.textContent = getDisplayName(currentInfo.mode);
+    
+    // Get correct answer preview with consecutive prevention applied
+    const rawCorrectInfo = window.AdaptiveLearning.getNextQuestionPreview(currentQuestion.id, true);
+    const correctInfo = getAdjustedNextQuestionPreview(currentQuestion.id, true);
+    
+    const correctPreventionApplied = rawCorrectInfo.mode !== correctInfo.mode;
+    
+    console.log(`📊 DEBUG PREDICTIONS:`, {
+        currentFormat: currentQuestion.currentFormat,
+        rawCorrectPrediction: rawCorrectInfo,
+        adjustedCorrectPrediction: correctInfo,
+        preventionApplied: correctPreventionApplied
+    });
+    
+    // Update correct answer preview
+    const correctDepthEl = document.getElementById('correctDepth');
+    const correctDifficultyEl = document.getElementById('correctDifficulty');
+    const correctTypeEl = document.getElementById('correctType');
+    const correctNoteEl = document.getElementById('correctNote');
+    
+    if (correctDepthEl) correctDepthEl.textContent = correctInfo.depth;
+    if (correctDifficultyEl) correctDifficultyEl.textContent = correctInfo.difficulty;
+    if (correctTypeEl) correctTypeEl.textContent = getDisplayName(correctInfo.mode);
+    
+    // Show/hide prevention note for correct answers
+    if (correctNoteEl) {
+        correctNoteEl.style.display = correctPreventionApplied ? 'block' : 'none';
+    }
+    
+    // Get incorrect answer preview with consecutive prevention applied
+    const rawIncorrectInfo = window.AdaptiveLearning.getNextQuestionPreview(currentQuestion.id, false);
+    const incorrectInfo = getAdjustedNextQuestionPreview(currentQuestion.id, false);
+    
+    const incorrectPreventionApplied = rawIncorrectInfo.mode !== incorrectInfo.mode;
+    
+    console.log(`📊 INCORRECT PREDICTIONS:`, {
+        rawIncorrectPrediction: rawIncorrectInfo,
+        adjustedIncorrectPrediction: incorrectInfo,
+        preventionApplied: incorrectPreventionApplied
+    });
+    
+    // Update incorrect answer preview
+    const incorrectDepthEl = document.getElementById('incorrectDepth');
+    const incorrectDifficultyEl = document.getElementById('incorrectDifficulty');
+    const incorrectTypeEl = document.getElementById('incorrectType');
+    const incorrectNoteEl = document.getElementById('incorrectNote');
+    
+    if (incorrectDepthEl) incorrectDepthEl.textContent = incorrectInfo.depth;
+    if (incorrectDifficultyEl) incorrectDifficultyEl.textContent = incorrectInfo.difficulty;
+    if (incorrectTypeEl) incorrectTypeEl.textContent = getDisplayName(incorrectInfo.mode);
+    
+    // Show/hide prevention note for incorrect answers
+    if (incorrectNoteEl) {
+        incorrectNoteEl.style.display = incorrectPreventionApplied ? 'block' : 'none';
+    }
+}
+
+// Get adjusted next question preview that accounts for consecutive prevention logic
+function getAdjustedNextQuestionPreview(questionId, assumeCorrect = true) {
+    if (!window.AdaptiveLearning) {
+        return { depth: 'Unknown', mode: 'Unknown', difficulty: 'Unknown' };
+    }
+    
+    // Get the raw prediction from adaptive learning
+    const rawInfo = window.AdaptiveLearning.getNextQuestionPreview(questionId, assumeCorrect);
+    
+    // If the question would be completed, return as-is
+    if (rawInfo.depth === 'Completed' || rawInfo.mode === 'Completed') {
+        return rawInfo;
+    }
+    
+    // Apply the same consecutive prevention logic used in adaptDifficulty()
+    const currentFormat = currentQuestion.currentFormat;
+    let adjustedMode = rawInfo.mode;
+    
+    // Apply consecutive matching/flashcard prevention for the same question
+    // This prevents a question from becoming matching->flashcard or flashcard->matching
+    if (currentFormat && 
+        (currentFormat === 'matching' || currentFormat === 'flashcard') &&
+        (adjustedMode === 'Matching' || adjustedMode === 'Flashcard') &&
+        getDisplayName(adjustedMode).toLowerCase().replace(' ', '_') !== currentFormat) {
+        
+        console.log(`Debug preview: Preventing consecutive ${currentFormat} -> ${adjustedMode} adaptation for question ${questionId}`);
+        
+        // Use multiple choice as a safe alternative for adaptive progression
+        adjustedMode = 'MCQ';
+    }
+    
+    return {
+        depth: rawInfo.depth,
+        mode: adjustedMode,
+        difficulty: rawInfo.difficulty,
+        internalFormat: rawInfo.internalFormat
+    };
+}
+
+// Helper function to get display names for adaptive learning modes
+function getDisplayName(mode) {
+    const displayNames = {
+        'Flashcard': 'Flashcard',
+        'Matching': 'Matching',
+        'MCQ': 'Multiple choice',
+        'Free-Form': 'Written',
+        'Completed': 'Completed',
+        'Unknown': 'Unknown'
+    };
+    return displayNames[mode] || mode;
 }
 
 // Handle debug option selection
@@ -1940,10 +2213,294 @@ function getQuestionTypeDisplayName(type) {
         'multiple_choice': 'Multiple choice',
         'flashcard': 'Flashcard',
         'written': 'Written',
-        'matching': 'Matching',
-        'true_false': 'True/False'
+        'matching': 'Matching'
     };
     return displayNames[type] || type;
+}
+
+// Explanation bottom sheet functionality
+function setupExplanationBottomSheetListeners() {
+    console.log('Setting up explanation bottom sheet listeners...');
+    explanationBottomSheet = document.getElementById('explanationBottomSheet');
+    closeExplanationSheetBtn = document.getElementById('closeExplanationSheet');
+    
+    console.log('Explanation elements found:', {
+        bottomSheet: !!explanationBottomSheet,
+        closeBtn: !!closeExplanationSheetBtn,
+        doneBtn: !!document.getElementById('doneButton'),
+        questionInput: !!document.getElementById('questionInput')
+    });
+    
+    if (!explanationBottomSheet || !closeExplanationSheetBtn) {
+        console.warn('Explanation bottom sheet elements not found');
+        return;
+    }
+    
+    // Close button handler
+    closeExplanationSheetBtn.addEventListener('click', closeExplanationBottomSheet);
+    
+    // Done button handler
+    const doneButton = document.getElementById('doneButton');
+    if (doneButton) {
+        doneButton.addEventListener('click', closeExplanationBottomSheet);
+    }
+    
+    // Question input handler
+    const questionInput = document.getElementById('questionInput');
+    if (questionInput) {
+        questionInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && questionInput.value.trim()) {
+                handleQuestionSubmit(questionInput.value.trim());
+                questionInput.value = '';
+            }
+        });
+    }
+    
+    // Overlay click handler (close when clicking outside content)
+    explanationBottomSheet.addEventListener('click', function(e) {
+        if (e.target === explanationBottomSheet) {
+            closeExplanationBottomSheet();
+        }
+    });
+    
+    // Escape key handler
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && explanationBottomSheet.classList.contains('show')) {
+            closeExplanationBottomSheet();
+        }
+    });
+}
+
+// Open explanation bottom sheet
+function openExplanationBottomSheet() {
+    console.log('openExplanationBottomSheet called, bottom sheet exists:', !!explanationBottomSheet);
+    
+    if (!explanationBottomSheet) {
+        console.error('Explanation bottom sheet not found!');
+        explanationBottomSheet = document.getElementById('explanationBottomSheet');
+        console.log('Retry found bottom sheet:', !!explanationBottomSheet);
+        if (!explanationBottomSheet) return;
+    }
+    
+    console.log('Opening explanation bottom sheet');
+    explanationBottomSheet.classList.add('show');
+    
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Update explanation content
+    updateExplanationContent();
+    
+    console.log('Explanation bottom sheet should now be visible, classes:', explanationBottomSheet.className);
+}
+
+// Close explanation bottom sheet
+function closeExplanationBottomSheet() {
+    if (!explanationBottomSheet) return;
+    
+    console.log('Closing explanation bottom sheet');
+    explanationBottomSheet.classList.remove('show');
+    
+    document.body.style.overflow = ''; // Restore scrolling
+}
+
+// Update explanation content with current question's explanation
+function updateExplanationContent() {
+    const explanationText = document.getElementById('explanationText');
+    const explanationImage = document.getElementById('explanationImage');
+    const formulaSection = document.getElementById('formulaSection');
+    const formulaText = document.getElementById('formulaText');
+    
+    if (explanationText && currentQuestion && currentQuestion.explanation) {
+        explanationText.textContent = currentQuestion.explanation;
+        
+        // Add concept image if available
+        if (explanationImage && currentQuestion.conceptImage) {
+            explanationImage.innerHTML = `<img src="${currentQuestion.conceptImage}" alt="Concept illustration" />`;
+        } else if (explanationImage) {
+            // Default placeholder for concepts without images
+            explanationImage.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: var(--color-gray-500);">
+                    <span class="material-icons-round" style="font-size: 48px; margin-bottom: 8px;">science</span>
+                    <p style="margin: 0; font-size: 14px;">Visual explanation coming soon</p>
+                </div>
+            `;
+        }
+        
+        // Add formula if available
+        if (formulaSection && formulaText && currentQuestion.formula) {
+            formulaText.textContent = currentQuestion.formula;
+            formulaSection.style.display = 'block';
+        } else if (formulaSection) {
+            formulaSection.style.display = 'none';
+        }
+        
+    } else if (explanationText) {
+        explanationText.textContent = 'No detailed explanation is available for this question.';
+        if (explanationImage) {
+            explanationImage.innerHTML = '';
+        }
+        if (formulaSection) {
+            formulaSection.style.display = 'none';
+        }
+    }
+}
+
+// Handle question submission from the input
+function handleQuestionSubmit(question) {
+    console.log('User asked:', question);
+    
+    // For now, show a simple response
+    // In a real implementation, this would connect to an AI API
+    showToast(`Great question! "${question}" - AI responses coming soon.`, 3000);
+    
+    // You could implement actual AI chat functionality here
+    // Example: sendToAI(question, currentQuestion.id);
+}
+
+// Create button container with continue and explanation buttons for incorrect answers
+function createIncorrectAnswerButtons() {
+    console.log('createIncorrectAnswerButtons called for', currentQuestion.currentFormat, 'question');
+    
+    // Remove any existing button containers
+    const existingContainer = document.querySelector('.button-container');
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+    
+    // Create button container
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'button-container';
+    
+    // Add specific class for multiple choice to match answer options width
+    if (currentQuestion.currentFormat === 'multiple_choice') {
+        buttonContainer.classList.add('multiple-choice-buttons');
+    }
+    
+    // Create explanation button first (only for multiple choice and written questions with explanations)
+    if ((currentQuestion.currentFormat === 'multiple_choice' || currentQuestion.currentFormat === 'written') && 
+        currentQuestion.explanation) {
+        console.log('Adding explanation button for question with explanation');
+        
+        const explanationBtn = document.createElement('button');
+        explanationBtn.className = 'explanation-button';
+        explanationBtn.innerHTML = '<img src="../images/sparkle.png" alt="Learn more" />';
+        explanationBtn.setAttribute('aria-label', 'Learn more about this concept');
+        
+        explanationBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Explanation button clicked');
+            openExplanationBottomSheet();
+        });
+        
+        // Add explanation button to container first
+        buttonContainer.appendChild(explanationBtn);
+        console.log('Explanation button added to container');
+    } else {
+        console.log('No explanation button created:', {
+            format: currentQuestion.currentFormat,
+            hasExplanation: !!currentQuestion.explanation
+        });
+    }
+    
+    // Create continue button
+    const continueBtn = document.createElement('button');
+    continueBtn.textContent = 'Continue';
+    continueBtn.className = 'continue-btn';
+    continueBtn.addEventListener('click', () => {
+        nextQuestion();
+    });
+    
+    // Add continue button to container
+    buttonContainer.appendChild(continueBtn);
+    
+    // Add container to page
+    document.body.appendChild(buttonContainer);
+    console.log('Button container added to page with', buttonContainer.children.length, 'buttons');
+}
+
+// Create explanation button for incorrect answers
+function createExplanationButton() {
+    console.log('createExplanationButton called', {
+        currentQuestion: currentQuestion?.id,
+        hasExplanation: !!currentQuestion?.explanation,
+        explanation: currentQuestion?.explanation?.substring(0, 50) + '...'
+    });
+    
+    // Remove any existing explanation button
+    const existingBtn = document.querySelector('.explanation-button');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+    
+    // Only create button if current question has an explanation
+    if (!currentQuestion || !currentQuestion.explanation) {
+        console.log('No explanation available for current question');
+        return;
+    }
+    
+    // Create the explanation button
+    const explanationBtn = document.createElement('button');
+    explanationBtn.className = 'explanation-button';
+    explanationBtn.innerHTML = '<span class="material-icons-round">lightbulb</span>';
+    explanationBtn.setAttribute('aria-label', 'Learn more about this concept');
+    explanationBtn.style.cssText = `
+        background: #A7F3D0 !important;
+        border: 3px solid #059669 !important;
+        border-radius: 50% !important;
+        padding: 16px !important;
+        font-size: 24px !important;
+        color: #064E3B !important;
+        cursor: pointer !important;
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 64px !important;
+        height: 64px !important;
+        z-index: 9999 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    `;
+    
+    explanationBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Explanation button clicked');
+        openExplanationBottomSheet();
+    });
+    
+    // Add to page
+    document.body.appendChild(explanationBtn);
+    console.log('Explanation button added to page');
+    console.log('Button element:', explanationBtn);
+    console.log('Button in DOM:', document.body.contains(explanationBtn));
+    
+    // Adjust continue button to make room
+    const continueBtn = document.querySelector('.continue-btn');
+    if (continueBtn) {
+        continueBtn.classList.add('with-explanation');
+        console.log('Continue button adjusted for explanation');
+    }
+    
+    return explanationBtn;
+}
+
+// Remove explanation button
+function removeExplanationButton() {
+    const explanationBtn = document.querySelector('.explanation-button');
+    if (explanationBtn) {
+        explanationBtn.remove();
+    }
+    
+    // Reset continue button width
+    const continueBtn = document.querySelector('.continue-btn');
+    if (continueBtn) {
+        continueBtn.classList.remove('with-explanation');
+    }
 }
 
 // No longer needed - bottom sheet is in HTML
@@ -1987,6 +2544,228 @@ window.testDebugSheet = function() {
         bottomSheet.classList.add('show');
         console.log('Debug sheet should now be visible');
     }
+};
+
+// Debug function to test explanation button
+window.testExplanationButton = function() {
+    console.log('Testing explanation button creation...');
+    console.log('Current question:', {
+        id: currentQuestion?.id,
+        format: currentQuestion?.currentFormat,
+        hasExplanation: !!currentQuestion?.explanation
+    });
+    createExplanationButton();
+};
+
+// Simple test function to create button manually
+window.forceCreateExplanationButton = function() {
+    console.log('Force creating explanation button...');
+    
+    // Remove existing button
+    const existing = document.querySelector('.explanation-button');
+    if (existing) existing.remove();
+    
+    // Create simple test button
+    const btn = document.createElement('button');
+    btn.textContent = '💡';
+    btn.style.cssText = `
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 64px !important;
+        height: 64px !important;
+        background: lime !important;
+        border: 3px solid red !important;
+        border-radius: 50% !important;
+        font-size: 32px !important;
+        z-index: 9999 !important;
+        cursor: pointer !important;
+        display: block !important;
+    `;
+    btn.onclick = () => alert('Button works!');
+    document.body.appendChild(btn);
+    console.log('Test button created');
+};
+
+// Debug function to check for existing buttons
+window.checkButtons = function() {
+    const buttonContainer = document.querySelector('.button-container');
+    const continueBtn = document.querySelector('.continue-btn');
+    const explanationBtn = document.querySelector('.explanation-button');
+    console.log('Button check:', {
+        buttonContainer: !!buttonContainer,
+        containerChildren: buttonContainer?.children.length,
+        continueBtn: !!continueBtn,
+        explanationBtn: !!explanationBtn,
+        continueClasses: continueBtn?.className,
+        explanationClasses: explanationBtn?.className
+    });
+};
+
+// Test the new button container approach
+window.testIncorrectButtons = function() {
+    console.log('Testing incorrect answer buttons...');
+    createIncorrectAnswerButtons();
+};
+
+// Test the new explanation bottom sheet layout
+window.testExplanationSheet = function() {
+    console.log('Testing explanation bottom sheet...');
+    
+    // Set up a test question with all features
+    currentQuestion = {
+        id: 999,
+        question: "Test question for explanation sheet",
+        explanation: "This is a test explanation to demonstrate the new bottom sheet layout with AI chat functionality, concept images, and formula support.",
+        conceptImage: "../images/sparkle.png",
+        formula: "E = mc² (Test formula for demonstration)"
+    };
+    
+    openExplanationBottomSheet();
+};
+
+// Test adaptive learning debug info
+window.testAdaptiveDebug = function() {
+    console.log('Testing adaptive learning debug info...');
+    
+    if (!window.AdaptiveLearning) {
+        console.log('Adaptive learning engine not available');
+        return;
+    }
+    
+    // Create a test question if none exists
+    if (!currentQuestion) {
+        currentQuestion = {
+            id: 999,
+            question: "Test question for adaptive debug",
+            currentFormat: "multiple_choice"
+        };
+    }
+    
+    // Make sure the question is tracked by adaptive learning
+    window.AdaptiveLearning.getQuestionFormat(currentQuestion.id);
+    
+    // Update debug info
+    updateAdaptiveLearningDebugInfo();
+    
+    // Open debug sheet to see the info
+    openDebugBottomSheet();
+    
+    console.log('Debug info updated. Check the debug bottom sheet!');
+    console.log('You can now see:');
+    console.log('- Current question adaptive parameters');
+    console.log('- What happens if the answer is correct (green)');
+    console.log('- What happens if the answer is incorrect (orange)');
+};
+
+// Test consecutive question format prevention
+window.testConsecutivePrevention = function() {
+    console.log('Testing consecutive matching/flashcard prevention...');
+    
+    // Simulate a round with consecutive formats that should be prevented
+    const testQuestions = [
+        { id: 1, currentFormat: 'multiple_choice', question: 'Test question 1' },
+        { id: 2, currentFormat: 'matching', question: 'Test question 2' },
+        { id: 3, currentFormat: 'flashcard', question: 'Test question 3' }, // Should be prevented
+        { id: 4, currentFormat: 'matching', question: 'Test question 4' }, // Should be prevented
+        { id: 5, currentFormat: 'written', question: 'Test question 5' }
+    ];
+    
+    // Test round-level prevention
+    console.log('Original formats:', testQuestions.map(q => q.currentFormat));
+    
+    // Test session-level prevention by simulating question flow
+    lastShownQuestionFormat = null;
+    const finalFormats = [];
+    
+    testQuestions.forEach((question, index) => {
+        currentQuestion = question;
+        
+        // Apply the same logic as showQuestion()
+        if (lastShownQuestionFormat && 
+            (lastShownQuestionFormat === 'matching' || lastShownQuestionFormat === 'flashcard') &&
+            (currentQuestion.currentFormat === 'matching' || currentQuestion.currentFormat === 'flashcard')) {
+            
+            console.log(`TEST: Preventing consecutive ${lastShownQuestionFormat} -> ${currentQuestion.currentFormat} for question ${currentQuestion.id}`);
+            currentQuestion.currentFormat = 'multiple_choice';
+        }
+        
+        lastShownQuestionFormat = currentQuestion.currentFormat;
+        finalFormats.push(currentQuestion.currentFormat);
+    });
+    
+    console.log('Final formats after prevention:', finalFormats);
+    console.log('Prevention worked correctly:', !hasConsecutiveMatchingFlashcard(finalFormats));
+    
+    // Helper function to check for consecutive matching/flashcard
+    function hasConsecutiveMatchingFlashcard(formats) {
+        for (let i = 1; i < formats.length; i++) {
+            if ((formats[i-1] === 'matching' || formats[i-1] === 'flashcard') &&
+                (formats[i] === 'matching' || formats[i] === 'flashcard')) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+// Test debug info accuracy
+window.testDebugAccuracy = function() {
+    console.log('🧪 TESTING DEBUG ACCURACY...');
+    
+    if (!window.AdaptiveLearning || !currentQuestion) {
+        console.log('❌ No adaptive learning or current question available');
+        return;
+    }
+    
+    const questionId = currentQuestion.id;
+    const currentFormat = currentQuestion.currentFormat;
+    
+    console.log(`🔎 Testing question ${questionId} (current format: ${currentFormat})`);
+    
+    // Get raw predictions
+    const rawCorrect = window.AdaptiveLearning.getNextQuestionPreview(questionId, true);
+    const rawIncorrect = window.AdaptiveLearning.getNextQuestionPreview(questionId, false);
+    
+    // Get adjusted predictions
+    const adjustedCorrect = getAdjustedNextQuestionPreview(questionId, true);
+    const adjustedIncorrect = getAdjustedNextQuestionPreview(questionId, false);
+    
+    console.log(`📊 RAW vs ADJUSTED PREDICTIONS:`);
+    console.log(`  Correct: ${rawCorrect.mode} → ${adjustedCorrect.mode} (${rawCorrect.mode !== adjustedCorrect.mode ? 'MODIFIED' : 'UNCHANGED'})`);
+    console.log(`  Incorrect: ${rawIncorrect.mode} → ${adjustedIncorrect.mode} (${rawIncorrect.mode !== adjustedIncorrect.mode ? 'MODIFIED' : 'UNCHANGED'})`);
+    
+    // Simulate what would actually happen if user answered correctly
+    console.log(`🎯 SIMULATING CORRECT ANSWER...`);
+    const beforeState = JSON.parse(JSON.stringify(window.AdaptiveLearning.getDebugInfo(questionId)));
+    
+    // Process the answer and see what actually happens
+    window.AdaptiveLearning.processAnswer(questionId, true);
+    let actualFormat = window.AdaptiveLearning.getQuestionFormat(questionId);
+    
+    // Apply the same prevention logic used in adaptDifficulty
+    if (currentFormat && 
+        (currentFormat === 'matching' || currentFormat === 'flashcard') &&
+        (actualFormat === 'matching' || actualFormat === 'flashcard') &&
+        currentFormat !== actualFormat) {
+        
+        console.log(`🚫 SIMULATION: Would prevent ${currentFormat} -> ${actualFormat}`);
+        actualFormat = 'multiple_choice';
+    }
+    
+    console.log(`📈 SIMULATION RESULTS:`);
+    console.log(`  Debug predicted: ${getDisplayName(adjustedCorrect.mode)}`);
+    console.log(`  Actually would be: ${actualFormat}`);
+    console.log(`  Match: ${getDisplayName(adjustedCorrect.mode).toLowerCase().replace(' ', '_') === actualFormat ? '✅' : '❌'}`);
+    
+    // Restore the original state (undo the simulation)
+    window.AdaptiveLearning.loadState();
+    
+    return {
+        predicted: getDisplayName(adjustedCorrect.mode),
+        actual: actualFormat,
+        matches: getDisplayName(adjustedCorrect.mode).toLowerCase().replace(' ', '_') === actualFormat
+    };
 };
 
 // Initialize when DOM is loaded

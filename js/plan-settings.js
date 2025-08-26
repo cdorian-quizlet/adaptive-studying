@@ -9,14 +9,16 @@ const bottomSheetClose = document.getElementById('bottomSheetClose');
 
 // Setting value elements
 const courseValue = document.getElementById('courseValue');
-const goalValue = document.getElementById('goalValue');
+const goalTypeValue = document.getElementById('goalTypeValue');
+const examGoalValue = document.getElementById('examGoalValue');
 const conceptsValue = document.getElementById('conceptsValue');
 const knowledgeValue = document.getElementById('knowledgeValue');
 const dateValue = document.getElementById('dateValue');
 
 // Setting items (clickable)
 const courseSetting = document.getElementById('courseSetting');
-const goalSetting = document.getElementById('goalSetting');
+const goalTypeSetting = document.getElementById('goalTypeSetting');
+const examGoalSetting = document.getElementById('examGoalSetting');
 const conceptsSetting = document.getElementById('conceptsSetting');
 const knowledgeSetting = document.getElementById('knowledgeSetting');
 const dateSetting = document.getElementById('dateSetting');
@@ -30,8 +32,8 @@ let debugSettings = {
 };
 
 // Initialize the settings screen
-document.addEventListener('DOMContentLoaded', function() {
-    loadSettings();
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadSettings();
     loadDebugSettings();
     setupEventListeners();
     initMaterialIcons();
@@ -40,25 +42,67 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Settings gear button available:', !!document.getElementById('settingsGearBtn'));
 });
 
-// Load settings from localStorage
-function loadSettings() {
+// Load course information from API with localStorage fallback
+async function loadCourseFromAPI() {
     try {
-        // Load course
+        // First try to get course from the new API
+        if (window.QuizletApi && window.QuizletApi.getCurrentCourse) {
+            try {
+                const currentCourse = await window.QuizletApi.getCurrentCourse();
+                if (currentCourse) {
+                    const courseDisplay = window.QuizletApi.formatCourseDisplay(currentCourse);
+                    if (courseValue) {
+                        courseValue.textContent = courseDisplay;
+                    }
+                    console.log('Course loaded from API:', courseDisplay);
+                    return;
+                }
+            } catch (error) {
+                console.log('API course not available, falling back to localStorage');
+            }
+        }
+        
+        // Fallback to localStorage
         const course = localStorage.getItem('onboarding_course');
-        if (course) {
+        if (course && courseValue) {
             // Extract course code (everything before " - " if it exists)
             const courseCode = course.includes(' - ') ? 
                 course.split(' - ')[0] : course;
             courseValue.textContent = courseCode;
+            console.log('Course loaded from localStorage:', courseCode);
+        }
+    } catch (error) {
+        console.error('Error loading course:', error);
+    }
+}
+
+// Load settings from localStorage and API
+async function loadSettings() {
+    try {
+        // Load course from API first, fallback to localStorage
+        await loadCourseFromAPI();
+
+        // Continue with other settings...
+
+        // Load goal type (from flow entry point)
+        const goalType = localStorage.getItem('onboarding_goal_type');
+        if (goalType) {
+            let displayGoalType = 'Study plan'; // Default
+            if (goalType === 'cram') {
+                displayGoalType = 'Cram for a test';
+            } else if (goalType === 'memorize') {
+                displayGoalType = 'Memorize terms';
+            }
+            goalTypeValue.textContent = displayGoalType;
         }
 
-        // Load goals
+        // Load exam/test goals
         const goals = localStorage.getItem('onboarding_goals');
         if (goals) {
             try {
                 const goalsArray = JSON.parse(goals);
                 if (Array.isArray(goalsArray) && goalsArray.length > 0) {
-                    goalValue.textContent = goalsArray.join(', ');
+                    examGoalValue.textContent = goalsArray.join(', ');
                 }
             } catch (e) {
                 console.error('Error parsing goals:', e);
@@ -130,10 +174,16 @@ function setupEventListeners() {
         showToast('Course editing coming soon');
     });
 
-    goalSetting.addEventListener('click', function() {
-        // Future: Open goal selection
-        console.log('Goal setting clicked');
-        showToast('Goal editing coming soon');
+    goalTypeSetting.addEventListener('click', function() {
+        // Future: Open goal type selection
+        console.log('Goal type setting clicked');
+        showToast('Goal type editing coming soon');
+    });
+
+    examGoalSetting.addEventListener('click', function() {
+        // Future: Open exam/test goal selection
+        console.log('Exam goal setting clicked');
+        showToast('Exam goal editing coming soon');
     });
 
     conceptsSetting.addEventListener('click', function() {
@@ -210,6 +260,7 @@ function deletePlan() {
             'onboarding_knowledge_level',
             'onboarding_knowledge_pill',
             'onboarding_knowledge_headline',
+            'onboarding_goal_type',
             'plan_due_date',
             'onboarding_completed',
             'onboarding_sheet_open',
@@ -404,3 +455,37 @@ function handleDebugOptionClick(option) {
     // Show feedback
     showToast(`Debug ${type}: ${debugSettings[settingKey] || 'None'}`, 1500);
 }
+
+// Test function for debugging course display
+window.testPlanSettingsCourse = async function() {
+    console.log('Testing plan settings course loading...');
+    
+    // Test API loading
+    try {
+        if (window.QuizletApi && window.QuizletApi.getCurrentCourse) {
+            const course = await window.QuizletApi.getCurrentCourse();
+            console.log('Current course from API:', course);
+            
+            if (course) {
+                const display = window.QuizletApi.formatCourseDisplay(course);
+                console.log('Formatted display:', display);
+            }
+        } else {
+            console.log('QuizletApi not available');
+        }
+    } catch (error) {
+        console.error('API test failed:', error);
+    }
+    
+    // Test localStorage fallback
+    const localCourse = localStorage.getItem('onboarding_course');
+    console.log('Course from localStorage:', localCourse);
+    
+    // Test current display
+    const currentDisplay = courseValue ? courseValue.textContent : 'No courseValue element';
+    console.log('Current displayed course:', currentDisplay);
+    
+    // Test manual reload
+    await loadCourseFromAPI();
+    console.log('After manual reload:', courseValue ? courseValue.textContent : 'No courseValue element');
+};

@@ -138,20 +138,25 @@ function setupEventListeners() {
     studyOptions.forEach(option => {
         option.addEventListener('click', function() {
             const action = this.textContent.trim();
+            
             // Route to plan flow for study plan
             if (/^make a study plan$/i.test(action) || /^study plan$/i.test(action)) {
-                smoothNavigate('html/plan-flow.html');
+                smoothNavigate('html/plan-flow.html?goal=study-plan');
                 return;
             }
-            // Show toast for specific buttons
+            
+            // Route to plan flow for cram for a test
             if (/^cram for a test$/i.test(action)) {
-                showToast('Cram for a test flow opened');
+                smoothNavigate('html/plan-flow.html?goal=cram');
                 return;
             }
+            
+            // Route to plan flow for memorize terms
             if (/^memorize terms$/i.test(action)) {
-                showToast('Memorize terms flow opened');
+                smoothNavigate('html/plan-flow.html?goal=memorize');
                 return;
             }
+            
             if (/^something else$/i.test(action)) {
                 showToast('Something else flow opened');
                 return;
@@ -619,17 +624,24 @@ function updateTodaysProgressFromStudyData() {
     return dailyData;
 }
 
-// Calculate overall study plan progress
+// Calculate overall study plan progress using adaptive learning
 function calculateOverallPlanProgress() {
     try {
-        // Get study path data
+        // Try to get adaptive learning progress first
+        const adaptiveProgress = getAdaptiveLearningProgress();
+        if (adaptiveProgress !== null) {
+            console.log('🔍 DEBUG: Using adaptive learning progress:', adaptiveProgress);
+            return adaptiveProgress;
+        }
+        
+        // Get study path data for fallback calculation
         const studyPathData = localStorage.getItem('studyPathData');
         if (!studyPathData) {
             console.log('🔍 DEBUG: No study path data found, progress is 0%');
             return 0;
         }
         
-            const pathData = JSON.parse(studyPathData);
+        const pathData = JSON.parse(studyPathData);
         const questionsPerRound = pathData.questionsPerRound || 7;
         const completedRounds = pathData.completedRounds || 0;
         const currentRoundProgress = pathData.currentRoundProgress || 0;
@@ -647,7 +659,7 @@ function calculateOverallPlanProgress() {
         // Calculate percentage
         const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
         
-        console.log('🔍 DEBUG: Overall plan progress calculation:', {
+        console.log('🔍 DEBUG: Traditional progress calculation:', {
             totalRounds,
             questionsPerRound,
             totalQuestions,
@@ -662,6 +674,46 @@ function calculateOverallPlanProgress() {
     } catch (error) {
         console.error('Error calculating overall plan progress:', error);
         return 0;
+    }
+}
+
+// Get progress from adaptive learning system
+function getAdaptiveLearningProgress() {
+    try {
+        // Check if adaptive learning system is available
+        if (typeof window === 'undefined' || !window.AdaptiveLearning) {
+            console.log('🔍 DEBUG: Adaptive learning system not available');
+            return null;
+        }
+        
+        // Load adaptive learning state
+        window.AdaptiveLearning.loadState();
+        
+        // Get all questions from the study session
+        const totalQuestions = 50; // Standard question pool size
+        let completedQuestions = 0;
+        
+        // Count completed questions according to adaptive learning
+        for (let questionId = 1; questionId <= totalQuestions; questionId++) {
+            if (window.AdaptiveLearning.isQuestionCompleted(questionId)) {
+                completedQuestions++;
+            }
+        }
+        
+        // Calculate percentage
+        const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log('🔍 DEBUG: Adaptive learning progress:', {
+            totalQuestions,
+            completedQuestions,
+            progressPercentage
+        });
+        
+        return Math.min(progressPercentage, 100); // Cap at 100%
+        
+    } catch (error) {
+        console.error('Error getting adaptive learning progress:', error);
+        return null;
     }
 }
 
@@ -908,6 +960,7 @@ function resetOnboardingFlow() {
         localStorage.removeItem('onboarding_course');
         localStorage.removeItem('onboarding_goals');
         localStorage.removeItem('onboarding_concepts');
+        localStorage.removeItem('onboarding_goal_type');
         localStorage.removeItem('onboarding_due_date');
         localStorage.removeItem('onboarding_confidence');
         
@@ -1260,6 +1313,7 @@ function resetOnboardingFlow() {
     localStorage.removeItem('onboarding_course');
     localStorage.removeItem('onboarding_goals');
     localStorage.removeItem('onboarding_concepts');
+    localStorage.removeItem('onboarding_goal_type');
     localStorage.removeItem('plan_due_date');
     // Force first-time state on next load
     showToast('Onboarding has been reset');

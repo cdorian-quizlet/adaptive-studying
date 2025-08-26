@@ -57,11 +57,7 @@
                     </div>
                 </div>
 
-                <!-- True/False -->
-                <div class="true-false-container" id="trueFalse" style="display: none;">
-                    <button class="option-btn" data-answer="true">True</button>
-                    <button class="option-btn" data-answer="false">False</button>
-                </div>
+
 
                 <!-- Flashcard -->
                 <div class="flashcard-container" id="flashcard" style="display: none;">
@@ -103,8 +99,70 @@
                     </button>
                 </div>
                 <div class="bottom-sheet-actions">
+                    <!-- Adaptive Learning Debug Info -->
                     <div class="debug-section">
-                        <h4 class="debug-label">Question type</h4>
+                        <h4 class="debug-label">Current Question</h4>
+                        <div class="debug-info">
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Knowledge depth:</span>
+                                <span class="debug-info-value" id="currentDepth">-</span>
+                            </div>
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Difficulty:</span>
+                                <span class="debug-info-value" id="currentDifficulty">-</span>
+                            </div>
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Type:</span>
+                                <span class="debug-info-value" id="currentType">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="debug-section">
+                        <h4 class="debug-label">If Answer is Correct</h4>
+                        <div class="debug-info">
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Knowledge depth:</span>
+                                <span class="debug-info-value" id="correctDepth">-</span>
+                            </div>
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Difficulty:</span>
+                                <span class="debug-info-value" id="correctDifficulty">-</span>
+                            </div>
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Type:</span>
+                                <span class="debug-info-value" id="correctType">-</span>
+                            </div>
+                        </div>
+                        <div class="debug-note" id="correctNote" style="display: none;">
+                            <span>⚠️ Adjusted due to consecutive prevention</span>
+                        </div>
+                    </div>
+
+                    <div class="debug-section">
+                        <h4 class="debug-label">If Answer is Incorrect</h4>
+                        <div class="debug-info">
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Knowledge depth:</span>
+                                <span class="debug-info-value" id="incorrectDepth">-</span>
+                            </div>
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Difficulty:</span>
+                                <span class="debug-info-value" id="incorrectDifficulty">-</span>
+                            </div>
+                            <div class="debug-info-row">
+                                <span class="debug-info-label">Type:</span>
+                                <span class="debug-info-value" id="incorrectType">-</span>
+                            </div>
+                        </div>
+                        <div class="debug-note" id="incorrectNote" style="display: none;">
+                            <span>⚠️ Adjusted due to consecutive prevention</span>
+                        </div>
+                    </div>
+
+                    <!-- Manual Question Type Override -->
+                    <div class="debug-section">
+                        <h4 class="debug-label">Override current question type</h4>
                         <div class="debug-options">
                             <button class="debug-option" data-type="question-type" data-value="multiple_choice">Multiple choice</button>
                             <button class="debug-option" data-type="question-type" data-value="flashcard">Flashcard</button>
@@ -115,11 +173,50 @@
                 </div>
             </div>
         </div>
+
+        <!-- Explanation Bottom Sheet -->
+        <div class="bottom-sheet" id="explanationBottomSheet">
+            <div class="bottom-sheet-content shadow-modal explanation-sheet">
+                <div class="bottom-sheet-header">
+                    <div class="explanation-header">
+                        <div class="ai-icon">
+                            <span class="material-icons-round">smart_toy</span>
+                        </div>
+                        <h3 class="subheading-2 text-primary">Learn More</h3>
+                    </div>
+                    <button class="close-bottom-sheet" id="closeExplanationSheet">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+                <div class="bottom-sheet-body">
+                    <div class="explanation-content">
+                        <div class="explanation-image" id="explanationImage">
+                            <!-- Concept image will be inserted here -->
+                        </div>
+                        <div class="explanation-text">
+                            <p id="explanationText">This is where the detailed explanation will appear.</p>
+                            <div class="formula-section" id="formulaSection" style="display: none;">
+                                <h4>Key Formula:</h4>
+                                <div class="formula" id="formulaText"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="explanation-bottom-bar">
+                    <div class="question-input-container">
+                        <span class="material-icons-round question-icon">auto_awesome</span>
+                        <input type="text" class="question-input" placeholder="Ask a question" id="questionInput">
+                    </div>
+                    <button class="done-button" id="doneButton">Done</button>
+                </div>
+            </div>
+        </div>
     </div>
 
 
     <script src="../js/api.js"></script>
     <script src="../js/components/header.js"></script>
+    <script src="../js/adaptive-learning.js"></script>
     <script src="../js/study.js"></script>
 </body>
 </html> 

@@ -1182,6 +1182,8 @@ body {
     overflow: hidden;
     transform: translateY(100%);
     transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .bottom-sheet.show .bottom-sheet-content { transform: translateY(0); }
@@ -1193,6 +1195,7 @@ body {
     margin-bottom: 24px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--sys-border-primary);
+    flex-shrink: 0;
 }
 
 .bottom-sheet-header h3 {
@@ -1224,6 +1227,29 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px; /* Account for scrollbar */
+}
+
+/* Custom scrollbar styling for bottom sheet */
+.bottom-sheet-actions::-webkit-scrollbar {
+    width: 6px;
+}
+
+.bottom-sheet-actions::-webkit-scrollbar-track {
+    background: var(--color-gray-100);
+    border-radius: 3px;
+}
+
+.bottom-sheet-actions::-webkit-scrollbar-thumb {
+    background: var(--color-gray-400);
+    border-radius: 3px;
+}
+
+.bottom-sheet-actions::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gray-500);
 }
 
 .action-button {

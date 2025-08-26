@@ -95,45 +95,57 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize header component
     initializeHeader();
 
-    // Check if progress has been reset FIRST, before loading any data
-    const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-    if (!hasProgressData) {
-        console.log('No progress data found on page load, resetting overview card');
-        // Reset overview card immediately for 0% state
-        const progressSummary = document.getElementById('progressSummary');
-        const overviewTitle = document.querySelector('.overview-title');
-        
-        if (progressSummary) {
-            progressSummary.style.display = 'none'; // Hide progress summary for 0% state
-        }
-        if (overviewTitle) {
-            const examDate = formatExamDate();
-            if (examDate) {
-                overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
-            } else {
-                overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
-            }
-        }
-        
-        // Initialize circular progress properly to start from 0% (with visible pill)
-        initializeProgressRing();
-        
-        // Reset circular progress and ensure circular view is shown
-        updateCircularProgress(0, false); // Don't animate the initial 0% reset
-        
-        // Make sure circular view is visible and add zero-state class
-        const circularView = document.getElementById('circularProgressView');
-        const trendView = document.getElementById('trendGraphView');
-        if (circularView) {
-            circularView.style.display = 'flex';
-            circularView.classList.add('zero-state');
-        }
-        if (trendView) trendView.style.display = 'none';
-    }
-
+    // Load onboarding data and plan first
     loadOnboardingData();
     generateDynamicStudyPlan();
     loadStudyPathData();
+
+    // Check if adaptive learning system is available and try to use it for progress
+    setTimeout(() => {
+        const adaptiveProgressUpdated = refreshAdaptiveLearningProgress();
+        
+        if (!adaptiveProgressUpdated) {
+            // Check if progress has been reset FIRST, before loading any data
+            const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+            if (!hasProgressData) {
+                console.log('No progress data found on page load, resetting overview card');
+                // Reset overview card immediately for 0% state
+                const progressSummary = document.getElementById('progressSummary');
+                const overviewTitle = document.querySelector('.overview-title');
+                
+                if (progressSummary) {
+                    progressSummary.style.display = 'none'; // Hide progress summary for 0% state
+                }
+                if (overviewTitle) {
+                    const examDate = formatExamDate();
+                    if (examDate) {
+                        overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
+                    } else {
+                        overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+                    }
+                }
+                
+                // Initialize circular progress properly to start from 0% (with visible pill)
+                initializeProgressRing();
+                
+                // Reset circular progress and ensure circular view is shown
+                updateCircularProgress(0, false); // Don't animate the initial 0% reset
+                
+                // Make sure circular view is visible and add zero-state class
+                const circularView = document.getElementById('circularProgressView');
+                const trendView = document.getElementById('trendGraphView');
+                if (circularView) {
+                    circularView.style.display = 'flex';
+                    circularView.classList.add('zero-state');
+                }
+                if (trendView) trendView.style.display = 'none';
+            } else {
+                // Fall back to traditional sync
+                syncDailyProgressWithHome();
+            }
+        }
+    }, 200); // Small delay to ensure adaptive learning is fully loaded
+
     updateUI();
     setupEventListeners();
     animateCompletedSteps();
@@ -149,15 +161,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize material icons
     initMaterialIcons();
-
-    // Extra sync after everything loads to ensure consistency
-    setTimeout(() => {
-        // Only sync if we have progress data (don't overwrite reset state)
-        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-        if (hasProgressData) {
-            syncDailyProgressWithHome();
-        }
-    }, 100);
 });
 
 // Initialize header component
@@ -243,7 +246,7 @@ function updateTodaysProgress() {
     return dailyData;
 }
 
-// Calculate overall study plan progress
+// Calculate overall study plan progress using adaptive learning data
 function calculateOverallPlanProgress() {
     try {
         // Use the global studyPathData if available
@@ -252,6 +255,14 @@ function calculateOverallPlanProgress() {
             return 0;
         }
         
+        // Try to get adaptive learning progress first
+        const adaptiveProgress = getAdaptiveLearningProgress();
+        if (adaptiveProgress !== null) {
+            console.log('🔍 DEBUG: [STUDY PLAN] Using adaptive learning progress:', adaptiveProgress);
+            return adaptiveProgress;
+        }
+        
+        // Fallback to traditional calculation
         const questionsPerRound = studyPathData.questionsPerRound || 7;
         const completedRounds = studyPathData.completedRounds || 0;
         const currentRoundProgress = studyPathData.currentRoundProgress || 0;
@@ -268,7 +279,7 @@ function calculateOverallPlanProgress() {
         // Calculate percentage
         const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
         
-        console.log('🔍 DEBUG: [STUDY PLAN] Overall plan progress calculation:', {
+        console.log('🔍 DEBUG: [STUDY PLAN] Traditional progress calculation:', {
             totalRounds,
             questionsPerRound,
             totalQuestions,
@@ -283,6 +294,117 @@ function calculateOverallPlanProgress() {
     } catch (error) {
         console.error('Error calculating overall plan progress in study plan:', error);
         return 0;
+    }
+}
+
+// Get progress from adaptive learning system
+function getAdaptiveLearningProgress() {
+    try {
+        // Check if adaptive learning system is available
+        if (typeof window === 'undefined' || !window.AdaptiveLearning) {
+            console.log('🔍 DEBUG: [STUDY PLAN] Adaptive learning system not available');
+            return null;
+        }
+        
+        // Load adaptive learning state
+        window.AdaptiveLearning.loadState();
+        
+        // Get all questions from the study session
+        const totalQuestions = 50; // Standard question pool size
+        let completedQuestions = 0;
+        
+        // Count completed questions according to adaptive learning
+        for (let questionId = 1; questionId <= totalQuestions; questionId++) {
+            if (window.AdaptiveLearning.isQuestionCompleted(questionId)) {
+                completedQuestions++;
+            }
+        }
+        
+        // Calculate percentage
+        const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log('🔍 DEBUG: [STUDY PLAN] Adaptive learning progress calculation:', {
+            totalQuestions,
+            completedQuestions,
+            progressPercentage,
+            adaptiveLearningAvailable: !!window.AdaptiveLearning,
+            hasState: !!window.AdaptiveLearning?.state
+        });
+        
+        return Math.min(progressPercentage, 100); // Cap at 100%
+        
+    } catch (error) {
+        console.error('Error getting adaptive learning progress:', error);
+        return null;
+    }
+}
+
+// Get detailed adaptive learning statistics for progress insights
+function getAdaptiveLearningStats() {
+    try {
+        if (typeof window === 'undefined' || !window.AdaptiveLearning) {
+            return null;
+        }
+        
+        // Load adaptive learning state
+        window.AdaptiveLearning.loadState();
+        
+        const stats = {
+            totalQuestions: 50,
+            completedQuestions: 0,
+            questionsByType: {
+                'multiple_choice': 0,
+                'written': 0,
+                'flashcard': 0,
+                'matching': 0,
+                'completed': 0
+            },
+            questionsByDifficulty: {
+                'easy': 0,
+                'medium': 0,
+                'hard': 0
+            },
+            questionsByDepth: {
+                'Recall': 0,
+                'Understanding': 0,
+                'Application': 0
+            }
+        };
+        
+        // Analyze all questions
+        for (let questionId = 1; questionId <= stats.totalQuestions; questionId++) {
+            if (window.AdaptiveLearning.isQuestionCompleted(questionId)) {
+                stats.completedQuestions++;
+                stats.questionsByType.completed++;
+            } else {
+                // Get current question format and details
+                try {
+                    const debugInfo = window.AdaptiveLearning.getDebugInfo(questionId);
+                    if (debugInfo && debugInfo.mode) {
+                        const questionType = debugInfo.mode.toLowerCase();
+                        if (stats.questionsByType[questionType] !== undefined) {
+                            stats.questionsByType[questionType]++;
+                        }
+                        
+                        if (debugInfo.difficulty && stats.questionsByDifficulty[debugInfo.difficulty]) {
+                            stats.questionsByDifficulty[debugInfo.difficulty]++;
+                        }
+                        
+                        if (debugInfo.depth && stats.questionsByDepth[debugInfo.depth]) {
+                            stats.questionsByDepth[debugInfo.depth]++;
+                        }
+                    }
+                } catch (debugError) {
+                    // Question might not be tracked yet, that's ok
+                }
+            }
+        }
+        
+        return stats;
+        
+    } catch (error) {
+        console.error('Error getting adaptive learning stats:', error);
+        return null;
     }
 }
 
@@ -359,6 +481,28 @@ function syncDailyProgressWithHome() {
 function updateProgressSummary() {
     console.log('🔍 DEBUG: [STUDY PLAN] updateProgressSummary() called');
     
+    // First try to use adaptive learning progress
+    const adaptiveProgress = getAdaptiveLearningProgress();
+    if (adaptiveProgress !== null) {
+        console.log('🔍 DEBUG: [STUDY PLAN] Using adaptive learning progress in updateProgressSummary:', adaptiveProgress);
+        
+        // Update UI based on adaptive learning progress
+        if (progressSummary) {
+            if (adaptiveProgress === 0) {
+                progressSummary.style.display = 'none'; // Hide for 0% state
+            } else {
+                progressSummary.style.display = 'block';
+                progressSummary.textContent = `Study plan ${adaptiveProgress}% complete`;
+            }
+        }
+        
+        // Update circular progress
+        updateCircularProgress(adaptiveProgress, false);
+        showCircularProgress();
+        return;
+    }
+    
+    // Fall back to traditional progress calculation
     const dailyData = getDailyProgress();
     const today = getTodayDateString();
     const yesterday = new Date();
@@ -368,7 +512,7 @@ function updateProgressSummary() {
     const todayQuestions = dailyData[today]?.questions || 0;
     const yesterdayQuestions = dailyData[yesterdayString]?.questions || 0;
     
-    console.log('🔍 DEBUG: [STUDY PLAN] Progress data state:', {
+    console.log('🔍 DEBUG: [STUDY PLAN] Progress data state (traditional):', {
         today,
         todayQuestions,
         yesterdayQuestions,
@@ -393,7 +537,7 @@ function updateProgressSummary() {
         return;
     }
     
-    // Always show overall plan progress
+    // Always show overall plan progress (traditional calculation)
     const overallProgressPercentage = calculateOverallPlanProgress();
     if (progressSummary) {
         if (overallProgressPercentage === 0) {
@@ -406,8 +550,6 @@ function updateProgressSummary() {
     
     // Always show circular progress with overall plan progress
     showCircularProgress();
-    
-
 }
 
 // Helper function to format exam date for headlines
@@ -525,6 +667,56 @@ function showCircularProgress() {
 
 
 
+// Refresh adaptive learning progress specifically
+function refreshAdaptiveLearningProgress() {
+    console.log('🔄 Refreshing adaptive learning progress...');
+    
+    if (window.AdaptiveLearning) {
+        // Force reload the adaptive learning state
+        window.AdaptiveLearning.loadState();
+        
+        // Get fresh progress calculation
+        const adaptiveProgress = getAdaptiveLearningProgress();
+        
+        if (adaptiveProgress !== null) {
+            console.log('🔄 Updated adaptive learning progress:', adaptiveProgress);
+            
+            // Update circular progress display
+            updateCircularProgress(adaptiveProgress, true);
+            
+            // Update progress summary
+            const progressSummary = document.getElementById('progressSummary');
+            const overviewTitle = document.querySelector('.overview-title');
+            const circularView = document.getElementById('circularProgressView');
+            
+            if (adaptiveProgress === 0) {
+                // 0% state
+                if (circularView) circularView.classList.add('zero-state');
+                if (progressSummary) progressSummary.style.display = 'none';
+                if (overviewTitle) {
+                    const examDate = formatExamDate();
+                    overviewTitle.textContent = examDate ? `Let's get ready for your test ${examDate}` : "let's get ready for Exam 1. You got this!";
+                }
+            } else {
+                // Progress state
+                if (circularView) circularView.classList.remove('zero-state');
+                if (progressSummary) {
+                    progressSummary.style.display = 'block';
+                    progressSummary.textContent = `Study plan ${adaptiveProgress}% complete`;
+                }
+                if (overviewTitle) {
+                    const examDate = formatExamDate();
+                    overviewTitle.textContent = examDate ? `Keep up the momentum for your test ${examDate}` : 'Keep up the momentum';
+                }
+            }
+            
+            return true; // Progress was updated
+        }
+    }
+    
+    return false; // No adaptive learning progress available
+}
+
 // Refresh progress when returning from study screen
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
@@ -534,16 +726,23 @@ document.addEventListener('visibilitychange', function() {
         const currentRound = studyPathData.currentRound;
         const currentProgress = studyPathData.currentRoundProgress;
 
+        // First try to refresh adaptive learning progress
+        const adaptiveProgressUpdated = refreshAdaptiveLearningProgress();
+        
         // Load new data and sync with home page
         loadStudyPathData();
-        syncDailyProgressWithHome();
+        
+        if (!adaptiveProgressUpdated) {
+            // Fall back to traditional sync if adaptive learning not available
+            syncDailyProgressWithHome();
+        }
         
         // Ensure current round progress is properly synced after loading
         syncCurrentRoundProgressFromRoundData();
 
         // Check if progress has been reset (no data in localStorage)
         const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-        if (!hasProgressData) {
+        if (!hasProgressData && !adaptiveProgressUpdated) {
             console.log('Progress data has been reset, updating overview card');
             // Reset overview card display for 0% state
             const progressSummary = document.getElementById('progressSummary');
@@ -2180,13 +2379,53 @@ function syncCurrentRoundProgressFromRoundData() {
 
 // Update roundProgress from regular study session data
 function updateRoundProgressFromStudyData() {
+    // Try to get adaptive learning progress first
+    const adaptiveStats = getAdaptiveLearningStats();
+    if (adaptiveStats && adaptiveStats.completedQuestions > 0) {
+        console.log('Updating roundProgress from adaptive learning data');
+        
+        // Initialize roundProgress if it doesn't exist
+        if (!studyPathData.roundProgress) {
+            studyPathData.roundProgress = {};
+        }
+        
+        // Calculate round progress based on adaptive learning completion
+        const questionsPerRound = studyPathData.questionsPerRound || 7;
+        const conceptRounds = studyPathData.concepts.length || 7;
+        const completedQuestions = adaptiveStats.completedQuestions;
+        
+        // Distribute completed questions across rounds
+        for (let round = 1; round <= conceptRounds; round++) {
+            const roundStartQuestion = (round - 1) * questionsPerRound;
+            const roundEndQuestion = round * questionsPerRound;
+            
+            if (completedQuestions > roundStartQuestion) {
+                const questionsInRound = Math.min(completedQuestions - roundStartQuestion, questionsPerRound);
+                if (questionsInRound > 0) {
+                    studyPathData.roundProgress[round] = questionsInRound;
+                    console.log(`Updated round ${round} progress to ${questionsInRound} from adaptive learning`);
+                }
+            }
+        }
+        
+        // Update completion data
+        const completedRounds = Math.floor(completedQuestions / questionsPerRound);
+        const currentRoundProgress = completedQuestions % questionsPerRound;
+        
+        studyPathData.completedRounds = Math.max(studyPathData.completedRounds || 0, completedRounds);
+        studyPathData.currentRoundProgress = currentRoundProgress;
+        
+        return; // Skip traditional calculation if we have adaptive learning data
+    }
+    
+    // Fallback to traditional calculation
     // Get regular study progress
     const studyProgress = localStorage.getItem('studyProgress');
     const currentQuestionIndex = localStorage.getItem('currentQuestionIndex');
     const roundProgressData = localStorage.getItem('roundProgressData');
     
     if (studyProgress || currentQuestionIndex || roundProgressData) {
-        console.log('Updating roundProgress from study data');
+        console.log('Updating roundProgress from traditional study data');
         
         // Initialize roundProgress if it doesn't exist
         if (!studyPathData.roundProgress) {
@@ -2624,6 +2863,65 @@ function initMaterialIcons() {
     }
 }
 
+// Test function for debugging adaptive learning progress
+window.testStudyPlanProgress = function() {
+    console.log('🧪 Testing Study Plan Progress Integration...');
+    
+    // Check if adaptive learning is available
+    const hasAdaptiveLearning = !!window.AdaptiveLearning;
+    console.log('🔍 Adaptive Learning Available:', hasAdaptiveLearning);
+    
+    if (hasAdaptiveLearning) {
+        // Load state and get progress
+        window.AdaptiveLearning.loadState();
+        const adaptiveProgress = getAdaptiveLearningProgress();
+        
+        console.log('🔍 Adaptive Learning Progress:', adaptiveProgress);
+        
+        // Show question completion status
+        const totalQuestions = 50;
+        let completedQuestions = 0;
+        const completedList = [];
+        
+        for (let questionId = 1; questionId <= totalQuestions; questionId++) {
+            if (window.AdaptiveLearning.isQuestionCompleted(questionId)) {
+                completedQuestions++;
+                completedList.push(questionId);
+            }
+        }
+        
+        console.log('🔍 Completed Questions:', {
+            total: totalQuestions,
+            completed: completedQuestions,
+            percentage: Math.round((completedQuestions / totalQuestions) * 100),
+            completedList: completedList.slice(0, 10) // Show first 10
+        });
+        
+        // Test refresh function
+        console.log('🔄 Testing refresh function...');
+        refreshAdaptiveLearningProgress();
+    } else {
+        console.log('❌ Adaptive Learning not available');
+        console.log('🔍 Available global objects:', Object.keys(window).filter(key => key.includes('Adaptive')));
+    }
+    
+    // Test traditional progress
+    const traditionalProgress = calculateOverallPlanProgress();
+    console.log('🔍 Traditional Progress:', traditionalProgress);
+    
+    // Current UI state
+    const progressSummary = document.getElementById('progressSummary');
+    const progressPercentageText = document.getElementById('progressPercentageText');
+    const circularView = document.getElementById('circularProgressView');
+    
+    console.log('🔍 Current UI State:', {
+        progressSummaryText: progressSummary?.textContent,
+        progressSummaryVisible: progressSummary?.style.display !== 'none',
+        circularProgressText: progressPercentageText?.textContent,
+        hasZeroStateClass: circularView?.classList.contains('zero-state')
+    });
+};
+
 // Export functions for external use
 window.StudyPath = {
     markRoundCompleted,
@@ -2631,6 +2929,8 @@ window.StudyPath = {
     markDiagnosticCompleted,
     getCurrentRound: () => studyPathData.currentRound,
     getCompletedRounds: () => studyPathData.completedRounds,
+    refreshAdaptiveLearningProgress, // Export for external testing
+    getAdaptiveLearningProgress, // Export for external testing
 };
 // Migrated: inline the logic from study-path.js so we can remove the legacy file
 // Minimal bootstrap to ensure back button works even if DOMContentLoaded fired earlier

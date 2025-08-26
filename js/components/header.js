@@ -139,19 +139,37 @@ class AppHeader {
         window.location.href = '../html/plan-settings.html';
     }
 
-    // Load title from onboarding data
-    loadTitleFromStorage() {
+    // Load title from onboarding data and current course API
+    async loadTitleFromStorage() {
         try {
-            const course = localStorage.getItem('onboarding_course');
-            const goals = localStorage.getItem('onboarding_goals');
+            // First try to get course from the new API
+            let courseDisplay = '';
             
-            if (course) {
-                // Extract course code (everything before " - " if it exists)
-                const courseCode = course.includes(' - ') ? 
-                    course.split(' - ')[0] : course;
-                
+            if (window.QuizletApi && window.QuizletApi.getCurrentCourse) {
+                try {
+                    const currentCourse = await window.QuizletApi.getCurrentCourse();
+                    if (currentCourse) {
+                        courseDisplay = window.QuizletApi.formatCourseDisplay(currentCourse);
+                    }
+                } catch (error) {
+                    console.log('API course not available, falling back to localStorage');
+                }
+            }
+            
+            // Fallback to localStorage if API fails
+            if (!courseDisplay) {
+                const course = localStorage.getItem('onboarding_course');
+                if (course) {
+                    // Extract course code (everything before " - " if it exists)
+                    courseDisplay = course.includes(' - ') ? 
+                        course.split(' - ')[0] : course;
+                }
+            }
+            
+            if (courseDisplay) {
                 // Get first goal from onboarding data
                 let firstGoal = '';
+                const goals = localStorage.getItem('onboarding_goals');
                 if (goals) {
                     try {
                         const goalsArray = JSON.parse(goals);
@@ -163,8 +181,8 @@ class AppHeader {
                 }
                 
                 // Format as "BIO 201, Exam 1"
-                const title = [courseCode, firstGoal].filter(Boolean).join(', ');
-                this.setTitle(title || courseCode);
+                const title = [courseDisplay, firstGoal].filter(Boolean).join(', ');
+                this.setTitle(title || courseDisplay);
             }
         } catch (error) {
             console.error('Error loading title from storage:', error);
