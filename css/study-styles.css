@@ -684,8 +684,8 @@ body {
 .matching-item {
     background: var(--sys-surface-base);
     border: 2px solid var(--color-gray-300);
-    border-radius: 12px;
-    padding: 8px 6px;
+    border-radius: 24px;
+    padding: 6px 8px;
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-subheading-three);
     font-style: normal;

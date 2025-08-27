@@ -387,7 +387,12 @@
   };
 
   const knowledgeToPill = {
-    'Not at all': 'Not at all confident',
+    'Not at all, start from scratch': 'Not confident',
+    'Somewhat, speed me along': 'Somewhat confident',
+    'Very, I just want extra practice': 'Very confident',
+    "I don't know, help me diagnose": "Not sure",
+    // Legacy mappings for backwards compatibility
+    'Not at all': 'Not confident',
     'Somewhat': 'Somewhat confident',
     'Very': 'Very confident',
     "I don't know": "Not sure",
@@ -398,14 +403,19 @@
   };
 
   const knowledgeToHeadline = {
-    'Not at all': "We'll start at the basics and build up quickly.",
-    'Somewhat': "We’ll move fast, fine-tune weak areas, and review test-style questions.",
-    'Very': "We’ll focus on refinement and high-yield practice.",
-    "I don't know": "We’ll figure it out together and adapt as we go.",
-    'start from scratch': "We’ll teach core concepts and ramp up gently.",
-    'speed me along': "We’ll accelerate with targeted practice and checkpoints.",
-    'I just want extra practice': "We’ll emphasize practice problems and recall.",
-    'help me diagnose': "We’ll start with a quick diagnostic to find gaps."
+    'Not at all, start from scratch': "We'll build a strong foundation step by step and cover everything you need to know.",
+    'Somewhat, speed me along': "We'll move fast, fine-tune weak areas, and review test-style questions.",
+    'Very, I just want extra practice': "We'll skip the basics and give you targeted drills for extra confidence.",
+    "I don't know, help me diagnose": "We'll figure it out together and adapt as we go.",
+    // Legacy mappings for backwards compatibility
+    'Not at all': "We'll build a strong foundation step by step and cover everything you need to know.",
+    'Somewhat': "We'll move fast, fine-tune weak areas, and review test-style questions.",
+    'Very': "We'll skip the basics and give you targeted drills for extra confidence.",
+    "I don't know": "We'll figure it out together and adapt as we go.",
+    'start from scratch': "We'll teach core concepts and ramp up gently.",
+    'speed me along': "We'll accelerate with targeted practice and checkpoints.",
+    'I just want extra practice': "We'll emphasize practice problems and recall.",
+    'help me diagnose': "We'll start with a quick diagnostic to find gaps."
   };
 
   function updateBackButtonIcon() {
@@ -2426,6 +2436,8 @@
       // Reset slider to middle position
       slider.value = 1;
       updateGradientFill(1);
+      // Automatically advance to next step
+      next();
     });
     
     // Initialize from existing state if any, otherwise keep default

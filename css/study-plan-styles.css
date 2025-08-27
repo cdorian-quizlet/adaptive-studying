@@ -829,26 +829,40 @@ body {
 }
 
 .step-status.completed {
-    display: none; /* Hide button for completed steps */
+    background: var(--color-gray-200);
+    border: 2px solid var(--color-gray-200);
+    color: var(--interactive-fg-tertiary-default);
+    cursor: pointer; /* Make clickable */
+    pointer-events: auto; /* Enable interactions */
 }
 
-/* Next/future round status buttons */
+.step-status.completed:hover {
+    background: var(--color-gray-300);
+    border-color: var(--color-gray-300);
+    color: var(--interactive-fg-tertiary-default);
+    transform: scale(1.05);
+}
+
+/* Next/future round status buttons - tertiary style */
 .step-status.next {
-    background: var(--color-gray-400);
-    color: white;
-    cursor: default;
-    pointer-events: none;
+    background: var(--color-gray-200);
+    border: 2px solid var(--color-gray-200);
+    color: var(--interactive-fg-tertiary-default);
+    cursor: pointer; /* Make clickable */
+    pointer-events: auto; /* Enable interactions */
 }
 
 .step-status.next:hover {
-    background: var(--color-gray-400);
-    transform: none;
+    background: var(--color-gray-300);
+    border-color: var(--color-gray-300);
+    color: var(--interactive-fg-tertiary-default);
+    transform: scale(1.05);
 }
 
-/* Make next rounds non-interactive, but allow diagnostic steps to be clickable */
+/* Allow next rounds to be interactive with tertiary button style */
 .path-step.next:not(.diagnostic) {
-    cursor: default;
-    pointer-events: none;
+    cursor: pointer; /* Make clickable */
+    pointer-events: auto; /* Enable interactions */
 }
 
 /* Allow diagnostic steps with "Skip ahead" to be clickable */
@@ -857,17 +871,14 @@ body {
     pointer-events: auto;
 }
 
-/* Remove hover effects for all non-current steps */
-.path-step.completed:hover,
-.path-step.next:hover {
-    transform: none;
-    box-shadow: none;
+/* Allow completed steps to have subtle hover effects */
+.path-step.completed:hover {
+    transform: translateY(-1px); /* Subtle lift for completed rounds */
 }
 
-.path-step.completed:hover .path-step-main,
-.path-step.next:hover .path-step-main {
-    transform: none;
-    background: transparent;
+/* Allow next rounds to have subtle hover effects */
+.path-step.next:hover {
+    transform: translateY(-1px); /* Subtle lift for next rounds */
 }
 
 /* Allow diagnostic next steps to have hover effects for skip-ahead functionality */
@@ -938,6 +949,7 @@ body {
 /* Show progress bar for current round only when there's progress */
 .path-step.current .step-progress.has-progress {
     display: flex !important;
+    margin-top: 0; /* Remove top margin for current step with progress */
 }
 
 .step-progress-bar {
@@ -1109,7 +1121,7 @@ body {
 }
 
 .accordion-section:last-of-type {
-    margin-bottom: 16px;
+    margin-bottom: 0; /* Remove bottom spacing */
 }
 
 .accordion-section-title {
@@ -1214,8 +1226,8 @@ body {
 
 /* Make a change button */
 .accordion-action {
-    margin-top: 24px; /* Add space above the button */
-    margin-bottom: 23px; /* Add space below the button to separate from next path step */
+    margin-top: 0; /* Remove top spacing */
+    margin-bottom: 16px; /* Add bottom spacing */
     margin-left: -24px; /* Align button with vertical rule (28px - 52px content start = -24px) */
     display: flex;
     justify-content: flex-start; /* Align button to the left */
@@ -1225,13 +1237,13 @@ body {
 
 .make-change-btn {
     display: flex;
-    padding: 12px 16px; /* 12px top/bottom, 16px left/right */
+    padding: 8px 16px; /* 8px top/bottom, 16px left/right - match skip-ahead button size */
     justify-content: center;
     align-items: center;
-    gap: var(--spacing-none, 0);
+    gap: 8px; /* Add proper gap for icon and text alignment */
     width: auto; /* Hug contents */
     background: var(--interactive-bg-secondary-default, #EDEFFF);
-    color: var(--color-twilight-600);
+    color: var(--color-twilight-500); /* Update text color to twilight500 */
     border: none;
     border-radius: var(--radius-full, 200px);
     font-family: var(--typography-fontFamily);
@@ -1254,18 +1266,22 @@ body {
     max-width: var(--size-small, 16px);
     max-height: var(--size-small, 16px);
     background: url('../images/sparkle-twilight.png') center/contain no-repeat;
-    display: inline-block;
-    margin-right: 8px; /* Add spacing between icon and text since gap is 0 */
+    display: inline-block; /* Needed for empty span to show background image */
+    vertical-align: top; /* Reset baseline alignment, let flexbox handle centering */
+    flex-shrink: 0; /* Prevent icon from shrinking */
+    /* Remove margin-right since parent now uses gap for proper alignment */
 }
 
 .make-change-text {
     font-weight: 600;
+    color: var(--color-twilight-500); /* Ensure text uses twilight500 */
+    line-height: 1; /* Ensure consistent line height for proper vertical alignment */
 }
 
 /* Make a change input state */
 .make-change-input {
     display: flex;
-    padding: 10px 16px 10px 40px; /* Reduced by 2px top/bottom to account for 2px border */
+    padding: 6px 16px 6px 40px; /* Reduced by 2px top/bottom to account for 2px border (8px - 2px = 6px) */
     justify-content: flex-start;
     align-items: center;
     gap: 0;

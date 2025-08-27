@@ -287,7 +287,9 @@ window.testCourseAPI = {
   }
 };
 
-// Auto-initialize course when API loads
+// Auto-initialize course when API loads - DISABLED FOR LOCAL TESTING
+// Commented out to prevent CORS errors during local development
+/*
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeCourse);
@@ -296,4 +298,5 @@ if (typeof document !== 'undefined') {
     setTimeout(initializeCourse, 100);
   }
 }
+*/
 

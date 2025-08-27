@@ -886,12 +886,11 @@ body:has(.loading-screen) {
   position: relative;
 }
 
-/* Modern loading spinner */
+/* Loading spinner with gradient and fully rounded corners */
 .loading-spinner {
-  width: 60px;
-  height: 60px;
+  width: 120px;
+  height: 120px;
   position: relative;
-  animation: spin 1.5s linear infinite;
 }
 
 .loading-spinner::before {
@@ -902,28 +901,17 @@ body:has(.loading-screen) {
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  border: 4px solid var(--color-gray-300);
-  border-top: 4px solid var(--sys-interactive-bg-primary-default);
+  background: conic-gradient(from 270deg, var(--color-twilight-500) 0deg, rgba(79, 70, 229, 0.4) 60deg, transparent 120deg, transparent 360deg);
+  mask: radial-gradient(closest-side, transparent 75%, black 76%, black 100%);
+  -webkit-mask: radial-gradient(closest-side, transparent 75%, black 76%, black 100%);
+  filter: blur(0.5px);
   animation: spin 1.5s linear infinite;
-}
-
-.loading-spinner::after {
-  content: '';
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  border-top: 3px solid var(--sys-interactive-bg-primary-default);
-  animation: spin 0.8s linear infinite reverse;
 }
 
 .loading-text {
   font-family: var(--typography-fontFamily);
-  font-size: 20px;
-  line-height: 28px;
+  font-size: var(--typography-size-header-three);
+  line-height: var(--typography-lineHeight-header-three);
   font-weight: 600;
   color: var(--sys-text-primary);
   text-align: center;

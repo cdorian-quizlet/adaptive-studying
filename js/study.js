@@ -99,7 +99,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "The Golgi apparatus acts like the cell's post office, receiving proteins from the endoplasmic reticulum and modifying, packaging, and shipping them to their final destinations. It consists of stacked membranes called cisternae that add chemical tags to proteins, determining where they should go in the cell or if they should be exported outside the cell."
     },
     {
         id: 7,
@@ -109,7 +110,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "Ribosomes are the protein factories of the cell. They read the genetic instructions from messenger RNA (mRNA) and assemble amino acids in the correct order to build proteins. Ribosomes can be found floating freely in the cytoplasm or attached to the endoplasmic reticulum, and they're essential for all life since every living thing needs to make proteins."
     },
     {
         id: 8,
@@ -119,7 +121,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "Prokaryotic cells, like bacteria, are much simpler than eukaryotic cells. They lack membrane-bound organelles such as a nucleus, mitochondria, or endoplasmic reticulum. Instead, their genetic material floats freely in the cytoplasm, and all cellular functions occur in a single compartment. Despite their simplicity, prokaryotes are incredibly successful and have been on Earth for billions of years."
     },
     {
         id: 9,
@@ -129,7 +132,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "The cytoskeleton is like the cell's internal scaffolding system. Made of protein fibers including microtubules, actin filaments, and intermediate filaments, it gives the cell its shape, provides structural support, and enables movement. It also acts like highways for transporting materials within the cell and helps organize organelles in their proper locations."
     },
     {
         id: 10,
@@ -139,7 +143,8 @@ const questions = [
         difficulty: "multiple_choice",
         attempts: 0,
         correct: 0,
-        currentFormat: "multiple_choice"
+        currentFormat: "multiple_choice",
+        explanation: "Peroxisomes are specialized organelles that contain enzymes for breaking down fatty acids and detoxifying harmful substances like hydrogen peroxide. They're particularly important in liver cells where they help process fats and neutralize toxins. The name 'peroxisome' comes from their role in producing and then breaking down hydrogen peroxide, a potentially dangerous chemical byproduct."
     },
     {
         id: 11,
@@ -2376,8 +2381,8 @@ function createIncorrectAnswerButtons() {
         buttonContainer.classList.add('multiple-choice-buttons');
     }
     
-    // Create explanation button first (only for multiple choice and written questions with explanations)
-    if ((currentQuestion.currentFormat === 'multiple_choice' || currentQuestion.currentFormat === 'written') && 
+    // Create explanation button first (only for multiple choice, written, and matching questions with explanations)
+    if ((currentQuestion.currentFormat === 'multiple_choice' || currentQuestion.currentFormat === 'written' || currentQuestion.currentFormat === 'matching') && 
         currentQuestion.explanation) {
         console.log('Adding explanation button for question with explanation');
         

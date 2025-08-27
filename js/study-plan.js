@@ -5,8 +5,8 @@ let appHeader = null;
 
 let pathSteps = document.querySelectorAll('.path-step'); // Will be updated when we generate dynamic content
 
-// Progress Elements
-const progressSummary = document.getElementById('progressSummary');
+// Progress Elements - will be initialized after DOM loads
+let progressSummary = null;
 const progressRingFill = document.querySelector('.progress-ring-fill');
 
 // Progress text fade timeout tracking
@@ -89,6 +89,9 @@ const studyPathData = {
 
     // Initialize the study plan
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DOM elements
+    progressSummary = document.getElementById('progressSummary');
+    
     // Initialize progress ring first
     initializeProgressRing();
     
@@ -110,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!hasProgressData) {
                 console.log('No progress data found on page load, resetting overview card');
                 // Reset overview card immediately for 0% state
-                const progressSummary = document.getElementById('progressSummary');
                 const overviewTitle = document.querySelector('.overview-title');
                 
                 if (progressSummary) {
@@ -481,6 +483,12 @@ function syncDailyProgressWithHome() {
 function updateProgressSummary() {
     console.log('🔍 DEBUG: [STUDY PLAN] updateProgressSummary() called');
     
+    // Ensure progressSummary is available
+    if (!progressSummary) {
+        progressSummary = document.getElementById('progressSummary');
+        console.log('🔍 DEBUG: [STUDY PLAN] Re-initializing progressSummary element:', !!progressSummary);
+    }
+    
     // First try to use adaptive learning progress
     const adaptiveProgress = getAdaptiveLearningProgress();
     if (adaptiveProgress !== null) {
@@ -606,6 +614,11 @@ function formatExamDate() {
 
 // Show circular progress view with overall plan progress
 function showCircularProgress() {
+    // Ensure progressSummary is available
+    if (!progressSummary) {
+        progressSummary = document.getElementById('progressSummary');
+    }
+    
     const circularView = document.getElementById('circularProgressView');
     const trendView = document.getElementById('trendGraphView');
     const overviewTitle = document.querySelector('.overview-title');
@@ -685,7 +698,6 @@ function refreshAdaptiveLearningProgress() {
             updateCircularProgress(adaptiveProgress, true);
             
             // Update progress summary
-            const progressSummary = document.getElementById('progressSummary');
             const overviewTitle = document.querySelector('.overview-title');
             const circularView = document.getElementById('circularProgressView');
             
@@ -745,7 +757,6 @@ document.addEventListener('visibilitychange', function() {
         if (!hasProgressData && !adaptiveProgressUpdated) {
             console.log('Progress data has been reset, updating overview card');
             // Reset overview card display for 0% state
-            const progressSummary = document.getElementById('progressSummary');
             const overviewTitle = document.querySelector('.overview-title');
             
             if (progressSummary) {
@@ -942,24 +953,26 @@ function generatePathStepsHTML() {
         
         // Add diagnostic test every 2 rounds (but not after the last concept)
         if (roundNumber % 2 === 0 && !isLastConcept) {
-            const diagnosticNumber = Math.floor(roundNumber / 2) + 1;
-            let diagnosticType, diagnosticTitle, diagnosticDescription, conceptsCovered;
+            const quizNumber = Math.floor(roundNumber / 2);
+            let diagnosticType, diagnosticTitle, conceptsCovered;
             
-            if (diagnosticNumber === 2) {
+            // Set diagnostic type based on quiz number for backwards compatibility
+            if (quizNumber === 1) {
                 diagnosticType = 'mid';
-                diagnosticTitle = 'Quiz 1';
-                diagnosticDescription = 'Rounds 1 – 2';
-                // Get the first 2 concepts for Quiz 1
-                conceptsCovered = studyPathData.concepts.slice(0, roundNumber);
             } else {
-                diagnosticType = `checkpoint${diagnosticNumber}`;
-                diagnosticTitle = `Checkpoint Diagnostic ${diagnosticNumber - 1}`;
-                diagnosticDescription = 'Assess your learning and adjust your study path';
-                conceptsCovered = [];
+                diagnosticType = `checkpoint${quizNumber + 1}`;
             }
             
+            // All diagnostics use "Quiz X" format
+            diagnosticTitle = `Quiz ${quizNumber}`;
+            
+            // Calculate concepts covered by this quiz (previous 2 rounds)
+            const startIndex = roundNumber - 2; // Start from 2 rounds ago
+            const endIndex = roundNumber; // Up to current round
+            conceptsCovered = studyPathData.concepts.slice(startIndex, endIndex);
+            
             const hasNextStepAfterDiagnostic = index < studyPathData.concepts.length - 1;
-            html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, diagnosticDescription, conceptsCovered);
+            html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, '', conceptsCovered);
             
             // Update the step line for the diagnostic
             if (hasNextStepAfterDiagnostic) {
@@ -1354,6 +1367,26 @@ function updatePathSteps() {
             updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFill, stepProgressText, roundNumber);
         }
     });
+    
+    // Cleanup: Ensure only current step has expanded accordion
+    setTimeout(() => {
+        const currentSteps = document.querySelectorAll('.path-step.current');
+        const expandedSteps = document.querySelectorAll('.path-step.expanded');
+        
+        // If no current step, collapse all accordions
+        if (currentSteps.length === 0) {
+            expandedSteps.forEach(step => {
+                step.classList.remove('expanded');
+                const accordionContent = step.querySelector('.step-accordion-content');
+                if (accordionContent) {
+                    accordionContent.style.maxHeight = '0px';
+                }
+                step.style.setProperty('--accordion-height', '0px');
+                step.style.setProperty('--dynamic-line-height', '0px');
+                clearAccordionAnimations(step);
+            });
+        }
+    }, 400); // Delay to allow auto-expansion to complete first
 }
 
 // Helper function to check if a round should be disabled because a diagnostic above it is current
@@ -1526,11 +1559,12 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('completed');
         stepCircle.querySelector('.step-icon').textContent = 'check';
         
-        stepStatus.style.display = 'none'; // Hide button for completed rounds
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+        stepStatus.style.display = 'flex'; // Show tertiary button for completed rounds
         stepStatus.classList.add('completed');
         
         stepProgressFill.style.width = '100%';
-        stepProgress.classList.add('has-progress');
+        stepProgress.classList.remove('has-progress'); // Remove progress display
         
         // Hide progress text for completed rounds
         if (stepProgressText) {
@@ -1551,6 +1585,15 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('in-progress');
         stepStatus.style.display = 'flex';
+        
+        // Auto-expand accordion for current step only if there is progress
+        if (studyPathData.currentRoundProgress > 0) {
+            setTimeout(() => {
+                if (!step.classList.contains('expanded')) {
+                    expandAccordion(step, roundNumber);
+                }
+            }, 300); // Small delay to ensure DOM is ready and allow animations to complete
+        }
         
         const progressPercentage = (studyPathData.currentRoundProgress / studyPathData.questionsPerRound) * 100;
         stepProgressFill.style.width = `${progressPercentage}%`;
@@ -1729,11 +1772,7 @@ function setupEventListeners() {
                     roundType === 'diagnostic'
                 );
                 
-                // Prevent clicks on next/future rounds, but allow diagnostic steps
-                if (step.classList.contains('next') && !isDiagnostic) {
-                    console.log('🚫 Play button click blocked - next round that is not diagnostic');
-                    return;
-                }
+                // Allow all rounds to be clicked (removed restriction on future rounds)
                 
                 if (roundType === 'diagnostic-initial') {
                     console.log('🎯 Starting initial diagnostic test');
@@ -1751,15 +1790,59 @@ function setupEventListeners() {
                     startDiagnosticTest('initial');
                 } else {
                     const roundNumber = parseInt(roundType);
-                    // Additional check: only allow current round or earlier
-                    if (roundNumber <= studyPathData.currentRound) {
-                        console.log('🎯 Starting round:', roundNumber);
-                        startRound(roundNumber);
-                    } else {
-                        console.log('🚫 Play button click blocked - future round');
-                    }
+                    // Allow all rounds to be started (current, past, and future)
+                    console.log('🎯 Starting round:', roundNumber);
+                    startRound(roundNumber);
                 }
                 return;
+            }
+            
+            // Check if click was on accordion content (to close accordion)
+            const accordionContent = e.target.closest('.step-accordion-content');
+            if (accordionContent) {
+                const step = accordionContent.closest('.path-step');
+                if (step && step.classList.contains('expanded')) {
+                    const roundType = step.dataset.round;
+                    const roundNumber = parseInt(roundType);
+                    
+                    console.log('📋 Closing accordion via content click:', roundNumber);
+                    toggleAccordion(step, roundNumber);
+                    return;
+                }
+            }
+            
+            // Check if click was on step-vertical-spacer (accordion toggle)
+            const stepSpacer = e.target.closest('.step-vertical-spacer');
+            if (stepSpacer) {
+                // Find the previous step element (the one that owns this spacer)
+                const step = stepSpacer.previousElementSibling;
+                if (step && step.classList.contains('path-step')) {
+                    const roundType = step.dataset.round;
+                    const roundNumber = parseInt(roundType);
+                    
+                    // Don't expand accordion for diagnostic steps
+                    const isDiagnostic = roundType && (
+                        roundType.startsWith('diagnostic-') || 
+                        roundType === 'diagnostic'
+                    );
+                    
+                    if (isDiagnostic) {
+                        console.log('🚫 Accordion blocked - diagnostic step via spacer');
+                        return;
+                    }
+                    
+                    // Only allow accordion for current round
+                    const isCurrent = step.classList.contains('current');
+                    
+                    if (roundNumber && isCurrent) {
+                        console.log('📋 Toggling accordion via spacer for current round:', roundNumber);
+                        toggleAccordion(step, roundNumber);
+                        return;
+                    } else if (roundNumber && !isCurrent) {
+                        console.log('🚫 Accordion blocked via spacer - only available for current round');
+                        return;
+                    }
+                }
             }
             
             // Check if click was on step-progress with has-progress class (accordion toggle)
@@ -1806,6 +1889,82 @@ function setupEventListeners() {
     });
 }
 
+// Expand accordion for current step (auto-expand on load)
+function expandAccordion(step, roundNumber) {
+    const accordionContent = step.querySelector('.step-accordion-content');
+    if (!accordionContent) {
+        console.log('🚫 No accordion content found for round:', roundNumber);
+        return;
+    }
+    
+    // Don't auto-expand if already expanded
+    if (step.classList.contains('expanded')) {
+        return;
+    }
+    
+    console.log('📋 Auto-expanding accordion for current round:', roundNumber);
+    
+    // Close all other expanded steps first
+    const allSteps = document.querySelectorAll('.path-step.expanded');
+    allSteps.forEach(otherStep => {
+        if (otherStep !== step) {
+            otherStep.classList.remove('expanded');
+            const otherContent = otherStep.querySelector('.step-accordion-content');
+            if (otherContent) {
+                otherContent.style.maxHeight = '0px';
+            }
+            otherStep.style.setProperty('--accordion-height', '0px');
+            otherStep.style.setProperty('--dynamic-line-height', '0px');
+            // Clear any existing animation timers for other steps
+            clearAccordionAnimations(otherStep);
+        }
+    });
+    
+    // Expand current step
+    step.classList.add('expanded');
+    // Set max-height to scrollHeight for smooth animation
+    const contentHeight = accordionContent.scrollHeight;
+    accordionContent.style.maxHeight = contentHeight + 'px';
+    
+    // Set accordion height for extended vertical line overlay and margin
+    const totalHeight = contentHeight + 16 + 16; // 16px for expanded margin-top + 16px for accordion-action margin-bottom
+    step.style.setProperty('--accordion-height', totalHeight + 'px');
+    
+    // Set initial dynamic line height for normal accordion expansion
+    // Calculate height to reach the bottom of the last text line
+    setTimeout(() => {
+        // Find the "Next round:" section using the same reliable method as re-planning
+        const allSections = accordionContent.querySelectorAll('.accordion-section');
+        let nextRoundSection = null;
+        allSections.forEach(section => {
+            const title = section.querySelector('.accordion-section-title');
+            if (title && title.textContent.includes('Next round:')) {
+                nextRoundSection = section;
+            }
+        });
+        
+        if (nextRoundSection) {
+            const nextRoundItems = nextRoundSection.querySelector('.accordion-items');
+            if (nextRoundItems) {
+                const items = nextRoundItems.querySelectorAll('.accordion-item');
+                if (items.length > 0) {
+                    const lastItem = items[items.length - 1];
+                    
+                    // Calculate height from accordion start to bottom of last item
+                    const accordionTop = accordionContent.getBoundingClientRect().top;
+                    const lastItemBottom = lastItem.getBoundingClientRect().bottom;
+                    const lineHeight = lastItemBottom - accordionTop;
+                    
+                    step.style.setProperty('--dynamic-line-height', `${lineHeight}px`);
+                }
+            }
+        }
+    }, 100);
+    
+    // Start the planning animation sequence
+    startPlanningAnimation(step);
+}
+
 // Toggle accordion expansion for path steps
 function toggleAccordion(step, roundNumber) {
     const accordionContent = step.querySelector('.step-accordion-content');
@@ -1850,7 +2009,7 @@ function toggleAccordion(step, roundNumber) {
         accordionContent.style.maxHeight = contentHeight + 'px';
         
         // Set accordion height for extended vertical line overlay and margin
-        const totalHeight = contentHeight + 16 + 24 + 16; // 16px for expanded margin-top + 24px for accordion-action margin-top + 16px for accordion-action margin-bottom
+        const totalHeight = contentHeight + 16 + 16; // 16px for expanded margin-top + 16px for accordion-action margin-bottom
         step.style.setProperty('--accordion-height', totalHeight + 'px');
         
         // Set initial dynamic line height for normal accordion expansion
@@ -2115,12 +2274,10 @@ function startReplanningAnimation(accordionContent, userRequest) {
 
 // Get the data for next round items based on round number
 function getNextRoundItemsData(roundNumber) {
-    const difficulty = roundNumber <= 2 ? 'Medium' : roundNumber <= 4 ? 'Hard' : 'Advanced';
-    
     return [
-        { text: `${difficulty} difficulty questions`, type: 'planned' },
-        { text: 'Interleaving previous questions', type: 'planned' },
-        { text: 'Fun question types for a little break', type: 'planned' }
+        { text: 'Push the ones you know a bit harder', type: 'planned' },
+        { text: 'Retry the tricky ones a bit easier', type: 'planned' },
+        { text: 'Mix in a couple new terms', type: 'planned' }
     ];
 }
 
@@ -2221,15 +2378,15 @@ function getAccordionContent(roundNumber) {
                 <div class="accordion-items">
                     <div class="accordion-item completed">
                         <div class="accordion-icon"></div>
-                        <span class="accordion-text">Medium difficulty questions</span>
+                        <span class="accordion-text">Stepped up a level</span>
                     </div>
                     <div class="accordion-item completed">
                         <div class="accordion-icon"></div>
-                        <span class="accordion-text">Interleaving previous questions</span>
+                        <span class="accordion-text">Revisited a few misses</span>
                     </div>
                     <div class="accordion-item completed">
                         <div class="accordion-icon"></div>
-                        <span class="accordion-text">Fun question types for a little break</span>
+                        <span class="accordion-text">Quick flashcard/matching break</span>
                     </div>
                 </div>
             </div>
@@ -2237,19 +2394,17 @@ function getAccordionContent(roundNumber) {
     }
     
     // Next round section (show for all rounds)
-    const difficulty = roundNumber <= 2 ? 'Medium' : roundNumber <= 4 ? 'Hard' : 'Advanced';
-    
     html += `
         <div class="accordion-section">
             <h4 class="accordion-section-title">Next round:</h4>
             <div class="accordion-items">
                 <div class="accordion-item planned">
                     <div class="accordion-icon"></div>
-                    <span class="accordion-text">${difficulty} difficulty questions</span>
+                    <span class="accordion-text">Push the ones you know a bit harder</span>
                 </div>
                 <div class="accordion-item planned">
                     <div class="accordion-icon"></div>
-                    <span class="accordion-text">Interleaving previous questions</span>
+                    <span class="accordion-text">Retry the tricky ones a bit easier</span>
                 </div>
                 <div class="accordion-item loading">
                     <div class="accordion-icon"></div>
@@ -2920,6 +3075,255 @@ window.testStudyPlanProgress = function() {
         circularProgressText: progressPercentageText?.textContent,
         hasZeroStateClass: circularView?.classList.contains('zero-state')
     });
+};
+
+// Simple test to check if we can update the progress summary at all
+window.testProgressSummary = function() {
+    console.log('🧪 Testing progress summary element...');
+    
+    // Get element fresh each time
+    const progressElement = document.getElementById('progressSummary');
+    
+    console.log('Progress element found:', !!progressElement);
+    console.log('Current text:', progressElement?.textContent);
+    console.log('Current display:', progressElement?.style.display);
+    console.log('Computed display:', progressElement ? getComputedStyle(progressElement).display : 'N/A');
+    
+    if (progressElement) {
+        progressElement.style.display = 'block';
+        progressElement.textContent = 'TEST: Study plan 50% complete';
+        console.log('✅ Directly updated element');
+        console.log('New text:', progressElement.textContent);
+        console.log('New display:', progressElement.style.display);
+    } else {
+        console.log('❌ Element not found!');
+    }
+};
+
+// Force update overview card progress (for testing)
+window.forceUpdateProgress = function(percentage = 25) {
+    console.log(`🔄 Forcing progress update to ${percentage}%...`);
+    
+    // Ensure elements are available
+    if (!progressSummary) {
+        progressSummary = document.getElementById('progressSummary');
+        console.log('Re-getting progressSummary:', !!progressSummary);
+    }
+    
+    const circularView = document.getElementById('circularProgressView');
+    const overviewTitle = document.querySelector('.overview-title');
+    
+    console.log('Elements found:', {
+        progressSummary: !!progressSummary,
+        circularView: !!circularView,
+        overviewTitle: !!overviewTitle
+    });
+    
+    // Update progress summary
+    if (progressSummary) {
+        console.log('Updating progress summary...');
+        if (percentage === 0) {
+            progressSummary.style.display = 'none';
+        } else {
+            progressSummary.style.display = 'block';
+            progressSummary.textContent = `Study plan ${percentage}% complete`;
+        }
+        console.log('Progress summary updated:', progressSummary.textContent);
+    } else {
+        console.log('❌ progressSummary element not found!');
+    }
+    
+    // Update circular progress
+    updateCircularProgress(percentage, true);
+    
+    // Update overview title
+    if (overviewTitle) {
+        if (percentage === 0) {
+            overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+        } else {
+            overviewTitle.textContent = 'Keep up the momentum';
+        }
+        console.log('Overview title updated:', overviewTitle.textContent);
+    }
+    
+    // Update zero state class
+    if (circularView) {
+        if (percentage === 0) {
+            circularView.classList.add('zero-state');
+        } else {
+            circularView.classList.remove('zero-state');
+        }
+    }
+    
+    console.log(`✅ Progress update complete`);
+};
+
+// Test what happens when we call the actual update functions
+window.testRealUpdate = function() {
+    console.log('🔄 Testing actual update functions...');
+    
+    // Test progress calculations
+    console.log('Testing progress calculations:');
+    const adaptiveProgress = getAdaptiveLearningProgress();
+    const traditionalProgress = calculateOverallPlanProgress();
+    
+    console.log('Adaptive progress:', adaptiveProgress);
+    console.log('Traditional progress:', traditionalProgress);
+    
+    // Test calling the actual update functions
+    console.log('Calling updateProgressSummary()...');
+    updateProgressSummary();
+    
+    console.log('Calling showCircularProgress()...');
+    showCircularProgress();
+    
+    // Check element state after
+    const progressElement = document.getElementById('progressSummary');
+    console.log('Progress element after update:', {
+        exists: !!progressElement,
+        text: progressElement?.textContent,
+        display: progressElement?.style.display,
+        computedDisplay: progressElement ? getComputedStyle(progressElement).display : 'N/A'
+    });
+};
+
+// Complete diagnostic test - run this first!
+window.fullDiagnostic = function() {
+    console.log('🏥 FULL DIAGNOSTIC TEST...');
+    console.log('================================');
+    
+    // 1. Check element exists
+    console.log('1. ELEMENT CHECK:');
+    const progressElement = document.getElementById('progressSummary');
+    console.log('   Element found:', !!progressElement);
+    
+    if (!progressElement) {
+        console.log('❌ CRITICAL: progressSummary element not found!');
+        console.log('   Available elements with "progress" in ID:');
+        const allElements = document.querySelectorAll('[id*="progress"]');
+        allElements.forEach(el => console.log(`   - ${el.id}: ${el.tagName}`));
+        return;
+    }
+    
+    // 2. Check element properties
+    console.log('2. ELEMENT PROPERTIES:');
+    console.log('   Current text:', `"${progressElement.textContent}"`);
+    console.log('   Style display:', progressElement.style.display || 'not set');
+    console.log('   Computed display:', getComputedStyle(progressElement).display);
+    console.log('   Parent element:', progressElement.parentElement?.className);
+    
+    // 3. Test direct manipulation
+    console.log('3. DIRECT MANIPULATION TEST:');
+    const originalText = progressElement.textContent;
+    const originalDisplay = progressElement.style.display;
+    
+    progressElement.style.display = 'block';
+    progressElement.textContent = 'DIAGNOSTIC TEST: 99% complete';
+    console.log('   After direct update - text:', `"${progressElement.textContent}"`);
+    console.log('   After direct update - display:', progressElement.style.display);
+    
+    // 4. Test progress calculations
+    console.log('4. PROGRESS CALCULATIONS:');
+    const adaptiveProgress = getAdaptiveLearningProgress();
+    const traditionalProgress = calculateOverallPlanProgress();
+    console.log('   Adaptive progress:', adaptiveProgress);
+    console.log('   Traditional progress:', traditionalProgress);
+    
+    // 5. Check data sources
+    console.log('5. DATA SOURCES:');
+    console.log('   studyPathData:', !!localStorage.getItem('studyPathData'));
+    console.log('   dailyProgress:', !!localStorage.getItem('dailyProgress'));
+    console.log('   currentRoundProgress:', localStorage.getItem('currentRoundProgress'));
+    console.log('   AdaptiveLearning available:', !!window.AdaptiveLearning);
+    
+    // 6. Check global progressSummary variable
+    console.log('6. GLOBAL VARIABLE:');
+    if (!progressSummary) {
+        progressSummary = document.getElementById('progressSummary');
+    }
+    console.log('   Global progressSummary:', !!progressSummary);
+    console.log('   Same as element?', progressSummary === progressElement);
+    
+    console.log('================================');
+    console.log('✅ DIAGNOSTIC COMPLETE');
+    
+    // Restore original state
+    progressElement.textContent = originalText;
+    progressElement.style.display = originalDisplay;
+};
+
+// Debug overview card update issues
+window.debugOverviewCard = function() {
+    console.log('🔍 DEBUGGING OVERVIEW CARD...');
+    
+    // Check data sources
+    const studyPathData = localStorage.getItem('studyPathData');
+    const dailyProgress = localStorage.getItem('dailyProgress');
+    const currentRoundProgress = localStorage.getItem('currentRoundProgress');
+    const currentRoundNumber = localStorage.getItem('currentRoundNumber');
+    
+    console.log('📊 Data Sources:', {
+        hasStudyPathData: !!studyPathData,
+        hasDailyProgress: !!dailyProgress,
+        currentRoundProgress,
+        currentRoundNumber,
+        studyPathDataParsed: studyPathData ? JSON.parse(studyPathData) : null,
+        dailyProgressParsed: dailyProgress ? JSON.parse(dailyProgress) : null
+    });
+    
+    // Test progress calculations
+    const adaptiveProgress = getAdaptiveLearningProgress();
+    const traditionalProgress = calculateOverallPlanProgress();
+    
+    console.log('🧮 Progress Calculations:', {
+        adaptiveProgress,
+        traditionalProgress,
+        studyPathDataGlobal: window.studyPathData || 'Not available'
+    });
+    
+    // Check DOM elements
+    const progressSummary = document.getElementById('progressSummary');
+    const progressPercentageText = document.getElementById('progressPercentageText');
+    const circularView = document.getElementById('circularProgressView');
+    const overviewTitle = document.querySelector('.overview-title');
+    
+    console.log('🎯 DOM Elements:', {
+        progressSummary: {
+            exists: !!progressSummary,
+            text: progressSummary?.textContent,
+            visible: progressSummary?.style.display !== 'none',
+            computedDisplay: progressSummary ? getComputedStyle(progressSummary).display : 'N/A'
+        },
+        progressPercentageText: {
+            exists: !!progressPercentageText,
+            text: progressPercentageText?.textContent
+        },
+        circularView: {
+            exists: !!circularView,
+            hasZeroState: circularView?.classList.contains('zero-state'),
+            display: circularView?.style.display,
+            computedDisplay: circularView ? getComputedStyle(circularView).display : 'N/A'
+        },
+        overviewTitle: {
+            exists: !!overviewTitle,
+            text: overviewTitle?.textContent
+        }
+    });
+    
+    // Force update functions
+    console.log('🔄 Force updating progress...');
+    updateProgressSummary();
+    showCircularProgress();
+    
+    console.log('✅ Debug complete. Check elements again:');
+    setTimeout(() => {
+        console.log('📊 Post-update state:', {
+            progressSummaryText: progressSummary?.textContent,
+            progressSummaryVisible: progressSummary?.style.display !== 'none',
+            circularProgressText: progressPercentageText?.textContent,
+            overviewTitleText: overviewTitle?.textContent
+        });
+    }, 500);
 };
 
 // Export functions for external use
