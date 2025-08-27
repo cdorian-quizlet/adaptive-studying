@@ -307,18 +307,11 @@
       return processedGoals;
     } catch(e) { 
       console.error('Error fetching goals by course:', e);
-      // API failed - use fallback with STATIC label
-      console.log('API failed, using fallback goals with STATIC label');
-      const fallbackGoals = defaultGoals.map((goal, index) => ({
-        id: `static-${index}`,
-        name: goal,
-        type: 'exam',
-        date: null,
-        description: 'Static fallback data',
-        source: 'static-error'
-      }));
-      apiCache.goalsByCourse.set(cacheKey, fallbackGoals);
-      return fallbackGoals;
+      // API failed - return empty array, no static fallbacks
+      console.log('API failed, returning empty goals array');
+      const emptyGoals = [];
+      apiCache.goalsByCourse.set(cacheKey, emptyGoals);
+      return emptyGoals;
     }
   }
 
@@ -372,24 +365,16 @@
       return processedConcepts;
     } catch(e) { 
       console.error('Error fetching concepts by course:', e);
-      // API failed - use fallback with STATIC label
-      console.log('API failed, using fallback concepts with STATIC label');
-      const fallbackConcepts = defaultConcepts.map((concept, index) => ({
-        id: `static-${index}`,
-        name: concept,
-        description: 'Static fallback data',
-        terms: [],
-        source: 'static-error'
-      }));
-      apiCache.conceptsByCourse.set(cacheKey, fallbackConcepts);
-      return fallbackConcepts;
+      // API failed - return empty array, no static fallbacks
+      console.log('API failed, returning empty concepts array');
+      const emptyConcepts = [];
+      apiCache.conceptsByCourse.set(cacheKey, emptyConcepts);
+      return emptyConcepts;
     }
   }
 
-  const sampleCourses = ['BIOL 210', 'CHEM 101', 'HIST 205', 'PSYC 110', 'MATH 221', 'IBUS 330'];
-  const currentCourses = ['BIOL 210', 'IBUS 330'];
+  // Common exam fallbacks for when API returns empty
   const defaultGoals = ['Exam 1', 'Exam 2', 'Exam 3', 'Final exam'];
-  const defaultConcepts = ['Anatomy & Physiology', 'Cells & Tissues', 'Integumentary System', 'Muscular System'];
   
   // Store course descriptions by course name
   const courseDescriptions = {
@@ -514,25 +499,56 @@
     const dropdown = document.getElementById('courseDropdown');
     const list = document.getElementById('courseList');
 
-    function populateList(items){
-      list.innerHTML = items.map(c => `
-        <div class="course-row" data-course="${c}">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text">
-            <div class="course-title">${escapeHtml(c)}</div>
-            <div class="course-subtitle">${escapeHtml(courseDescriptions[c] || 'Course description')}</div>
+    async function populateList(){
+      try {
+        // Try to get courses from localStorage (recently added courses) first
+        const recentCourses = JSON.parse(localStorage.getItem('recent_courses') || '[]');
+        
+        // If we have recent courses, use them; otherwise show message to add course
+        if (recentCourses.length > 0) {
+          list.innerHTML = recentCourses.map(c => `
+            <div class="course-row" data-course="${c.name || c}">
+              <div class="course-check" aria-hidden="true"></div>
+              <div class="course-text">
+                <div class="course-title">${escapeHtml(c.name || c)}</div>
+                <div class="course-subtitle">${escapeHtml(c.description || 'Course description')}</div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          // Show message to add course if no recent courses
+          list.innerHTML = `
+            <div class="course-row" style="cursor: default; opacity: 0.6;">
+              <div class="course-check" aria-hidden="true"></div>
+              <div class="course-text">
+                <div class="course-title">No courses yet</div>
+                <div class="course-subtitle">Tap "Find a course" above to add your first course</div>
+              </div>
+            </div>
+          `;
+        }
+        
+        // Restore prior selection if any
+        if(state.course){
+          const sel = list.querySelector(`[data-course="${CSS.escape(state.course)}"]`);
+          if(sel){ sel.classList.add('selected'); }
+          const cta = document.getElementById('coursesCta');
+          if(cta) cta.classList.toggle('hidden', !state.course);
+        }
+      } catch (error) {
+        console.error('Error populating course list:', error);
+        list.innerHTML = `
+          <div class="course-row" style="cursor: default; opacity: 0.6;">
+            <div class="course-check" aria-hidden="true"></div>
+            <div class="course-text">
+              <div class="course-title">Unable to load courses</div>
+              <div class="course-subtitle">Please try refreshing the page</div>
+            </div>
           </div>
-        </div>
-      `).join('');
-      // Restore prior selection if any
-      if(state.course){
-        const sel = list.querySelector(`[data-course="${CSS.escape(state.course)}"]`);
-        if(sel){ sel.classList.add('selected'); }
-        const cta = document.getElementById('coursesCta');
-        if(cta) cta.classList.toggle('hidden', !state.course);
+        `;
       }
     }
-    populateList(currentCourses);
+    populateList();
 
     // Redirect to add-course screen when the field is focused or clicked
     const openAddCourse = (e)=>{
@@ -558,16 +574,10 @@
     search.addEventListener('focus', openAddCourse);
     search.addEventListener('click', openAddCourse);
 
+    // Remove static course search - redirect to add course screen instead
     search.addEventListener('input', () => {
-      const q = search.value.toLowerCase();
-      const matches = sampleCourses.filter(c => c.toLowerCase().includes(q));
-      if(q.length>0 && matches.length>0){
-        dropdown.style.display = 'block';
-        dropdown.innerHTML = matches.map(c=>`<div class="dropdown-item" data-course="${c}">${c}</div>`).join('');
-      } else {
-        dropdown.style.display = 'none';
-        dropdown.innerHTML = '';
-      }
+      // All course search now happens in the add course screen
+      // This input is just for visual feedback
     });
 
     dropdown.addEventListener('click', (e)=>{
@@ -904,12 +914,15 @@
           <span>Popular at ${displayName}</span>
         </div>
         <div class="location-schools">
-          ${popularCourses.slice(0, 6).map(course => `
-            <div class="location-school-item" data-course="${course.name}">
-              <div class="location-school-name">${course.name}</div>
-              <div class="location-school-address">${course.description}</div>
-            </div>
-          `).join('')}
+          ${popularCourses.slice(0, 6).map(course => {
+            const normalizedName = normalizeCourseDisplay(course.name);
+            return `
+              <div class="location-school-item" data-course="${normalizedName}">
+                <div class="location-school-name">${normalizedName}</div>
+                <div class="location-school-address">${course.description}</div>
+              </div>
+            `;
+          }).join('')}
         </div>
       `;
       
@@ -951,7 +964,7 @@
       courseSuggestions.innerHTML = `
         <div class="location-schools">
           ${courses.slice(0, 8).map(course => {
-            const courseName = course.displayName || course.name || '';
+            const courseName = normalizeCourseDisplay(course.displayName || course.name || '');
             const courseDescription = course.description || course.subject || 'Course description';
             return `
               <div class="location-school-item" data-course="${courseName}">
@@ -1131,10 +1144,12 @@
               const id = it.id || it.schoolId || it.courseId || '';
               const name = it[nameKey] || it.name || '';
               const location = it.location || 'School location'; // Use processed location from expandSchoolLocations
-              const titleCaseName = toTitleCase(name);
+              // For courses, normalize the display name; for schools, use title case
+              const displayName = nameKey === 'name' && (it.code || it.subject) ? 
+                normalizeCourseDisplay(name) : toTitleCase(name);
               return `
                 <div class="location-school-item" data-id="${String(id)}" data-name="${name.replace(/"/g,'&quot;')}">
-                  <div class="location-school-name">${titleCaseName}</div>
+                  <div class="location-school-name">${displayName}</div>
                   <div class="location-school-address">${location}</div>
                 </div>
               `;
@@ -1185,10 +1200,10 @@
     const filterCoursesByQuery = (courses, q)=>{
       const s = (q||'').trim().toLowerCase();
       
-      // Prepare courses with display names (code + name)
+      // Prepare courses with display names (code + name) and normalize
       const coursesWithDisplay = courses.map(course => ({
         ...course,
-        displayName: `${course.code || ''} - ${course.name || ''}`.trim()
+        displayName: normalizeCourseDisplay(`${course.code || ''} - ${course.name || ''}`.trim())
       }));
       
       // Filter by either code or name
@@ -1473,14 +1488,36 @@
     if (addCourseBtn) {
       addCourseBtn.addEventListener('click', ()=>{
         if (state.school && state.course) {
-          // Add the new course to the currentCourses list if not already present
-          if (!currentCourses.includes(state.course)) {
-            currentCourses.unshift(state.course); // Add to beginning so newest appears first
+          try {
+            // Get existing recent courses from localStorage
+            const recentCourses = JSON.parse(localStorage.getItem('recent_courses') || '[]');
             
-            // Store the course description from API data
-            if (state.courseDescription) {
-              courseDescriptions[state.course] = state.courseDescription;
-            }
+            // Create course object
+            const courseObj = {
+              name: state.course,
+              description: state.courseDescription || 'Course description',
+              school: state.school,
+              schoolId: state.schoolId,
+              addedAt: Date.now()
+            };
+            
+            // Remove if already exists (to avoid duplicates)
+            const filteredCourses = recentCourses.filter(c => 
+              (c.name || c) !== state.course
+            );
+            
+            // Add to beginning so newest appears first
+            filteredCourses.unshift(courseObj);
+            
+            // Keep only last 10 courses
+            const limitedCourses = filteredCourses.slice(0, 10);
+            
+            // Save to localStorage
+            localStorage.setItem('recent_courses', JSON.stringify(limitedCourses));
+            
+            console.log('Course saved to localStorage:', courseObj);
+          } catch (error) {
+            console.error('Error saving course to localStorage:', error);
           }
           
           // The course is already set in state.course, so it will be selected when we go back
@@ -1496,8 +1533,22 @@
 
   // Step 2: Goal selection (multi, Continue visible when >=1)
   async function renderGoals(){
-    // Extract course code part (before " - " if present)
-    const courseCode = state.course.split(' - ')[0];
+    // Extract course code part (handle various separators)
+    let courseCode = state.course;
+    
+    // Split on various possible separators and take first part
+    if (courseCode.includes(' - ')) {
+      courseCode = courseCode.split(' - ')[0];
+    } else if (courseCode.includes(', ')) {
+      courseCode = courseCode.split(', ')[0];
+    } else if (courseCode.includes(' ')) {
+      // For cases like "NURS 320 Adults with Health Alterations"
+      // Extract course code pattern (letters followed by numbers)
+      const match = courseCode.match(/^([A-Z]{2,6}\s*\d+)/i);
+      if (match) {
+        courseCode = match[1];
+      }
+    }
     
     // Show loading state first
     flowContent.innerHTML = ''+
@@ -1539,7 +1590,7 @@
       
       console.log('Step 2: Processed goal names:', goals);
       
-      // If no goals returned from API, show common exam suggestions
+      // If no goals returned from API, show common exam suggestions as fallback
       if (goals.length === 0) {
         console.log('Step 2: No goals returned from API, showing common exam suggestions');
         
@@ -1554,9 +1605,6 @@
         
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
-          `<div style="margin-bottom: 16px;">`+
-          `  <div style="color: var(--sys-text-secondary); font-size: 14px; font-weight: 600; margin-bottom: 16px;">Common exams</div>`+
-          `</div>`+
           `<div class="course-list-card" id="goalList"></div>`+
           `<div class="course-list-card" id="addGoalCard">`+
           `  <div class="course-row" id="addGoalRow">`+
@@ -1669,111 +1717,45 @@
       
     } catch (error) {
       console.error('Step 2: Error loading goals from API:', error);
-      console.log('Step 2: Falling back to manual goal entry only');
+      console.log('Step 2: API failed, showing manual goal entry only');
       
-      // Show common exam suggestions as fallback when API fails
-      console.log('Step 2: API failed, showing common exam suggestions as fallback');
-      
-      // Use default goals as fallback suggestions when API fails  
-      const goalObjects = defaultGoals.map((goal, index) => ({
-        id: `fallback-${index}`,
-        name: goal,
-        type: 'exam',
-        source: 'fallback'
-      }));
-      const goals = goalObjects.map(goal => goal.name);
-      
+      // Don't use static fallbacks - just show error state and allow manual addition
       flowContent.innerHTML = ''+
         `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
-        `<div style="margin-bottom: 16px;">`+
-        `  <div style="color: var(--sys-text-secondary); font-size: 14px; font-weight: 600; margin-bottom: 16px;">Common exams</div>`+
+        `<div class="course-list-card" id="goalList">`+
+        `  <div class="course-row" style="cursor: default; opacity: 0.6;">`+
+        `    <div class="course-check" aria-hidden="true"></div>`+
+        `    <div class="course-text">`+
+        `      <div class="course-title">Unable to load goals from server</div>`+
+        `      <div class="course-subtitle">Add your own exams or goals below</div>`+
+        `    </div>`+
+        `  </div>`+
         `</div>`+
-        `<div class="course-list-card" id="goalList"></div>`+
         `<div class="course-list-card" id="addGoalCard">`+
         `  <div class="course-row" id="addGoalRow">`+
         `    <div class="course-check add" aria-hidden="true"></div>`+
-        `    <div class="course-text"><div class="course-title">Add custom exam or goal</div></div>`+
+        `    <div class="course-text"><div class="course-title">Add exam or goal</div></div>`+
         `  </div>`+
         `</div>`+
         `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
       
-      // Set up the same render logic as other cases
-      const list = document.getElementById('goalList');
-      function rowHtml(text, attrs, goalId){
-        const selected = Array.isArray(state.goals) && state.goals.includes(text);
-        return `<div class="course-row ${selected?'selected':''}" ${attrs}>
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title" id="goal-title-${goalId}">${escapeHtml(text)}</div></div>
-        </div>`;
-      }
-      function renderList(){
-        const allSelected = state.goals.length === goals.length && goals.length>0;
-        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title">All</div></div>
-        </div>`;
-        const items = goals.map((g, index) => {
-          const goal = goalObjects[index];
-          return rowHtml(g, `data-goal="${g}"`, goal.id);
-        }).join('');
-        list.innerHTML = allRow + items;
-        
-        // Add badges for fallback goals
-        goalObjects.forEach((goal, index) => {
-          const titleElement = document.getElementById(`goal-title-${goal.id}`);
-          if (titleElement && goal.source === 'fallback') {
-            const badge = createStaticBadge();
-            badge.textContent = 'FALLBACK';
-            titleElement.appendChild(badge);
-          }
-        });
-        
-        const goalsCta = document.getElementById('goalsContinue').parentElement;
-        const disabled = state.goals.length===0;
-        document.getElementById('goalsContinue').disabled = disabled;
-        goalsCta.classList.toggle('hidden', disabled);
-      }
+      // Set up event handlers for manual goal addition only
+      const goals = []; // Empty goals array for error state
+      const goalObjects = []; // Empty objects array for error state
       
-      // Render the fallback goals list
-      if (goals.length > 0) {
-        renderList();
-      }
-
-      // Set up event handlers
-      list.addEventListener('click', (e)=>{
-        const all = e.target.closest('[data-select-all]');
-        if(all){
-          if (Array.isArray(state.goals) && state.goals.length === goals.length) {
-            state.goals = [];
-          } else {
-            state.goals = goals.slice();
-          }
-          renderList();
-          return;
-        }
-        const item = e.target.closest('.course-row');
-        if(!item) return; const g = item.getAttribute('data-goal'); if(!g) return;
-        const i = state.goals.indexOf(g);
-        if(i>=0) state.goals.splice(i,1); else state.goals.push(g);
-        renderList();
-      });
-
       document.getElementById('addGoalRow').addEventListener('click', ()=>{
         const name = prompt('Exam or goal name (e.g. "Exam 1", "Final Exam", "Quiz 3")');
         if(name){ 
           const trimmed = name.trim(); 
-          if(trimmed && !goals.includes(trimmed)){ 
-            goals.push(trimmed);
-            // Also add to goalObjects for consistency
-            goalObjects.push({
-              id: `custom-fallback-${goalObjects.length}`,
-              name: trimmed,
-              type: 'exam',
-              source: 'custom'
-            });
+          if(trimmed && !state.goals.includes(trimmed)){ 
+            state.goals.push(trimmed);
+            // Update continue button state
+            const goalsCta = document.getElementById('goalsContinue').parentElement;
+            const disabled = state.goals.length === 0;
+            document.getElementById('goalsContinue').disabled = disabled;
+            goalsCta.classList.toggle('hidden', disabled);
           }
         }
-        renderList();
       });
 
       document.getElementById('goalsContinue').addEventListener('click', next);
@@ -1782,8 +1764,22 @@
 
   // Step 3: Concept selection (multi with expandable terms)
   async function renderConcepts(){
-    // Extract course code part (before " - " if present) as fallback
-    const courseCode = state.course.split(' - ')[0];
+    // Extract course code part (handle various separators)
+    let courseCode = state.course;
+    
+    // Split on various possible separators and take first part
+    if (courseCode.includes(' - ')) {
+      courseCode = courseCode.split(' - ')[0];
+    } else if (courseCode.includes(', ')) {
+      courseCode = courseCode.split(', ')[0];
+    } else if (courseCode.includes(' ')) {
+      // For cases like "NURS 320 Adults with Health Alterations"
+      // Extract course code pattern (letters followed by numbers)
+      const match = courseCode.match(/^([A-Z]{2,6}\s*\d+)/i);
+      if (match) {
+        courseCode = match[1];
+      }
+    }
     
     // Format goals with proper grammar
     let goalsText = '';
@@ -1830,26 +1826,224 @@
       const conceptObjects = apiConcepts;
       const concepts = apiConcepts.map(concept => concept.name);
       
-      // If no concepts returned from API, show a message and allow manual addition
+      // If no concepts returned from API, show search and allow manual addition
       if (concepts.length === 0) {
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
-          `<div class="course-list-card" id="conceptList">`+
-          `  <div class="course-row">`+
-          `    <div class="course-check" aria-hidden="true"></div>`+
-          `    <div class="course-text">`+
-          `      <div class="course-title">No concepts found for this course</div>`+
-          `      <div class="course-subtitle">Add your own concepts below</div>`+
-          `    </div>`+
-          `  </div>`+
+          `<div class="input-field" id="conceptSearchField">`+
+          `  <input id="conceptSearch" class="text-input" placeholder="Search for concepts..." aria-label="Search for concepts" autocomplete="off" />`+
+          `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
+          `    <img src="../images/plus-circled.png" alt="Add" />`+
+          `  </button>`+
           `</div>`+
-          `<div class="course-list-card" id="addConceptCard">`+
-          `  <div class="course-row" id="addConceptRow">`+
-          `    <div class="course-check add" aria-hidden="true"></div>`+
-          `    <div class="course-text"><div class="course-title">Add new concept</div></div>`+
-          `  </div>`+
-          `</div>`+
+          `<div id="conceptSearchResults" class="location-section" style="display: none; margin-top: 16px;"></div>`+
+          `<div class="course-list-card" id="selectedConceptsList" style="display: none; margin-top: 32px;"></div>`+
           `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
+        
+        // Add search functionality for concepts
+        const conceptSearch = document.getElementById('conceptSearch');
+        const conceptSearchResults = document.getElementById('conceptSearchResults');
+        const addConceptBtn = document.getElementById('addConceptBtn');
+        const selectedConceptsList = document.getElementById('selectedConceptsList');
+        
+        // Keep track of all available concepts and selected concepts separately
+        const availableConcepts = [];
+        
+        // Function to render available concepts with checkboxes (like goals screen)
+        function renderSelectedConcepts() {
+          if (availableConcepts.length === 0) {
+            selectedConceptsList.style.display = 'none';
+            return;
+          }
+          
+          selectedConceptsList.style.display = 'block';
+          
+          // Add "All" row if there are 2+ concepts
+          const allSelected = state.concepts.length === availableConcepts.length && availableConcepts.length > 0;
+          const allRow = availableConcepts.length >= 2 ? `
+            <div class="course-row ${allSelected ? 'selected' : ''}" data-select-all="1">
+              <div class="course-check" aria-hidden="true"></div>
+              <div class="course-text"><div class="course-title">All</div></div>
+            </div>
+          ` : '';
+          
+          // Add individual concept rows
+          const conceptRows = availableConcepts.map((concept) => {
+            const selected = state.concepts.includes(concept);
+            return `
+              <div class="course-row ${selected ? 'selected' : ''}" data-concept="${concept}">
+                <div class="course-check" aria-hidden="true"></div>
+                <div class="course-text">
+                  <div class="course-title">${escapeHtml(concept)}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+          
+          selectedConceptsList.innerHTML = allRow + conceptRows;
+        }
+        
+        // Function to update continue button state
+        function updateContinueButton() {
+          const conceptsCta = document.getElementById('conceptsContinue').parentElement;
+          const disabled = state.concepts.length === 0;
+          document.getElementById('conceptsContinue').disabled = disabled;
+          conceptsCta.classList.toggle('hidden', disabled);
+        }
+        
+        // Function to add a concept
+        function addConcept(conceptName) {
+          const trimmed = conceptName.trim();
+          if (trimmed && !availableConcepts.includes(trimmed)) {
+            // Add to available concepts
+            availableConcepts.push(trimmed);
+            
+            // Also select it
+            if (!state.concepts.includes(trimmed)) {
+              state.concepts.push(trimmed);
+            }
+            
+            // Update UI
+            renderSelectedConcepts();
+            updateContinueButton();
+            
+            // Clear search and hide results
+            conceptSearch.value = '';
+            conceptSearchResults.style.display = 'none';
+            addConceptBtn.style.display = 'none';
+            
+            // Provide feedback (optional)
+            console.log('Added concept:', trimmed);
+          }
+        }
+        
+        // Add single click handler for concept selection (outside render function to avoid duplicates)
+        selectedConceptsList.addEventListener('click', (e) => {
+          const all = e.target.closest('[data-select-all]');
+          if (all) {
+            // Toggle all: if everything is selected, clear; otherwise select all
+            if (state.concepts.length === availableConcepts.length) {
+              state.concepts = [];
+            } else {
+              state.concepts = availableConcepts.slice();
+            }
+            renderSelectedConcepts();
+            updateContinueButton();
+            return;
+          }
+          
+          const item = e.target.closest('.course-row');
+          if (!item) return;
+          const conceptToToggle = item.getAttribute('data-concept');
+          if (conceptToToggle) {
+            const index = state.concepts.indexOf(conceptToToggle);
+            if (index >= 0) {
+              // Deselect
+              state.concepts.splice(index, 1);
+            } else {
+              // Select
+              state.concepts.push(conceptToToggle);
+            }
+            renderSelectedConcepts();
+            updateContinueButton();
+          }
+        });
+        
+        // Initialize selected concepts display
+        renderSelectedConcepts();
+        updateContinueButton();
+        
+        // Debounced search function
+        const searchConcepts = debounce(async (query) => {
+          if (!query.trim()) {
+            conceptSearchResults.style.display = 'none';
+            addConceptBtn.style.display = 'none';
+            return;
+          }
+          
+          try {
+            // Show loading state
+            conceptSearchResults.innerHTML = `
+              <div class="search-loading-container">
+                ${Array(3).fill(0).map(() => `
+                  <div class="search-loading-item">
+                    <div class="loading-name"></div>
+                    <div class="loading-description"></div>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+            conceptSearchResults.style.display = 'block';
+            addConceptBtn.style.display = 'none';
+            
+            // Search for concepts using a general concepts API or fallback
+            // For now, we'll show a "no results" state since we don't have a general concepts search API
+            setTimeout(() => {
+              // Simulate some example results for demonstration
+              // In real app, this would be based on actual API response
+              const mockResults = []; // Could add mock results here if needed
+              const hasResults = mockResults.length > 0;
+              
+              if (hasResults) {
+                // Show results that can be selected
+                conceptSearchResults.innerHTML = `
+                  <div class="location-schools">
+                    ${mockResults.map(result => `
+                      <div class="location-school-item concept-result-item" data-concept="${result.name}">
+                        <div class="location-school-name">${result.name}</div>
+                        <div class="location-school-address">${result.description || 'Concept'}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `;
+                addConceptBtn.style.display = 'none';
+                
+                // Add click handlers for concept results
+                conceptSearchResults.querySelectorAll('.concept-result-item').forEach(item => {
+                  item.addEventListener('click', () => {
+                    const conceptName = item.getAttribute('data-concept');
+                    addConcept(conceptName);
+                  });
+                });
+              } else {
+                // No results - hide results and show add button
+                conceptSearchResults.style.display = 'none';
+                addConceptBtn.style.display = 'flex';
+              }
+            }, 500);
+            
+          } catch (error) {
+            console.error('Error searching concepts:', error);
+            conceptSearchResults.style.display = 'none';
+            addConceptBtn.style.display = 'flex';
+          }
+        }, 300);
+        
+        // Add search event listener
+        conceptSearch.addEventListener('input', (e) => {
+          searchConcepts(e.target.value);
+        });
+        
+        // Add concept button click handler
+        addConceptBtn.addEventListener('click', () => {
+          const query = conceptSearch.value.trim();
+          if (query) {
+            addConcept(query);
+          }
+        });
+        
+        // Allow adding concept by pressing Enter
+        conceptSearch.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const query = conceptSearch.value.trim();
+            if (query && addConceptBtn.style.display !== 'none') {
+              addConcept(query);
+            }
+          }
+        });
+
+        document.getElementById('conceptsContinue').addEventListener('click', next);
+        
       } else {
         // Show regular concept list with API data
         flowContent.innerHTML = ''+
@@ -1949,141 +2143,331 @@
       
     } catch (error) {
       console.error('Error loading concepts:', error);
-      // Fall back to static concepts with error badges
-      const list = document.getElementById('conceptList');
-      const conceptObjects = defaultConcepts.map((concept, index) => ({
-        id: `static-error-${index}`,
-        name: concept,
-        description: 'Static fallback data',
-        terms: [],
-        source: 'static-error'
-      }));
-      const concepts = conceptObjects.map(concept => concept.name);
+      // Show error state with simplified search-only UI
+      flowContent.innerHTML = ''+
+        `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
+        `<div class="input-field" id="conceptSearchField">`+
+        `  <input id="conceptSearch" class="text-input" placeholder="Search for concepts..." aria-label="Search for concepts" autocomplete="off" />`+
+        `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
+        `    <img src="../images/plus-circled.png" alt="Add" />`+
+        `  </button>`+
+        `</div>`+
+        `<div id="conceptSearchResults" class="location-section" style="display: none; margin-top: 16px;"></div>`+
+        `<div class="course-list-card" id="selectedConceptsList" style="display: none; margin-top: 32px;"></div>`+
+        `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
       
-      function rowHtml(text, attrs, conceptId){
-        const selected = Array.isArray(state.concepts) && state.concepts.includes(text);
-        return `<div class="course-row ${selected?'selected':''}" ${attrs}>
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title" id="concept-title-${conceptId}">${escapeHtml(text)}</div></div>
-        </div>`;
-      }
-      function renderList(){
-        const allSelected = state.concepts.length === concepts.length && concepts.length>0;
-        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title">All</div></div>
-        </div>`;
-        const items = concepts.map((c, index) => {
-          const concept = conceptObjects[index];
-          return rowHtml(c, `data-concept="${c}"`, concept.id);
-        }).join('');
-        list.innerHTML = allRow + items;
-        
-        // Add badges after DOM is updated
-        conceptObjects.forEach((concept, index) => {
-          const titleElement = document.getElementById(`concept-title-${concept.id}`);
-          if (titleElement) {
-            // Remove any existing badges
-            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
-            // Add static badge
-            titleElement.appendChild(createStaticBadge());
-          }
-        });
-        
-        const cta = document.getElementById('conceptsContinue').parentElement;
-        const disabled = state.concepts.length===0;
-        document.getElementById('conceptsContinue').disabled = disabled;
-        cta.classList.toggle('hidden', disabled);
-      }
-      renderList();
-
-      list.addEventListener('click', (e)=>{
-        const all = e.target.closest('[data-select-all]');
-        if(all){
-          if (Array.isArray(state.concepts) && state.concepts.length === concepts.length) {
-            state.concepts = [];
-          } else {
-            state.concepts = concepts.slice();
-          }
-          renderList();
+      // Add same search functionality for error state
+      const conceptSearch = document.getElementById('conceptSearch');
+      const conceptSearchResults = document.getElementById('conceptSearchResults');
+      const addConceptBtn = document.getElementById('addConceptBtn');
+      const selectedConceptsList = document.getElementById('selectedConceptsList');
+      
+      // Keep track of all available concepts and selected concepts separately
+      const availableConcepts = [];
+      
+      // Function to render available concepts with checkboxes (like goals screen)
+      function renderSelectedConcepts() {
+        if (availableConcepts.length === 0) {
+          selectedConceptsList.style.display = 'none';
           return;
         }
+        
+        selectedConceptsList.style.display = 'block';
+        
+        // Add "All" row if there are 2+ concepts
+        const allSelected = state.concepts.length === availableConcepts.length && availableConcepts.length > 0;
+        const allRow = availableConcepts.length >= 2 ? `
+          <div class="course-row ${allSelected ? 'selected' : ''}" data-select-all="1">
+            <div class="course-check" aria-hidden="true"></div>
+            <div class="course-text"><div class="course-title">All</div></div>
+          </div>
+        ` : '';
+        
+        // Add individual concept rows
+        const conceptRows = availableConcepts.map((concept) => {
+          const selected = state.concepts.includes(concept);
+          return `
+            <div class="course-row ${selected ? 'selected' : ''}" data-concept="${concept}">
+              <div class="course-check" aria-hidden="true"></div>
+              <div class="course-text">
+                <div class="course-title">${escapeHtml(concept)}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        selectedConceptsList.innerHTML = allRow + conceptRows;
+      }
+      
+      // Function to update continue button state
+      function updateContinueButton() {
+        const conceptsCta = document.getElementById('conceptsContinue').parentElement;
+        const disabled = state.concepts.length === 0;
+        document.getElementById('conceptsContinue').disabled = disabled;
+        conceptsCta.classList.toggle('hidden', disabled);
+      }
+      
+      // Function to add a concept
+      function addConcept(conceptName) {
+        const trimmed = conceptName.trim();
+        if (trimmed && !availableConcepts.includes(trimmed)) {
+          // Add to available concepts
+          availableConcepts.push(trimmed);
+          
+          // Also select it
+          if (!state.concepts.includes(trimmed)) {
+            state.concepts.push(trimmed);
+          }
+          
+          // Update UI
+          renderSelectedConcepts();
+          updateContinueButton();
+          
+          // Clear search and hide results
+          conceptSearch.value = '';
+          conceptSearchResults.style.display = 'none';
+          addConceptBtn.style.display = 'none';
+        }
+      }
+      
+      // Add single click handler for concept selection (outside render function to avoid duplicates)
+      selectedConceptsList.addEventListener('click', (e) => {
+        const all = e.target.closest('[data-select-all]');
+        if (all) {
+          // Toggle all: if everything is selected, clear; otherwise select all
+          if (state.concepts.length === availableConcepts.length) {
+            state.concepts = [];
+          } else {
+            state.concepts = availableConcepts.slice();
+          }
+          renderSelectedConcepts();
+          updateContinueButton();
+          return;
+        }
+        
         const item = e.target.closest('.course-row');
-        if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
-        const i = state.concepts.indexOf(c);
-        if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
-        renderList();
+        if (!item) return;
+        const conceptToToggle = item.getAttribute('data-concept');
+        if (conceptToToggle) {
+          const index = state.concepts.indexOf(conceptToToggle);
+          if (index >= 0) {
+            // Deselect
+            state.concepts.splice(index, 1);
+          } else {
+            // Select
+            state.concepts.push(conceptToToggle);
+          }
+          renderSelectedConcepts();
+          updateContinueButton();
+        }
       });
-
-      document.getElementById('addConceptRow').addEventListener('click', ()=>{
-        const name = prompt('Concept name');
-        if(name){ 
-          const trimmed = name.trim(); 
-          if(trimmed && !concepts.includes(trimmed)){ 
-            concepts.push(trimmed);
-            // Also add to conceptObjects for consistency
-            conceptObjects.push({
-              id: `custom-error-${conceptObjects.length}`,
-              name: trimmed,
-              description: 'User-added concept',
-              terms: [],
-              source: 'custom'
-            });
+      
+      // Initialize selected concepts display
+      renderSelectedConcepts();
+      updateContinueButton();
+      
+      // Show add button immediately since search will fail anyway
+      conceptSearch.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query) {
+          conceptSearchResults.style.display = 'none';
+          addConceptBtn.style.display = 'flex';
+        } else {
+          conceptSearchResults.style.display = 'none';
+          addConceptBtn.style.display = 'none';
+        }
+      });
+      
+      // Add concept button click handler
+      addConceptBtn.addEventListener('click', () => {
+        const query = conceptSearch.value.trim();
+        if (query) {
+          addConcept(query);
+        }
+      });
+      
+      // Allow adding concept by pressing Enter
+      conceptSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const query = conceptSearch.value.trim();
+          if (query && addConceptBtn.style.display !== 'none') {
+            addConcept(query);
           }
         }
-        renderList();
       });
 
       document.getElementById('conceptsContinue').addEventListener('click', next);
     }
   }
 
-  // Step 4: Knowledge state (single select)
+  // Step 4: Knowledge state (slider)
   function renderKnowledge(){
-    const options = [
+    const sliderOptions = [
       'Not at all, start from scratch',
       'Somewhat, speed me along',
-      'Very, I just want extra practice',
-      "I don’t know, help me diagnose"
+      'Very, I just want extra practice'
     ];
+    
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">How confident are you feeling already?</h1>`+
-      `<div class="course-list-card" id="knowledgeList"></div>`+
-      `<div class="cta-row hidden"><button class="primary-btn" id="knowledgeContinue" disabled>Continue</button></div>`;
-    const list = document.getElementById('knowledgeList');
+      `<div class="knowledge-slider-container">`+
+      `  <div class="knowledge-selected-text" id="knowledgeSelectedText">Somewhat, speed me along</div>`+
+      `  <div class="knowledge-slider-track">`+
+      `    <div class="slider-dots">`+
+      `      <div class="slider-dot"></div>`+
+      `      <div class="slider-dot"></div>`+
+      `      <div class="slider-dot"></div>`+
+      `    </div>`+
+      `    <input type="range" id="knowledgeSlider" class="knowledge-slider" min="0" max="2" step="0.01" value="1" />`+
+      `  </div>`+
+      `  <div class="knowledge-slider-labels">`+
+      `    <div class="knowledge-slider-label left">Not</div>`+
+      `    <div class="knowledge-slider-label">Somewhat</div>`+
+      `    <div class="knowledge-slider-label right">Very</div>`+
+      `  </div>`+
+      `</div>`+
+      `<div class="cta-row" id="knowledgeCta">`+
+      `  <button class="primary-btn" id="knowledgeContinue">Continue</button>`+
+      `  <button class="diagnostic-btn" id="diagnosticBtn">I don't know, help me diagnose</button>`+
+      `</div>`;
+    
+    const slider = document.getElementById('knowledgeSlider');
+    const selectedText = document.getElementById('knowledgeSelectedText');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
-    function renderRows(){
-      list.innerHTML = options.map(o=>`
-        <div class="course-row ${state.knowledge===o?'selected':''}" data-k="${o}">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title">${escapeHtml(o)}</div></div>
-        </div>`).join('');
+    const diagnosticBtn = document.getElementById('diagnosticBtn');
+    
+    const knowledgeCta = document.getElementById('knowledgeCta');
+    
+    // Set default state
+    state.knowledge = sliderOptions[1]; // "Somewhat, speed me along"
+    selectedText.classList.add('selected');
+    
+    // Update gradient fill based on slider position
+    function updateGradientFill(value) {
+      const percentage = (parseFloat(value) / 2) * 100; // Convert 0-2 range to 0-100%
+      const track = document.querySelector('.knowledge-slider-track');
+      if (track) {
+        track.style.setProperty('--fill-width', `${percentage}%`);
+      }
     }
-    renderRows();
-    list.addEventListener('click', (e)=>{
-      const row = e.target.closest('.course-row');
-      if(!row) return;
-      const selected = row.getAttribute('data-k');
-      if (state.knowledge === selected) {
-        // Deselect current selection
-        state.knowledge = '';
-        renderRows();
-        knowledgeContinue.disabled = true;
-        knowledgeContinue.parentElement.classList.add('hidden');
+    
+    // Snap to nearest whole number
+    function snapToNearestPosition(value) {
+      return Math.round(parseFloat(value));
+    }
+    
+    // Update text and state when slider snaps to position
+    function updateSliderSelection(snappedValue) {
+      if (snappedValue !== null && snappedValue !== undefined) {
+        state.knowledge = sliderOptions[snappedValue];
+        selectedText.textContent = sliderOptions[snappedValue];
+        selectedText.classList.add('selected');
+        // Clear diagnostic selection
+        diagnosticBtn.classList.remove('selected');
+      }
+    }
+    
+    let isDragging = false;
+    let lastSnappedValue = 1; // Start with middle position
+    
+    // Initialize gradient fill with default position
+    updateGradientFill(1);
+    
+    // Handle smooth dragging with threshold-based snapping
+    slider.addEventListener('input', (e) => {
+      isDragging = true;
+      const currentValue = parseFloat(e.target.value);
+      const potentialSnap = snapToNearestPosition(currentValue);
+      
+      // Update gradient fill in real-time during drag
+      updateGradientFill(currentValue);
+      
+      // Define snap thresholds (snap when crossing 25% past center of each zone)
+      const snapThresholds = [0.25, 1.25]; // Snap points between positions
+      
+      // Check if we've crossed a threshold for snapping
+      let shouldSnap = false;
+      let newSnappedValue = potentialSnap;
+      
+      if (currentValue <= snapThresholds[0]) {
+        newSnappedValue = 0;
+        shouldSnap = lastSnappedValue !== 0;
+      } else if (currentValue >= snapThresholds[1]) {
+        newSnappedValue = 2;
+        shouldSnap = lastSnappedValue !== 2;
       } else {
-        state.knowledge = selected;
-        renderRows();
-        knowledgeContinue.disabled = false;
-        knowledgeContinue.parentElement.classList.remove('hidden');
+        newSnappedValue = 1;
+        shouldSnap = lastSnappedValue !== 1;
+      }
+      
+      // Update text immediately when crossing threshold
+      if (shouldSnap && newSnappedValue !== lastSnappedValue) {
+        lastSnappedValue = newSnappedValue;
+        updateSliderSelection(newSnappedValue);
       }
     });
+    
+    // Handle final snap when user releases
+    slider.addEventListener('change', (e) => {
+      isDragging = false;
+      const snappedValue = snapToNearestPosition(e.target.value);
+      e.target.value = snappedValue; // Snap slider position visually
+      lastSnappedValue = snappedValue;
+      updateSliderSelection(snappedValue);
+      updateGradientFill(snappedValue); // Update gradient fill to final position
+    });
+    
+    // Handle diagnostic button
+    diagnosticBtn.addEventListener('click', () => {
+      state.knowledge = "I don't know, help me diagnose";
+      selectedText.textContent = "I don't know, help me diagnose";
+      selectedText.classList.add('selected');
+      diagnosticBtn.classList.add('selected');
+      // Reset slider to middle position
+      slider.value = 1;
+      updateGradientFill(1);
+    });
+    
+    // Initialize from existing state if any, otherwise keep default
+    if (state.knowledge && state.knowledge !== sliderOptions[1]) {
+      const sliderIndex = sliderOptions.indexOf(state.knowledge);
+      if (sliderIndex !== -1) {
+        slider.value = sliderIndex;
+        selectedText.textContent = sliderOptions[sliderIndex];
+        updateSliderSelection(sliderIndex);
+        updateGradientFill(sliderIndex);
+      } else if (state.knowledge === "I don't know, help me diagnose") {
+        diagnosticBtn.classList.add('selected');
+        selectedText.textContent = state.knowledge;
+        selectedText.classList.add('selected');
+        // Clear slider value when diagnostic is selected
+        slider.value = 1; // Reset to default position
+        updateGradientFill(1);
+      }
+    }
+    
     knowledgeContinue.addEventListener('click', ()=>{ if(!knowledgeContinue.disabled) next(); });
   }
 
   // Step 5: Date selection
   function renderDate(){
-    // Extract course code part (before " - " if present) as fallback
-    const courseCode = state.course.split(' - ')[0];
+    // Extract course code part (handle various separators)
+    let courseCode = state.course;
+    
+    // Split on various possible separators and take first part
+    if (courseCode.includes(' - ')) {
+      courseCode = courseCode.split(' - ')[0];
+    } else if (courseCode.includes(', ')) {
+      courseCode = courseCode.split(', ')[0];
+    } else if (courseCode.includes(' ')) {
+      // For cases like "NURS 320 Adults with Health Alterations"
+      // Extract course code pattern (letters followed by numbers)
+      const match = courseCode.match(/^([A-Z]{2,6}\s*\d+)/i);
+      if (match) {
+        courseCode = match[1];
+      }
+    }
+    
     const goalText = state.goals[0] || courseCode;
     
     flowContent.innerHTML = ''+
@@ -2320,18 +2704,23 @@
     const header = document.querySelector('.flow-header');
     if (header) header.style.display = 'none';
     
+    // Get tailored copy based on entry point
+    let loadingText = 'Generating study plan';
+    if (state.goalType === 'cram') {
+      loadingText = 'Generating cram session';
+    } else if (state.goalType === 'memorize') {
+      loadingText = 'Generating memorization plan';
+    }
+    
     flowContent.innerHTML = ''+
       `<div class="loading-screen">
          <div class="loading-content">
-           <!-- Main content area for future use -->
-         </div>
-         <div class="loading-bottom-container">
-           <div class="loading-signature"></div>
-           <div class="loading-spark"></div>
-           <div class="loading-text">Generating study plan.</div>
-           <div class="loading-bar"><div class="fill"></div></div>
+           <div class="loading-spinner"></div>
+           <div class="loading-text">${loadingText}</div>
          </div>
        </div>`;
+
+
 
     // Persist for bottom sheet
     const pill = knowledgeToPill[state.knowledge] || 'Somewhat confident';
@@ -2355,6 +2744,24 @@
   function cssId(str){ return String(str||'').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9_-]/g,''); }
   function toTitleCase(str){ 
     return String(str||'').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  }
+  
+  // Normalize course display names by replacing em dashes and long dashes with commas
+  function normalizeCourseDisplay(courseName) {
+    if (!courseName) return '';
+    
+    return String(courseName)
+      // Remove leading dash and whitespace
+      .replace(/^[-\s]+/, '')
+      // Replace em dash (–) and en dash (—) with comma and space
+      .replace(/\s*[–—]\s*/g, ', ')
+      // Replace regular dash between course code and name with comma and space
+      // Only if it's separating what looks like a course code from a course name
+      .replace(/^([A-Z]{2,6}\s*\d+)\s*[-]\s*(.+)$/i, '$1, $2')
+      // Clean up any double commas or extra spaces
+      .replace(/,\s*,/g, ',')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   // Badge helpers for goals
@@ -2394,6 +2801,9 @@
     return badge;
   }
 
+  // Add API debug function to global scope for easy testing
+  window.normalizeCourseDisplay = normalizeCourseDisplay;
+  
   // Debug functions for testing API responses in console
   window.testGoalsAPI = async function(courseId, schoolId) {
     console.log('Testing goals API with:', { courseId, schoolId });
@@ -2648,6 +3058,69 @@
       render();
     } else {
       console.log('Navigate to step 2 first, then call this function');
+    }
+  };
+
+  // Test concept search functionality
+  window.testConceptSearch = function(query = 'cell biology', includeResults = true) {
+    if (stepIndex !== 3) {
+      console.log('Navigate to step 3 (concepts) first, then call this function');
+      return;
+    }
+    
+    const conceptSearch = document.getElementById('conceptSearch');
+    const conceptSearchResults = document.getElementById('conceptSearchResults');
+    const addConceptBtn = document.getElementById('addConceptBtn');
+    
+    if (!conceptSearch) {
+      console.log('Concept search not available - try this on the empty concepts screen');
+      return;
+    }
+    
+    // Simulate search
+    conceptSearch.value = query;
+    
+    if (includeResults) {
+      // Show mock results
+      const mockResults = [
+        { name: 'Cell Biology', description: 'Study of cellular structure and function' },
+        { name: 'Cellular Respiration', description: 'Process of energy production in cells' },
+        { name: 'Cell Membrane', description: 'Boundary structure of cells' }
+      ];
+      
+      conceptSearchResults.innerHTML = `
+        <div class="location-schools">
+          ${mockResults.map(result => `
+            <div class="location-school-item concept-result-item" data-concept="${result.name}">
+              <div class="location-school-name">${result.name}</div>
+              <div class="location-school-address">${result.description}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      conceptSearchResults.style.display = 'block';
+      addConceptBtn.style.display = 'none';
+      
+      // Add click handlers
+      conceptSearchResults.querySelectorAll('.concept-result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const conceptName = item.getAttribute('data-concept');
+          console.log('Would add concept:', conceptName);
+          // Add the concept
+          if (!state.concepts.includes(conceptName)) {
+            state.concepts.push(conceptName);
+            console.log('Added concept:', conceptName);
+            console.log('Current concepts:', state.concepts);
+          }
+        });
+      });
+      
+      console.log('Mock search results displayed. Click on any result to add it.');
+    } else {
+      // Show no results - just display plus button
+      conceptSearchResults.style.display = 'none';
+      addConceptBtn.style.display = 'flex';
+      console.log('No results - Plus button should be visible for adding.');
     }
   };
 
