@@ -399,7 +399,7 @@ body:has(.knowledge-slider:active) {
 }
 .course-row + .course-row { border-top:1px solid var(--sys-border-primary); }
 .course-text { display:flex; flex-direction:column; gap:0; min-width:0; }
-.course-title { font-size:16px; line-height:24px; color:var(--sys-text-primary); font-weight:600; margin:0; }
+.course-title { font-size:16px; line-height:24px; color:var(--sys-text-primary); font-weight:600; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-subtitle { font-family: var(--typography-fontFamily); font-size: var(--typography-size-subheading-four); line-height: var(--typography-lineHeight-subheading-four); font-weight: 600; color:var(--sys-text-secondary); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-row:hover { background:var(--color-gray-200); }
 .course-row.selected,
@@ -882,14 +882,15 @@ body:has(.loading-screen) {
   justify-content: center;
   flex: 1;
   padding: 40px 20px;
-  gap: 32px;
+  gap: 64px;
   position: relative;
+  min-height: 100vh;
 }
 
-/* Loading spinner with gradient and fully rounded corners */
+/* Loading spinner with gradient and pill-shaped end caps */
 .loading-spinner {
-  width: 120px;
-  height: 120px;
+  width: 80px;
+  height: 80px;
   position: relative;
 }
 
@@ -901,10 +902,23 @@ body:has(.loading-screen) {
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  background: conic-gradient(from 270deg, var(--color-twilight-500) 0deg, rgba(79, 70, 229, 0.4) 60deg, transparent 120deg, transparent 360deg);
-  mask: radial-gradient(closest-side, transparent 75%, black 76%, black 100%);
-  -webkit-mask: radial-gradient(closest-side, transparent 75%, black 76%, black 100%);
-  filter: blur(0.5px);
+  background: conic-gradient(from 270deg, var(--color-twilight-500) 0deg, rgba(79, 70, 229, 0.6) 120deg, rgba(79, 70, 229, 0.3) 200deg, transparent 240deg, transparent 360deg);
+  mask: radial-gradient(closest-side, transparent 70%, black 71%, black 100%);
+  -webkit-mask: radial-gradient(closest-side, transparent 70%, black 71%, black 100%);
+  animation: spin 1.5s linear infinite;
+}
+
+/* Add pill-shaped end cap */
+.loading-spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: var(--color-twilight-500);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) translateY(-32px);
   animation: spin 1.5s linear infinite;
 }
 

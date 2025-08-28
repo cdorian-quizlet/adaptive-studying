@@ -18,7 +18,7 @@
     height: 100%;
     background: var(--color-twilight-400);
     border-radius: 8px;
-    transition: width 0.3s ease, background-color 0.3s ease;
+    transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.3s ease;
     width: 0%;
     position: absolute;
     left: 0;
@@ -46,7 +46,7 @@
     transform: translate(-50%, -50%);
     top: 50%;
     z-index: 2;
-    transition: left 0.3s ease, background-color 0.3s ease;
+    transition: left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.3s ease;
     white-space: nowrap;
     text-align: center;
     box-shadow: var(--shadow-small);
@@ -61,4 +61,24 @@
 .progress-bar.zero-state .progress-counter {
     left: 24px; /* 8px from left edge + 16px to center on the small fill */
     background: var(--color-twilight-500);
+}
+
+/* Natural anticipatory effect - subtle "prep" before expansion */
+.progress-fill.preparing {
+    transform: scaleX(0.98);
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Enhanced expansion with slight overshoot for natural feel */
+.progress-fill.expanding {
+    transform: scaleX(1.02);
+    transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Return to normal after expansion */
+.progress-fill.settled {
+    transform: scaleX(1);
+    transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 } 

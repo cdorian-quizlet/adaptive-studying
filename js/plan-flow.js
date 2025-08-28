@@ -790,43 +790,106 @@
     // Initialize the location section with shimmer placeholders
     renderLocationSection();
     
-    // Immediately request location access when screen loads
-    requestLocationAccess();
+    // Check location permission and request if needed
+    checkAndRequestLocation();
     
-    function requestLocationAccess() {
+    async function checkAndRequestLocation() {
       if (locationRequested) return;
       locationRequested = true;
       
-      if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            console.log('Location access granted:', position);
-            userLocation = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            };
-            
-            // Fetch nearby schools based on user location
-            const nearbySchools = await getNearbySchools(
-              position.coords.latitude, 
-              position.coords.longitude
-            );
-            
-            showLocationSchools(nearbySchools);
-          },
-          (error) => {
-            console.log('Location access denied or failed:', error);
-            showLocationSchools(); // Show fallback schools if location fails
-          },
-          { 
-            timeout: 10000,
-            enableHighAccuracy: false,
-            maximumAge: 300000 // 5 minutes
-          }
-        );
-      } else {
-        showLocationSchools(); // Show fallback schools without location context
+      // Check if geolocation is supported
+      if (!('geolocation' in navigator)) {
+        console.log('Geolocation not supported, showing fallback schools');
+        showLocationSchools();
+        return;
       }
+      
+      // Check current permission status using Permissions API
+      if ('permissions' in navigator) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          console.log('Current geolocation permission status:', permission.state);
+          
+          if (permission.state === 'granted') {
+            // Permission already granted - get location without prompting
+            console.log('Location permission already granted, getting position...');
+            getCurrentLocationSilently();
+          } else if (permission.state === 'denied') {
+            // Permission explicitly denied - show fallback immediately
+            console.log('Location permission denied, showing fallback schools');
+            showLocationSchools();
+          } else {
+            // Permission state is 'prompt' - ask for permission
+            console.log('Location permission not yet determined, requesting...');
+            requestLocationAccess();
+          }
+        } catch (error) {
+          console.log('Permissions API not supported or failed, requesting location directly:', error);
+          requestLocationAccess();
+        }
+      } else {
+        // Permissions API not supported - request location directly
+        console.log('Permissions API not supported, requesting location directly');
+        requestLocationAccess();
+      }
+    }
+    
+    function getCurrentLocationSilently() {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          console.log('Location obtained silently:', position);
+          userLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          
+          // Fetch nearby schools based on user location
+          const nearbySchools = await getNearbySchools(
+            position.coords.latitude, 
+            position.coords.longitude
+          );
+          
+          showLocationSchools(nearbySchools);
+        },
+        (error) => {
+          console.log('Failed to get location silently:', error);
+          showLocationSchools(); // Show fallback schools if location fails
+        },
+        { 
+          timeout: 10000,
+          enableHighAccuracy: false,
+          maximumAge: 300000 // 5 minutes - use cached location if available
+        }
+      );
+    }
+    
+    function requestLocationAccess() {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          console.log('Location access granted after request:', position);
+          userLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          
+          // Fetch nearby schools based on user location
+          const nearbySchools = await getNearbySchools(
+            position.coords.latitude, 
+            position.coords.longitude
+          );
+          
+          showLocationSchools(nearbySchools);
+        },
+        (error) => {
+          console.log('Location access denied or failed after request:', error);
+          showLocationSchools(); // Show fallback schools if location fails
+        },
+        { 
+          timeout: 10000,
+          enableHighAccuracy: false,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
     }
     
     function showLocationSchools(nearbySchools = null) {
@@ -1323,7 +1386,9 @@
           getNearbySchools(userLocation.latitude, userLocation.longitude)
             .then(nearbySchools => showLocationSchools(nearbySchools));
         } else {
-          requestLocationAccess();
+          // Reset location request flag so we can check permission again
+          locationRequested = false;
+          checkAndRequestLocation();
         }
         
         // Clean up transition classes

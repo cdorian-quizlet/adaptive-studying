@@ -5,100 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz 2 - BIOL 210</title>
     <link rel="stylesheet" href="../css/styles.css">
-    <link rel="stylesheet" href="../css/study-styles.css">
     <link rel="stylesheet" href="../css/components/header.css">
-    <link rel="stylesheet" href="../css/components/progress-bar.css">
+    <link rel="stylesheet" href="../css/study-styles.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=close,settings" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
-
-        
-        .diagnostic-instructions {
-            background: #E8F5E8;
-            border: 2px solid #4CAF50;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 20px;
-            text-align: center;
-        }
-        
-        .instructions-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #2E7D32;
-            margin-bottom: 8px;
-        }
-        
-        .instructions-text {
-            font-size: 14px;
-            color: #1B5E20;
-            line-height: 1.4;
-        }
-        
-        .diagnostic-results {
-            display: none;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .results-card {
-            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
-            color: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-        
-        .results-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-        
-        .results-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-item {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-        
-        .continue-btn {
-            background: white;
-            color: #4ECDC4;
-            border: none;
-            border-radius: 25px;
-            padding: 12px 32px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .continue-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-        }
-        
+        /* Diagnostic-specific styles */
         .intro-screen {
             display: flex;
             align-items: flex-start;
@@ -235,62 +150,6 @@
             transform: translateY(0);
         }
         
-        /* Override submit button for diagnostic tests */
-        .submit-btn {
-            background: #4255FF;
-            color: white;
-            border: none;
-            padding: 0 24px;
-            border-radius: 32px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-left: 12px;
-            height: 64px;
-        }
-        
-        .submit-btn:hover {
-            background: #3B4CD9;
-            transform: translateY(-1px);
-        }
-        
-        /* Override text input container for diagnostic tests */
-        .text-input-container {
-            display: flex;
-            flex-direction: column;
-            gap: 48px;
-            width: 100%;
-        }
-        
-        .text-input {
-            width: 100%;
-            padding: 16px;
-            border: 2px solid #E5E7EB;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.2s ease;
-        }
-        
-        .text-input:focus {
-            outline: none;
-            border-color: #A8B1FF;
-        }
-        
-        .text-input.error {
-            border-color: #FF6B6B;
-            background-color: #FFF5F5;
-        }
-        
-        .submit-btn {
-            width: 100%;
-            margin-left: 0;
-        }
-        
-
-        
-        /* Use regular study styles for question container */
-        
         /* Results screen styling */
         .diagnostic-results {
             display: none;
@@ -362,8 +221,6 @@
             background: #3B4CD9;
             transform: translateY(-1px);
         }
-        
-        /* Remove custom header overrides - use regular study styles */
     </style>
 </head>
 <body>
@@ -432,7 +289,13 @@
                 <!-- Free Text Input -->
                 <div class="text-input-container" id="textInput" style="display: none;">
                     <input type="text" class="text-input" id="textAnswer" placeholder="Type your answer...">
-                    <button class="submit-btn" id="submitBtn">Next</button>
+                    <button class="submit-btn" id="submitBtn">Submit</button>
+                    
+                    <!-- Written question feedback -->
+                    <div class="written-feedback" id="writtenFeedback" style="display: none;">
+                        <div class="correct-answer-label">Correct answer</div>
+                        <div class="correct-answer-feedback" id="correctAnswerFeedback"></div>
+                    </div>
                 </div>
             </div>
         </main>

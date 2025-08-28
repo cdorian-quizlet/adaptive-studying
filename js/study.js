@@ -677,12 +677,13 @@ async function fetchAndLoadQuestionsFromApi() {
 
 // Initialize header component
 function initializeHeader() {
-    const roundTheme = roundThemes[currentRoundNumber] || "Study Session";
+    const initialTitle = getCurrentConcept() || "Study Session";
     
     appHeader = new AppHeader({
         backUrl: '../html/study-plan.html',
         backButtonIcon: 'close',
-        title: roundTheme,
+        title: initialTitle,
+        loadTitleFromStorage: false, // Disable auto-loading title so we can manage it dynamically
         onBackClick: function() {
             // Close study session with confirmation
             if (confirm('Are you sure you want to end this study session? Your progress will be saved.')) {
@@ -709,12 +710,63 @@ function initializeHeader() {
     appHeader.init();
 }
 
-// Update header title for current round
+// Update header title for current concept
 function updateHeaderTitle() {
     if (appHeader) {
-        const roundTheme = roundThemes[currentRoundNumber] || "Study Session";
-        appHeader.setTitle(roundTheme);
+        const concept = getCurrentConcept() || "Study Session";
+        appHeader.setTitle(concept);
     }
+}
+
+// Get current concept from question or round theme as fallback
+function getCurrentConcept() {
+    // Try to get concept from current question first
+    if (currentQuestion && currentQuestion.concept) {
+        return currentQuestion.concept;
+    }
+    
+    // Try to extract concept from question text for biology topics
+    if (currentQuestion && currentQuestion.question) {
+        const questionText = currentQuestion.question.toLowerCase();
+        
+        // Map common question patterns to concepts
+        if (questionText.includes('cell membrane') || questionText.includes('plasma membrane')) {
+            return 'Cell Membrane';
+        } else if (questionText.includes('mitochondri')) {
+            return 'Mitochondria';
+        } else if (questionText.includes('nucleus')) {
+            return 'Cell Nucleus';
+        } else if (questionText.includes('endoplasmic reticulum') || questionText.includes(' er ')) {
+            return 'Endoplasmic Reticulum';
+        } else if (questionText.includes('lysosome')) {
+            return 'Lysosomes';
+        } else if (questionText.includes('golgi')) {
+            return 'Golgi Apparatus';
+        } else if (questionText.includes('ribosome')) {
+            return 'Ribosomes';
+        } else if (questionText.includes('prokaryotic') || questionText.includes('eukaryotic')) {
+            return 'Cell Types';
+        } else if (questionText.includes('cytoskeleton')) {
+            return 'Cytoskeleton';
+        } else if (questionText.includes('peroxisome')) {
+            return 'Peroxisomes';
+        } else if (questionText.includes('cell wall')) {
+            return 'Cell Wall';
+        } else if (questionText.includes('chloroplast')) {
+            return 'Chloroplasts';
+        } else if (questionText.includes('vacuole')) {
+            return 'Vacuoles';
+        } else if (questionText.includes('cilia') || questionText.includes('flagella')) {
+            return 'Cell Movement';
+        } else if (questionText.includes('photosynthesis')) {
+            return 'Photosynthesis';
+        } else if (questionText.includes('cellular respiration')) {
+            return 'Cellular Respiration';
+        }
+    }
+    
+    // Fallback to round theme
+    return roundThemes[currentRoundNumber] || "Study Session";
 }
 
 // Initialize adaptive learning engine
@@ -967,6 +1019,9 @@ function showQuestion() {
     
     // Update tracking variable
     lastShownQuestionFormat = currentQuestion.currentFormat;
+    
+    // Update header title with current concept
+    updateHeaderTitle();
     
     // Reset question prompt classes
     questionPrompt.classList.remove('flashcard-prompt');
