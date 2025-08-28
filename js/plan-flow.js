@@ -2704,31 +2704,6 @@
       next();
     });
     
-<<<<<<< ours
-=======
-    // Handle final snap when user releases
-    slider.addEventListener('change', (e) => {
-      isDragging = false;
-      const snappedValue = snapToNearestPosition(e.target.value);
-      e.target.value = snappedValue; // Snap slider position visually
-      lastSnappedValue = snappedValue;
-      updateSliderSelection(snappedValue);
-      updateGradientFill(snappedValue); // Update gradient fill to final position
-    });
-    
-    // Handle diagnostic button
-    diagnosticBtn.addEventListener('click', () => {
-      state.knowledge = "I don't know, help me diagnose";
-      selectedText.textContent = "I don't know, help me diagnose";
-      selectedText.classList.add('selected');
-      diagnosticBtn.classList.add('selected');
-      // Reset slider to middle position
-      slider.value = 1;
-      updateGradientFill(1);
-      // Automatically advance to next step
-      next();
-    });
-    
     // Initialize from existing state if any, otherwise keep default
     if (state.knowledge && state.knowledge !== sliderOptions[1]) {
       const sliderIndex = sliderOptions.indexOf(state.knowledge);
