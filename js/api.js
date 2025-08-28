@@ -76,61 +76,69 @@ async function getUserCourses(userId) {
 }
 
 async function setCurrentCourse(courseId) {
-  // Save to localStorage for persistence
+  // Save to localStorage for persistence (avoid external API calls)
   try {
     localStorage.setItem('currentCourseId', courseId);
     localStorage.setItem('currentCourseTimestamp', Date.now().toString());
     
-    // Also fetch and cache course details
-    const courseDetails = await getCourseById(courseId);
-    if (courseDetails) {
+    // Use onboarding data instead of making API calls
+    const courseName = localStorage.getItem('onboarding_course');
+    const schoolName = localStorage.getItem('onboarding_school');
+    
+    if (courseName) {
+      const courseDetails = {
+        id: courseId,
+        name: courseName,
+        school: schoolName,
+        displayName: courseName,
+        source: 'onboarding'
+      };
+      
       localStorage.setItem('currentCourseDetails', JSON.stringify(courseDetails));
+      console.log('Set current course using onboarding data (no API call)');
+      return courseDetails;
     }
     
-    return courseDetails;
+    console.log('Course set but no details available');
+    return null;
   } catch (error) {
-    console.error('Error setting current course:', error);
-    throw error;
+    console.log('Error setting current course, continuing without it');
+    return null;
   }
 }
 
 async function getCurrentCourse() {
   try {
-    // Check localStorage first
-    const courseId = localStorage.getItem('currentCourseId');
+    // Use onboarding data instead of making API calls to avoid CORS errors
+    const courseName = localStorage.getItem('onboarding_course');
+    const schoolName = localStorage.getItem('onboarding_school');
+    
+    if (courseName) {
+      // Create a course object from onboarding data (no external API call needed)
+      const courseObject = {
+        id: 'onboarding-course',
+        name: courseName,
+        school: schoolName,
+        displayName: courseName,
+        source: 'onboarding'
+      };
+      
+      console.log('Using onboarding course data (no API call):', courseObject.name);
+      return courseObject;
+    }
+    
+    // Fallback: check legacy localStorage but don't make API calls
     const cachedDetails = localStorage.getItem('currentCourseDetails');
-    const timestamp = localStorage.getItem('currentCourseTimestamp');
-    
-    // Use cached data if it's less than 1 hour old
-    if (courseId && cachedDetails && timestamp) {
-      const age = Date.now() - parseInt(timestamp);
-      if (age < 3600000) { // 1 hour in milliseconds
-        return JSON.parse(cachedDetails);
-      }
+    if (cachedDetails) {
+      console.log('Using cached course details (no API call)');
+      return JSON.parse(cachedDetails);
     }
     
-    // If no cached data or expired, try to fetch fresh data
-    if (courseId) {
-      const courseDetails = await getCourseById(courseId);
-      if (courseDetails) {
-        localStorage.setItem('currentCourseDetails', JSON.stringify(courseDetails));
-        localStorage.setItem('currentCourseTimestamp', Date.now().toString());
-        return courseDetails;
-      }
-    }
-    
-    // Fallback: try to get user's first enrolled course
-    const userCourses = await getUserCourses('current'); // 'current' as default user
-    if (userCourses && userCourses.length > 0) {
-      return await setCurrentCourse(userCourses[0].id);
-    }
-    
+    console.log('No course information available');
     return null;
   } catch (error) {
-    console.error('Error getting current course:', error);
-    // Return cached data even if expired, as fallback
-    const cachedDetails = localStorage.getItem('currentCourseDetails');
-    return cachedDetails ? JSON.parse(cachedDetails) : null;
+    console.log('Course info not available, continuing without it');
+    return null;
   }
 }
 
@@ -216,6 +224,84 @@ async function initializeCourse() {
   }
 }
 
+// New hierarchical API endpoints
+async function getSchools() {
+  console.log('Fetching schools from API');
+  const url = 'https://getschools-p3vlbtsdwa-uc.a.run.app';
+  console.log('Schools API URL:', url);
+  try {
+    const response = await apiGet(url);
+    console.log('getSchools API raw response:', response);
+    return response;
+  } catch (error) {
+    console.error('getSchools API error:', error);
+    throw error;
+  }
+}
+
+async function getCoursesBySchool(schoolId, schoolName = null) {
+  // Try with schoolId first, fallback to schoolName if needed
+  let url;
+  if (schoolId) {
+    url = `https://getcoursesbyschool-p3vlbtsdwa-uc.a.run.app?schoolId=${encodeURIComponent(schoolId)}`;
+  } else if (schoolName) {
+    url = `https://getcoursesbyschool-p3vlbtsdwa-uc.a.run.app?schoolName=${encodeURIComponent(schoolName)}`;
+  } else {
+    throw new Error('Either schoolId or schoolName is required');
+  }
+  
+  try {
+    const response = await apiGet(url);
+    return response;
+  } catch (error) {
+    console.error('getCoursesBySchool API error:', error);
+    
+    // If schoolId failed and we have schoolName, try with schoolName
+    if (schoolId && schoolName && (error.message.includes('School ID') || error.message.includes('400'))) {
+      try {
+        const fallbackUrl = `https://getcoursesbyschool-p3vlbtsdwa-uc.a.run.app?schoolName=${encodeURIComponent(schoolName)}`;
+        const fallbackResponse = await apiGet(fallbackUrl);
+        return fallbackResponse;
+      } catch (fallbackError) {
+        console.error('Fallback API call also failed:', fallbackError);
+        throw fallbackError;
+      }
+    }
+    throw error;
+  }
+}
+
+async function getUnifiedContent(schoolName, courseName = null, goal = null, concept = null) {
+  let url = `https://getunifiedcontent-p3vlbtsdwa-uc.a.run.app?schoolName=${encodeURIComponent(schoolName)}`;
+  
+  if (courseName) {
+    url += `&courseName=${encodeURIComponent(courseName)}`;
+  }
+  if (goal) {
+    url += `&goal=${encodeURIComponent(goal)}`;
+  }
+  if (concept) {
+    url += `&concept=${encodeURIComponent(concept)}`;
+  }
+  
+  return apiGet(url);
+}
+
+// Helper function to get goals for a specific school and course
+async function getGoalsBySchoolAndCourse(schoolName, courseName) {
+  return getUnifiedContent(schoolName, courseName);
+}
+
+// Helper function to get concepts for a specific school, course, and goal
+async function getConceptsByGoal(schoolName, courseName, goal) {
+  return getUnifiedContent(schoolName, courseName, goal);
+}
+
+// Helper function to get questions for a specific concept
+async function getQuestionsByConcept(schoolName, courseName, goal, concept) {
+  return getUnifiedContent(schoolName, courseName, goal, concept);
+}
+
 // Expose on window for non-module scripts
 window.QuizletApi = {
   // Original endpoints
@@ -233,6 +319,14 @@ window.QuizletApi = {
   setCurrentCourse,
   getCurrentCourse,
   
+  // New hierarchical API endpoints
+  getSchools,
+  getCoursesBySchool,
+  getUnifiedContent,
+  getGoalsBySchoolAndCourse,
+  getConceptsByGoal,
+  getQuestionsByConcept,
+  
   // Utility functions
   formatCourseDisplay,
   getCachedCourseDisplay,
@@ -249,6 +343,30 @@ window.testCourseAPI = {
       return courses;
     } catch (error) {
       console.error('getCourses failed:', error);
+      return null;
+    }
+  },
+  
+  async testGetSchools() {
+    console.log('Testing getSchools...');
+    try {
+      const schools = await getSchools();
+      console.log('Available schools:', schools);
+      return schools;
+    } catch (error) {
+      console.error('getSchools failed:', error);
+      return null;
+    }
+  },
+  
+  async testGetCoursesBySchool(schoolId, schoolName = null) {
+    console.log(`Testing getCoursesBySchool for ID: ${schoolId}, Name: ${schoolName}`);
+    try {
+      const courses = await getCoursesBySchool(schoolId, schoolName);
+      console.log('Courses for school:', courses);
+      return courses;
+    } catch (error) {
+      console.error('getCoursesBySchool failed:', error);
       return null;
     }
   },

@@ -612,15 +612,116 @@ function createStaticBadge() {
 function setSourceBadge(element) {
     if (!element) return;
     element.querySelectorAll('.api-badge, .static-badge').forEach(b => b.remove());
-    if (currentQuestion && currentQuestion._raw) {
+    if (currentQuestion && (currentQuestion._raw || currentQuestion.source === 'api' || window.USING_API_CONTENT)) {
         element.appendChild(createApiBadge());
     } else {
         element.appendChild(createStaticBadge());
     }
 }
 
-// Load questions from API based on URL params (search, subject, subcategory)
+// Load questions from API based on onboarding data and current round
 async function fetchAndLoadQuestionsFromApi() {
+    try {
+        // Get onboarding data from localStorage
+        const schoolName = localStorage.getItem('onboarding_school');
+        const courseName = localStorage.getItem('onboarding_course');
+        const goalsData = localStorage.getItem('onboarding_goals');
+        const conceptsData = localStorage.getItem('onboarding_concepts');
+        const currentRoundNumber = parseInt(localStorage.getItem('currentRoundNumber')) || 1;
+        
+        // Parse arrays from localStorage
+        const goals = goalsData ? JSON.parse(goalsData) : [];
+        const concepts = conceptsData ? JSON.parse(conceptsData) : [];
+        
+        // Validate we have the required data
+        if (!schoolName || !courseName || goals.length === 0 || concepts.length === 0) {
+            console.log('Missing onboarding data for question loading:', {
+                school: schoolName || 'MISSING',
+                course: courseName || 'MISSING',
+                goals: goals.length || 0,
+                concepts: concepts.length || 0
+            });
+            // Fallback to URL params or legacy API
+            return await fetchLegacyQuestions();
+        }
+        
+        // Get the concept for the current round (rounds start at 1, array index starts at 0)
+        const conceptIndex = currentRoundNumber - 1;
+        const currentConcept = concepts[conceptIndex];
+        
+        if (!currentConcept) {
+            console.log('No concept found for round:', currentRoundNumber, 'Available concepts:', concepts.length);
+            return await fetchLegacyQuestions();
+        }
+        
+        console.log('Loading questions for:', {
+            school: schoolName,
+            course: courseName,
+            goals: goals,
+            concept: currentConcept,
+            round: currentRoundNumber
+        });
+        
+        // Fetch questions for this concept from all selected goals
+        const allQuestions = [];
+        const questionSet = new Set(); // To avoid duplicates
+        
+        for (const goal of goals) {
+            console.log('Fetching questions for goal:', goal, 'concept:', currentConcept);
+            
+            try {
+                // Use the hierarchical API to get questions for this specific concept and goal
+                const response = await window.QuizletApi.getQuestionsByConcept(schoolName, courseName, goal, currentConcept);
+                
+                // Extract questions from the response
+                const questionsFromAPI = response?.content?.questions || [];
+                console.log('Questions API returned:', questionsFromAPI.length, 'questions for goal:', goal, 'concept:', currentConcept);
+                
+                // Process and add unique questions
+                questionsFromAPI.forEach((apiQuestion, index) => {
+                    const questionId = apiQuestion.id || `${goal}-${currentConcept}-${index}`;
+                    if (!questionSet.has(questionId)) {
+                        questionSet.add(questionId);
+                        
+                        // Map API question format to internal format
+                        const mappedQuestion = mapApiQuestionToInternal(apiQuestion, allQuestions.length + 1);
+                        allQuestions.push(mappedQuestion);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error fetching questions for goal:', goal, 'concept:', currentConcept, error);
+                // Continue with other goals even if one fails
+            }
+        }
+        
+        if (allQuestions.length > 0) {
+            // Replace contents of the existing questions array
+            questions.length = 0;
+            // Limit to a manageable number for the study session
+            const limited = allQuestions.slice(0, 50);
+            limited.forEach(q => questions.push(q));
+            
+            // Mark that we're using API-backed content
+            window.USING_API_CONTENT = true;
+            console.log(`Loaded ${limited.length} questions from API for concept: ${currentConcept}`);
+            
+            // Update header title now that we have the correct concept loaded
+            updateHeaderTitle();
+        } else {
+            console.log('No questions found for concept:', currentConcept, '- falling back to legacy questions');
+            return await fetchLegacyQuestions();
+        }
+        
+    } catch (err) {
+        console.error('Error loading questions from hierarchical API:', err);
+        // Fallback to legacy API
+        return await fetchLegacyQuestions();
+    }
+}
+
+// Fallback to legacy API method
+async function fetchLegacyQuestions() {
     // Skip API calls if they're likely to fail (development/local environment)
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
         console.log('Skipping API calls in local environment - using static questions');
@@ -667,11 +768,88 @@ async function fetchAndLoadQuestionsFromApi() {
             limited.forEach(q => questions.push(q));
             // Mark that we're using API-backed content for this session
             window.USING_API_CONTENT = true;
-            console.log(`Loaded ${limited.length} questions from API`);
+            console.log(`Loaded ${limited.length} questions from legacy API`);
+            
+            // Update header title to ensure it reflects the correct concept
+            updateHeaderTitle();
         }
     } catch (err) {
-        // Silently handle API errors in development
         console.log('API unavailable - using static questions');
+    }
+}
+
+// Map API question format to internal question format
+function mapApiQuestionToInternal(apiQuestion, id) {
+    const questionType = apiQuestion.type || apiQuestion.difficulty || 'multiple_choice';
+    const mappedFormat = mapQuestionTypeToFormat(questionType);
+    
+    console.log('🔍 DEBUG: Mapping API question:', {
+        originalType: questionType,
+        mappedFormat: mappedFormat,
+        hasOptions: !!(apiQuestion.options && apiQuestion.options.length > 0),
+        question: apiQuestion.question?.substring(0, 50) + '...'
+    });
+    
+    return {
+        id: id,
+        question: apiQuestion.question || 'Question not available',
+        correctAnswer: getCorrectAnswerFromAPI(apiQuestion),
+        options: (mappedFormat === 'multiple_choice' && apiQuestion.options) ? apiQuestion.options : undefined,
+        difficulty: apiQuestion.difficulty || apiQuestion.type || "multiple_choice",
+        attempts: 0,
+        correct: 0,
+        currentFormat: mappedFormat,
+        explanation: apiQuestion.explanation || 'No explanation available',
+        conceptImage: "../images/thumbnails.png", // Default image
+        formula: apiQuestion.formula || null,
+        taxonomy: apiQuestion.taxonomy || 'recall',
+        source: 'api'
+    };
+}
+
+// Helper function to get correct answer from API question
+function getCorrectAnswerFromAPI(apiQuestion) {
+    const questionType = String(apiQuestion.type || '').toLowerCase();
+    
+    if (questionType === 'multiple_choice') {
+        const correctIndex = apiQuestion.correctAnswer;
+        if (typeof correctIndex === 'number' && apiQuestion.options && apiQuestion.options[correctIndex]) {
+            return apiQuestion.options[correctIndex];
+        }
+    }
+    
+    // For written/text questions, try different possible fields
+    return apiQuestion.correctAnswer || 
+           apiQuestion.answer || 
+           apiQuestion.expectedAnswer || 
+           apiQuestion.solution ||
+           'Answer not available';
+}
+
+// Helper function to map API question type to internal format
+function mapQuestionTypeToFormat(type) {
+    const lowerType = String(type).toLowerCase();
+    
+    switch (lowerType) {
+        case 'multiple_choice':
+        case 'multiple choice':
+        case 'mcq':
+            return 'multiple_choice';
+        case 'written':
+        case 'short_answer':
+        case 'text':
+        case 'essay':
+        case 'fill_in_blank':
+            return 'text';
+        case 'flashcard':
+        case 'flash_card':
+            return 'flashcard';
+        case 'matching':
+            return 'matching';
+        default:
+            // Default to text for unknown types to avoid empty MCQ issues
+            console.log('🔍 DEBUG: Unknown question type defaulting to text:', type);
+            return 'text';
     }
 }
 
@@ -718,14 +896,30 @@ function updateHeaderTitle() {
     }
 }
 
-// Get current concept from question or round theme as fallback
+// Get current concept from onboarding data based on current round
 function getCurrentConcept() {
-    // Try to get concept from current question first
+    // First try to get concept from onboarding data based on current round
+    try {
+        const conceptsData = localStorage.getItem('onboarding_concepts');
+        if (conceptsData) {
+            const concepts = JSON.parse(conceptsData);
+            const conceptIndex = currentRoundNumber - 1;
+            const currentConcept = concepts[conceptIndex];
+            if (currentConcept) {
+                console.log('Header concept from onboarding:', currentConcept, 'for round:', currentRoundNumber);
+                return currentConcept;
+            }
+        }
+    } catch (error) {
+        console.error('Error getting concept from onboarding data:', error);
+    }
+    
+    // Try to get concept from current question
     if (currentQuestion && currentQuestion.concept) {
         return currentQuestion.concept;
     }
     
-    // Try to extract concept from question text for biology topics
+    // Try to extract concept from question text for biology topics (legacy fallback)
     if (currentQuestion && currentQuestion.question) {
         const questionText = currentQuestion.question.toLowerCase();
         
@@ -765,7 +959,7 @@ function getCurrentConcept() {
         }
     }
     
-    // Fallback to round theme
+    // Final fallback to round themes for legacy compatibility
     return roundThemes[currentRoundNumber] || "Study Session";
 }
 
@@ -1047,6 +1241,8 @@ function showQuestion() {
     }
     
     // Show the appropriate answer type based on current format
+    console.log('🔍 DEBUG: Showing question with format:', currentQuestion.currentFormat, 'Type:', currentQuestion.difficulty);
+    
     switch (currentQuestion.currentFormat) {
         case 'multiple_choice':
             showMultipleChoice();
@@ -1054,11 +1250,16 @@ function showQuestion() {
         case 'flashcard':
             showFlashcard();
             break;
+        case 'text':
         case 'written':
             showTextInput();
             break;
         case 'matching':
             showMatching();
+            break;
+        default:
+            console.log('🔍 DEBUG: Unknown question format, defaulting to text input:', currentQuestion.currentFormat);
+            showTextInput();
             break;
     }
     
@@ -1984,7 +2185,7 @@ function setupEventListeners() {
     
     // Text input change - show/hide submit button based on content
     textAnswer.addEventListener('input', (e) => {
-        if (currentQuestion && currentQuestion.currentFormat === 'written') {
+        if (currentQuestion && (currentQuestion.currentFormat === 'written' || currentQuestion.currentFormat === 'text')) {
             if (e.target.value.trim().length > 0) {
                 submitBtn.classList.add('show');
             } else {

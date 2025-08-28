@@ -256,117 +256,113 @@
     }
   }
 
-  async function fetchGoalsByCourse(courseId, schoolId){
-    const cacheKey = `${schoolId || 'unknown'}-${courseId || 'unknown'}`;
+  async function fetchGoalsByCourse(courseName, schoolId) {
+    // Use school name from state for the new API
+    const schoolName = state.school;
+    
+    // Validate that we have both school and course
+    if (!schoolName || !courseName) {
+      console.error('Missing required parameters for goals API:', {
+        schoolName: schoolName || 'MISSING',
+        courseName: courseName || 'MISSING'
+      });
+      return []; // Return empty array if missing required params
+    }
+    
+    const cacheKey = `${schoolName}-${courseName}`;
+    
     if (apiCache.goalsByCourse.has(cacheKey)) {
-      console.log('Returning cached goals for:', cacheKey);
       return apiCache.goalsByCourse.get(cacheKey);
     }
     
     try {
-      console.log('Fetching goals for course:', courseId, 'at school:', schoolId);
+      console.log('Fetching goals for course:', courseName, 'at school:', schoolName);
+      console.log('🔍 DEBUG: Original course name being used for goals API:', courseName);
       
-      // Build URL with both course and school parameters
-      const params = new URLSearchParams();
-      if (courseId) params.append('courseId', courseId);
-      if (schoolId) params.append('schoolId', schoolId);
-      params.append('country', 'us');
+      // Use the new hierarchical API
+      const response = await window.QuizletApi.getGoalsBySchoolAndCourse(schoolName, courseName);
       
-      const apiUrl = `https://getgoalsbycourse-p3vlbtsdwa-uc.a.run.app/?${params.toString()}`;
-      console.log('Goals by course API URL:', apiUrl);
+      // Extract goals from the metadata.availableGoals structure
+      const availableGoals = response?.metadata?.availableGoals || [];
+      console.log('Goals API returned:', availableGoals.length, 'goals');
       
-      const res = await fetch(apiUrl);
-      console.log('Goals by course API response status:', res.status);
-      
-      if (!res.ok) {
-        throw new Error(`API returned ${res.status}: ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      console.log('Goals by course API raw response:', data);
-      console.log('Goals by course API response type:', typeof data, 'is array:', Array.isArray(data));
-      
-      // API returns {goals: [...]} not an array directly
-      const goalsArray = data.goals || data;
-      console.log('Goals by course API data received:', goalsArray?.length || 0, 'goals for course', courseId);
-      console.log('Goals array type:', typeof goalsArray, 'is array:', Array.isArray(goalsArray));
-      
-      // Process API response - use whatever data we get
-      const processedGoals = Array.isArray(goalsArray) ? goalsArray.map(goal => ({
-        id: goal.id || goal.goalId || `api-${Math.random().toString(36).substr(2, 9)}`,
-        name: goal.name || goal.title || goal.goal || 'Unnamed Goal',
-        type: goal.type || 'exam',
-        date: goal.date || goal.dueDate || null,
-        description: goal.description || '',
+      // Process API response to match expected format
+      const processedGoals = availableGoals.map(goal => ({
+        id: goal.id || `api-${Math.random().toString(36).substr(2, 9)}`,
+        name: goal.name || 'Unnamed Goal',
+        type: 'exam',
+        hasContent: goal.hasContent !== false,
         source: 'api'
-      })) : [];
+      }));
       
-      // If API returned data, use it; if empty, that's still valid API response
+      // Cache the processed goals
       apiCache.goalsByCourse.set(cacheKey, processedGoals);
-      console.log(`API returned ${processedGoals.length} goals for course ${courseId} at school ${schoolId}`);
       return processedGoals;
+      
     } catch(e) { 
       console.error('Error fetching goals by course:', e);
-      // API failed - return empty array, no static fallbacks
-      console.log('API failed, returning empty goals array');
+      // API failed - return empty array, will show fallback goals
       const emptyGoals = [];
       apiCache.goalsByCourse.set(cacheKey, emptyGoals);
       return emptyGoals;
     }
   }
 
-  async function fetchConceptsByCourse(courseId, schoolId, goals){
-    const cacheKey = `${schoolId || 'unknown'}-${courseId || 'unknown'}-${(goals || []).join(',')}`;
+  async function fetchConceptsByCourse(courseName, schoolId, goals) {
+    // Use school name from state for the new API
+    const schoolName = state.school;
+    
+    // Validate that we have required parameters
+    if (!schoolName || !courseName || !goals || goals.length === 0) {
+      console.error('Missing required parameters for concepts API:', {
+        schoolName: schoolName || 'MISSING',
+        courseName: courseName || 'MISSING',
+        goals: goals || 'MISSING'
+      });
+      return [];
+    }
+    
+    const cacheKey = `${schoolName}-${courseName}-${goals.join(',')}`;
+    
     if (apiCache.conceptsByCourse.has(cacheKey)) {
-      console.log('Returning cached concepts for:', cacheKey);
       return apiCache.conceptsByCourse.get(cacheKey);
     }
     
     try {
-      console.log('Fetching concepts for course:', courseId, 'at school:', schoolId, 'for goals:', goals);
+      // Since concepts are per goal, we need to fetch for each goal and combine
+      const allConcepts = [];
+      const conceptsSet = new Set(); // To avoid duplicates
       
-      // Build URL with course, school, and goals parameters
-      const params = new URLSearchParams();
-      if (courseId) params.append('courseId', courseId);
-      if (schoolId) params.append('schoolId', schoolId);
-      if (goals && goals.length > 0) {
-        goals.forEach(goal => params.append('goals', goal));
+      for (const goal of goals) {
+        // Use the new hierarchical API for each goal
+        const response = await window.QuizletApi.getConceptsByGoal(schoolName, courseName, goal);
+        
+        // Extract concepts from the metadata.availableConcepts structure
+        const availableConcepts = response?.metadata?.availableConcepts || [];
+        
+        // Process and add unique concepts
+        availableConcepts.forEach(concept => {
+          const conceptId = concept.id || concept.name;
+          if (!conceptsSet.has(conceptId)) {
+            conceptsSet.add(conceptId);
+            allConcepts.push({
+              id: concept.id || `api-${Math.random().toString(36).substr(2, 9)}`,
+              name: concept.name || 'Unnamed Concept',
+              description: concept.description || '',
+              source: 'api',
+              goal: goal // Track which goal this concept is from
+            });
+          }
+        });
       }
-      params.append('country', 'us');
       
-      const res = await fetch(`https://getconceptsbycourse-p3vlbtsdwa-uc.a.run.app/?${params.toString()}`);
-      console.log('Concepts by course API response status:', res.status);
+      // Cache the processed concepts
+      apiCache.conceptsByCourse.set(cacheKey, allConcepts);
+      return allConcepts;
       
-      if (!res.ok) {
-        throw new Error(`API returned ${res.status}: ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      console.log('Concepts by course API raw response:', data);
-      console.log('Concepts by course API response type:', typeof data, 'is array:', Array.isArray(data));
-      
-      // API returns {concepts: [...]} not an array directly
-      const conceptsArray = data.concepts || data;
-      console.log('Concepts by course API data received:', conceptsArray?.length || 0, 'concepts for course', courseId);
-      console.log('Concepts array type:', typeof conceptsArray, 'is array:', Array.isArray(conceptsArray));
-      
-      // Process API response - use whatever data we get
-      const processedConcepts = Array.isArray(conceptsArray) ? conceptsArray.map(concept => ({
-        id: concept.id || concept.conceptId || `api-${Math.random().toString(36).substr(2, 9)}`,
-        name: concept.name || concept.title || concept.concept || 'Unnamed Concept',
-        description: concept.description || '',
-        terms: concept.terms || concept.keywords || [],
-        source: 'api'
-      })) : [];
-      
-      // If API returned data, use it; if empty, that's still valid API response
-      apiCache.conceptsByCourse.set(cacheKey, processedConcepts);
-      console.log(`API returned ${processedConcepts.length} concepts for course ${courseId} at school ${schoolId}`);
-      return processedConcepts;
     } catch(e) { 
       console.error('Error fetching concepts by course:', e);
-      // API failed - return empty array, no static fallbacks
-      console.log('API failed, returning empty concepts array');
+      // API failed - return empty array, will show fallback/search interface
       const emptyConcepts = [];
       apiCache.conceptsByCourse.set(cacheKey, emptyConcepts);
       return emptyConcepts;
@@ -516,15 +512,22 @@
         
         // If we have recent courses, use them; otherwise show message to add course
         if (recentCourses.length > 0) {
-          list.innerHTML = recentCourses.map(c => `
-            <div class="course-row" data-course="${c.name || c}">
-              <div class="course-check" aria-hidden="true"></div>
-              <div class="course-text">
-                <div class="course-title">${escapeHtml(c.name || c)}</div>
-                <div class="course-subtitle">${escapeHtml(c.description || 'Course description')}</div>
+          list.innerHTML = recentCourses.map(c => {
+            const originalCourseName = c.originalName || c.name || c; // Prefer originalName for API calls
+            const displayCourseName = c.displayName || normalizeCourseDisplay(originalCourseName); // Normalize for display
+            
+            console.log('🔍 DEBUG: Loading saved course - Original:', originalCourseName, 'Display:', displayCourseName);
+            
+            return `
+              <div class="course-row" data-course="${originalCourseName}" data-course-display="${displayCourseName}">
+                <div class="course-check" aria-hidden="true"></div>
+                <div class="course-text">
+                  <div class="course-title">${escapeHtml(displayCourseName)}</div>
+                  <div class="course-subtitle">${escapeHtml(c.description || 'Course description')}</div>
+                </div>
               </div>
-            </div>
-          `).join('');
+            `;
+          }).join('');
         } else {
           // Show message to add course if no recent courses
           list.innerHTML = `
@@ -540,8 +543,14 @@
         
         // Restore prior selection if any
         if(state.course){
+          // Look for course by original name (data-course attribute)
           const sel = list.querySelector(`[data-course="${CSS.escape(state.course)}"]`);
-          if(sel){ sel.classList.add('selected'); }
+          if(sel){ 
+            sel.classList.add('selected'); 
+            console.log('🔍 DEBUG: Restored course selection:', state.course);
+          } else {
+            console.log('🔍 DEBUG: Could not find saved course to restore:', state.course);
+          }
           const cta = document.getElementById('coursesCta');
           if(cta) cta.classList.toggle('hidden', !state.course);
         }
@@ -611,7 +620,38 @@
         if (cta) cta.classList.add('hidden');
       } else {
         item.classList.add('selected');
-        state.course = item.dataset.course;
+        // Use the original course name for API calls (same pattern as API courses)
+        const originalCourseName = item.getAttribute('data-course');
+        const displayCourseName = item.getAttribute('data-course-display') || originalCourseName;
+        
+        // Find the saved course object to get school information
+        try {
+          const recentCourses = JSON.parse(localStorage.getItem('recent_courses') || '[]');
+          const savedCourse = recentCourses.find(c => 
+            (c.originalName || c.name) === originalCourseName
+          );
+          
+          if (savedCourse) {
+            // Restore ALL the course and school state
+            state.course = originalCourseName; // Store original name for API calls
+            state.school = savedCourse.school; // Restore school name for API calls
+            state.schoolId = savedCourse.schoolId; // Restore school ID
+            state.courseDescription = savedCourse.description;
+            
+            console.log('🔍 DEBUG: Selected saved course with school info:', {
+              course: originalCourseName,
+              school: state.school,
+              schoolId: state.schoolId
+            });
+          } else {
+            console.warn('Could not find saved course data for:', originalCourseName);
+            state.course = originalCourseName;
+          }
+        } catch (error) {
+          console.error('Error restoring saved course data:', error);
+          state.course = originalCourseName;
+        }
+        
         if (cta) cta.classList.remove('hidden');
       }
     });
@@ -835,29 +875,29 @@
     }
     
     function getCurrentLocationSilently() {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
           console.log('Location obtained silently:', position);
-          userLocation = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          };
-          
-          // Fetch nearby schools based on user location
-          const nearbySchools = await getNearbySchools(
-            position.coords.latitude, 
-            position.coords.longitude
-          );
-          
-          showLocationSchools(nearbySchools);
-        },
-        (error) => {
+            userLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            };
+            
+            // Fetch nearby schools based on user location
+            const nearbySchools = await getNearbySchools(
+              position.coords.latitude, 
+              position.coords.longitude
+            );
+            
+            showLocationSchools(nearbySchools);
+          },
+          (error) => {
           console.log('Failed to get location silently:', error);
-          showLocationSchools(); // Show fallback schools if location fails
-        },
-        { 
-          timeout: 10000,
-          enableHighAccuracy: false,
+            showLocationSchools(); // Show fallback schools if location fails
+          },
+          { 
+            timeout: 10000,
+            enableHighAccuracy: false,
           maximumAge: 300000 // 5 minutes - use cached location if available
         }
       );
@@ -979,38 +1019,95 @@
       }
     }
     
-    function showPopularCourses(schoolName) {
+    async function showPopularCourses(schoolId, schoolName) {
       const displayName = toTitleCase(schoolName);
+      
+      // Show loading state
       locationSection.innerHTML = `
         <div class="location-header">
-          <img class="location-icon" src="../images/upward-graph.png" alt="Popular" aria-hidden="true" />
-          <span>Popular at ${displayName}</span>
+          <img class="location-icon" src="../images/upward-graph.png" alt="Loading" aria-hidden="true" />
+          <span>Loading courses for ${displayName}...</span>
         </div>
         <div class="location-schools">
-          ${popularCourses.slice(0, 6).map(course => {
-            const normalizedName = normalizeCourseDisplay(course.name);
+          <div class="loading-placeholder">Fetching available courses...</div>
+        </div>
+      `;
+      locationSection.style.display = 'block';
+      courseSuggestions.style.display = 'none';
+      
+      try {
+        // Fetch courses from API using schoolId first, schoolName as fallback
+        const response = await window.QuizletApi.getCoursesBySchool(schoolId, schoolName);
+        
+        if (!response || !response.courses || response.courses.length === 0) {
+          // No courses found, show fallback with hardcoded popular courses
+          showFallbackPopularCourses(displayName);
+          return;
+        }
+        
+        const courses = response.courses;
+        
+        // Determine what to show based on number of courses
+        let coursesToShow = [];
+        let headerText = '';
+        
+        if (courses.length <= 2) {
+          // Show all courses if only 1-2 available
+          coursesToShow = courses;
+          headerText = `Available at ${displayName}`;
+        } else if (courses.length <= 5) {
+          // Show all courses if 3-5 available
+          coursesToShow = courses;
+          headerText = `Courses at ${displayName}`;
+        } else {
+          // Show first 6 courses if more than 5 available (popular ones)
+          coursesToShow = courses.slice(0, 6);
+          headerText = `Popular at ${displayName}`;
+        }
+        
+        // Render the courses
+        locationSection.innerHTML = `
+          <div class="location-header">
+            <img class="location-icon" src="../images/upward-graph.png" alt="Courses" aria-hidden="true" />
+            <span>${headerText}</span>
+          </div>
+          <div class="location-schools">
+            ${coursesToShow.map(course => {
+              // Handle API course structure: { id, name, subject }
+              const courseName = course.name || 'Unknown Course';
+              const courseDescription = course.subject || 'Course subject';
+              const normalizedName = normalizeCourseDisplay(courseName);
+              
             return `
-              <div class="location-school-item" data-course="${normalizedName}">
+              <div class="location-school-item" data-course="${courseName}" data-course-display="${normalizedName}">
                 <div class="location-school-name">${normalizedName}</div>
-                <div class="location-school-address">${course.description}</div>
+                  <div class="location-school-address">${courseDescription}</div>
               </div>
             `;
           }).join('')}
         </div>
       `;
+        
+      } catch (error) {
+        console.error('Error fetching courses for school:', error);
+        // Show fallback with hardcoded popular courses
+        showFallbackPopularCourses(displayName);
+        return;
+      }
       
       // Show the location section and hide course suggestions
       locationSection.style.display = 'block';
       courseSuggestions.style.display = 'none';
       
-      // Add click handlers for popular courses
+      // Add click handlers for courses
       locationSection.querySelectorAll('.location-school-item').forEach(item => {
         item.addEventListener('click', () => {
-          const courseName = item.getAttribute('data-course');
+          const originalCourseName = item.getAttribute('data-course'); // Original API name for API calls
+          const displayCourseName = item.getAttribute('data-course-display') || originalCourseName; // Display name for UI
           const courseDescription = item.querySelector('.location-school-address').textContent;
           
-          newCourseName.value = courseName;
-          state.course = courseName;
+          newCourseName.value = displayCourseName; // Show display name to user
+          state.course = originalCourseName; // Store original name for API calls
           state.courseDescription = courseDescription; // Store the description
           state.courseSelected = true; // Mark course as selected from results
           
@@ -1026,6 +1123,28 @@
       });
     }
     
+    function showFallbackPopularCourses(displayName) {
+      // Fallback to hardcoded popular courses when API fails
+      locationSection.innerHTML = `
+        <div class="location-header">
+          <img class="location-icon" src="../images/upward-graph.png" alt="Popular" aria-hidden="true" />
+          <span>Popular at ${displayName}</span>
+        </div>
+        <div class="location-schools">
+          ${popularCourses.slice(0, 6).map(course => {
+            const originalName = course.name;
+            const normalizedName = normalizeCourseDisplay(course.name);
+            return `
+              <div class="location-school-item" data-course="${originalName}" data-course-display="${normalizedName}">
+                <div class="location-school-name">${normalizedName}</div>
+                <div class="location-school-address">${course.description}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+    
     function showCourseResults(courses) {
       if (!courses || courses.length === 0) {
         showNoResults(courseSuggestions, 'No courses found');
@@ -1037,11 +1156,12 @@
       courseSuggestions.innerHTML = `
         <div class="location-schools">
           ${courses.slice(0, 8).map(course => {
-            const courseName = normalizeCourseDisplay(course.displayName || course.name || '');
+            const originalCourseName = course.displayName || course.name || '';
+            const normalizedCourseName = normalizeCourseDisplay(originalCourseName);
             const courseDescription = course.description || course.subject || 'Course description';
             return `
-              <div class="location-school-item" data-course="${courseName}">
-                <div class="location-school-name">${courseName}</div>
+              <div class="location-school-item" data-course="${originalCourseName}" data-course-display="${normalizedCourseName}">
+                <div class="location-school-name">${normalizedCourseName}</div>
                 <div class="location-school-address">${courseDescription}</div>
               </div>
             `;
@@ -1056,11 +1176,12 @@
       // Add click handlers for course results
       courseSuggestions.querySelectorAll('.location-school-item').forEach(item => {
         item.addEventListener('click', () => {
-          const courseName = item.getAttribute('data-course');
+          const originalCourseName = item.getAttribute('data-course'); // Original API name for API calls
+          const displayCourseName = item.getAttribute('data-course-display') || originalCourseName; // Display name for UI
           const courseDescription = item.querySelector('.location-school-address').textContent;
           
-          newCourseName.value = courseName;
-          state.course = courseName;
+          newCourseName.value = displayCourseName; // Show display name to user
+          state.course = originalCourseName; // Store original name for API calls
           state.courseDescription = courseDescription; // Store the description
           state.courseSelected = true; // Mark course as selected from results
           
@@ -1096,7 +1217,7 @@
       // 4. After transition out completes, replace content and transition in
       setTimeout(() => {
         // Replace location section with popular courses
-        showPopularCourses(titleCaseSchoolName);
+        showPopularCourses(schoolId, titleCaseSchoolName);
         
         // Start transition in for location section (now with popular courses)
         locationSection.classList.add('transitioning-in');
@@ -1429,7 +1550,7 @@
         
         // If course input is empty and school is selected, show popular courses
         if (!query && state.schoolId) {
-          showPopularCourses(state.school);
+          showPopularCourses(state.schoolId, state.school);
           return;
         }
         
@@ -1461,7 +1582,7 @@
           // Hide course suggestions if no query
           courseSuggestions.style.display = 'none';
           if (state.schoolId) {
-            showPopularCourses(state.school);
+            showPopularCourses(state.schoolId, state.school);
           }
         }
       } catch (e) {
@@ -1482,7 +1603,7 @@
       
       // Show popular courses if school is selected
       if (state.schoolId) {
-        showPopularCourses(state.school);
+        showPopularCourses(state.schoolId, state.school);
       }
       
       updateAddCourseButton();
@@ -1504,7 +1625,7 @@
     newCourseName.addEventListener('focus', ()=>{
       // Show popular courses when focusing on empty input with selected school
       if (!newCourseName.value.trim() && state.schoolId) {
-        showPopularCourses(state.school);
+        showPopularCourses(state.schoolId, state.school);
       } else if (newCourseName.value.trim()) {
         updateCourse();
       }
@@ -1567,14 +1688,18 @@
             // Get existing recent courses from localStorage
             const recentCourses = JSON.parse(localStorage.getItem('recent_courses') || '[]');
             
-            // Create course object
+            // Create course object with both original and display names
             const courseObj = {
-              name: state.course,
+              name: state.course, // Keep for backward compatibility
+              originalName: state.course, // Original API name for API calls
+              displayName: normalizeCourseDisplay(state.course), // Display name for UI
               description: state.courseDescription || 'Course description',
               school: state.school,
               schoolId: state.schoolId,
               addedAt: Date.now()
             };
+            
+            console.log('🔍 DEBUG: Saving course with formats - Original:', state.course, 'Display:', courseObj.displayName);
             
             // Remove if already exists (to avoid duplicates)
             const filteredCourses = recentCourses.filter(c => 
@@ -1644,30 +1769,14 @@
 
     try {
       // Fetch goals from API using course and school info
-      const courseId = state.course || courseCode;
-      const schoolId = state.schoolId;
-      
-      console.log('Step 2: Fetching goals/exams from API with params:', {
-        courseId, 
-        schoolId, 
-        originalCourse: state.course,
-        extractedCode: courseCode
-      });
-      
-      const apiGoals = await fetchGoalsByCourse(courseId, schoolId);
-      
-      console.log('Step 2: API returned goals:', apiGoals);
-      console.log('Step 2: Number of goals from API:', apiGoals.length);
+      const apiGoals = await fetchGoalsByCourse(state.course, state.schoolId);
       
       // Keep full goal objects for badge logic, but extract names for compatibility
       let goalObjects = apiGoals;
       let goals = apiGoals.map(goal => goal.name);
       
-      console.log('Step 2: Processed goal names:', goals);
-      
       // If no goals returned from API, show common exam suggestions as fallback
       if (goals.length === 0) {
-        console.log('Step 2: No goals returned from API, showing common exam suggestions');
         
         // Use default goals as suggestions since API returned no data
         goalObjects = defaultGoals.map((goal, index) => ({
@@ -1689,7 +1798,6 @@
           `</div>`+
           `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
       } else {
-        console.log('Step 2: Successfully loaded', goals.length, 'goals from API, rendering list');
         // Show regular goal list with API data
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
@@ -1791,8 +1899,7 @@
       document.getElementById('goalsContinue').addEventListener('click', next);
       
     } catch (error) {
-      console.error('Step 2: Error loading goals from API:', error);
-      console.log('Step 2: API failed, showing manual goal entry only');
+      console.error('Error loading goals from API:', error);
       
       // Don't use static fallbacks - just show error state and allow manual addition
       flowContent.innerHTML = ''+
@@ -1892,10 +1999,8 @@
 
     try {
       // Fetch concepts from API using course, school, and goals info
-      const courseId = state.course || courseCode;
-      const schoolId = state.schoolId;
       const goals = state.goals || [];
-      const apiConcepts = await fetchConceptsByCourse(courseId, schoolId, goals);
+      const apiConcepts = await fetchConceptsByCourse(state.course, state.schoolId, goals);
       
       // Keep full concept objects for badge logic, but extract names for compatibility
       const conceptObjects = apiConcepts;
@@ -1903,22 +2008,22 @@
       
       // If no concepts returned from API, show search and allow manual addition
       if (concepts.length === 0) {
-        flowContent.innerHTML = ''+
-          `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
-          `<div class="input-field" id="conceptSearchField">`+
-          `  <input id="conceptSearch" class="text-input" placeholder="Search for concepts..." aria-label="Search for concepts" autocomplete="off" />`+
-          `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
-          `    <img src="../images/plus-circled.png" alt="Add" />`+
-          `  </button>`+
-          `</div>`+
+      flowContent.innerHTML = ''+
+        `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
+        `<div class="input-field" id="conceptSearchField">`+
+        `  <input id="conceptSearch" class="text-input" placeholder="Search for concepts..." aria-label="Search for concepts" autocomplete="off" />`+
+        `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
+        `    <img src="../images/plus-circled.png" alt="Add" />`+
+        `  </button>`+
+        `</div>`+
           `<div id="conceptSearchResults" class="location-section" style="display: none; margin-top: 16px;"></div>`+
           `<div class="course-list-card" id="selectedConceptsList" style="display: none; margin-top: 32px;"></div>`+
-          `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
+        `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
         
         // Add search functionality for concepts
-        const conceptSearch = document.getElementById('conceptSearch');
+      const conceptSearch = document.getElementById('conceptSearch');
         const conceptSearchResults = document.getElementById('conceptSearchResults');
-        const addConceptBtn = document.getElementById('addConceptBtn');
+      const addConceptBtn = document.getElementById('addConceptBtn');
         const selectedConceptsList = document.getElementById('selectedConceptsList');
         
         // Keep track of all available concepts and selected concepts separately
@@ -1937,8 +2042,8 @@
           const allSelected = state.concepts.length === availableConcepts.length && availableConcepts.length > 0;
           const allRow = availableConcepts.length >= 2 ? `
             <div class="course-row ${allSelected ? 'selected' : ''}" data-select-all="1">
-              <div class="course-check" aria-hidden="true"></div>
-              <div class="course-text"><div class="course-title">All</div></div>
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
             </div>
           ` : '';
           
@@ -1953,16 +2058,16 @@
                 </div>
               </div>
             `;
-          }).join('');
-          
+        }).join('');
+        
           selectedConceptsList.innerHTML = allRow + conceptRows;
         }
         
         // Function to update continue button state
         function updateContinueButton() {
           const conceptsCta = document.getElementById('conceptsContinue').parentElement;
-          const disabled = state.concepts.length === 0;
-          document.getElementById('conceptsContinue').disabled = disabled;
+        const disabled = state.concepts.length === 0;
+        document.getElementById('conceptsContinue').disabled = disabled;
           conceptsCta.classList.toggle('hidden', disabled);
         }
         
@@ -1985,7 +2090,7 @@
             // Clear search and hide results
             conceptSearch.value = '';
             conceptSearchResults.style.display = 'none';
-            addConceptBtn.style.display = 'none';
+          addConceptBtn.style.display = 'none';
             
             // Provide feedback (optional)
             console.log('Added concept:', trimmed);
@@ -1999,7 +2104,7 @@
             // Toggle all: if everything is selected, clear; otherwise select all
             if (state.concepts.length === availableConcepts.length) {
               state.concepts = [];
-            } else {
+        } else {
               state.concepts = availableConcepts.slice();
             }
             renderSelectedConcepts();
@@ -2104,11 +2209,11 @@
           const query = conceptSearch.value.trim();
           if (query) {
             addConcept(query);
-          }
-        });
-        
-        // Allow adding concept by pressing Enter
-        conceptSearch.addEventListener('keydown', (e) => {
+        }
+      });
+      
+      // Allow adding concept by pressing Enter
+      conceptSearch.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             const query = conceptSearch.value.trim();
             if (query && addConceptBtn.style.display !== 'none') {
@@ -2120,9 +2225,15 @@
         document.getElementById('conceptsContinue').addEventListener('click', next);
         
       } else {
-        // Show regular concept list with API data
+        // Show concept list with search input at the top and API data below
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
+          `<div class="input-field" id="conceptSearchField">`+
+          `  <input id="conceptSearch" class="text-input" placeholder="Search concepts..." aria-label="Search concepts" autocomplete="off" />`+
+          `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
+          `    <img src="../images/plus-circled.png" alt="Add" />`+
+          `  </button>`+
+          `</div>`+
           `<div class="course-list-card" id="conceptList"></div>`+
           `<div class="course-list-card" id="addConceptCard">`+
           `  <div class="course-row" id="addConceptRow">`+
@@ -2175,7 +2286,67 @@
         document.getElementById('conceptsContinue').disabled = disabled;
         cta.classList.toggle('hidden', disabled);
       }
-      renderList();
+      // Set up filtering function that will be used by search and click handlers
+      let filteredConcepts = [...concepts];
+      let filteredConceptObjects = [...conceptObjects];
+      let filterAndRenderConcepts;
+      
+      // Define the filtering function
+      filterAndRenderConcepts = function() {
+        const conceptSearch = document.getElementById('conceptSearch');
+        const query = conceptSearch ? conceptSearch.value.trim().toLowerCase() : '';
+        
+        if (!query) {
+          // No search query - show all concepts
+          filteredConcepts = [...concepts];
+          filteredConceptObjects = [...conceptObjects];
+        } else {
+          // Filter concepts based on search query
+          filteredConcepts = [];
+          filteredConceptObjects = [];
+          concepts.forEach((concept, index) => {
+            if (concept.toLowerCase().includes(query)) {
+              filteredConcepts.push(concept);
+              filteredConceptObjects.push(conceptObjects[index]);
+            }
+          });
+        }
+        
+        // Re-render with filtered results
+        const allSelected = state.concepts.length === filteredConcepts.length && filteredConcepts.length > 0;
+        const allRow = filteredConcepts.length >= 2 ? `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
+        </div>` : '';
+        
+        const items = filteredConcepts.map((c, index) => {
+          const concept = filteredConceptObjects[index];
+          return rowHtml(c, `data-concept="${c}"`, concept.id);
+        }).join('');
+        
+        list.innerHTML = allRow + items;
+        
+        // Add badges after DOM is updated
+        filteredConceptObjects.forEach((concept, index) => {
+          const titleElement = document.getElementById(`concept-title-${concept.id}`);
+          if (titleElement && concept.source !== 'api') {
+            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
+            if (concept.source === 'static-error') {
+              const badge = createStaticBadge();
+              badge.textContent = 'STATIC';
+              titleElement.appendChild(badge);
+            } else if (concept.source === 'static') {
+              titleElement.appendChild(createStaticBadge());
+            }
+          }
+        });
+        
+        // Update continue button
+        const cta = document.getElementById('conceptsContinue').parentElement;
+        const disabled = state.concepts.length === 0;
+        document.getElementById('conceptsContinue').disabled = disabled;
+        cta.classList.toggle('hidden', disabled);
+      };
 
       list.addEventListener('click', (e)=>{
         const all = e.target.closest('[data-select-all]');
@@ -2185,20 +2356,30 @@
           } else {
             state.concepts = concepts.slice();
           }
-          renderList();
+          // Re-render using the appropriate function
+          if (document.getElementById('conceptSearch')) {
+            filterAndRenderConcepts();
+          } else {
+            renderList();
+          }
           return;
         }
         const item = e.target.closest('.course-row');
         if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
         const i = state.concepts.indexOf(c);
         if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
-        renderList();
+        // Re-render using the appropriate function
+        if (document.getElementById('conceptSearch')) {
+          filterAndRenderConcepts();
+        } else {
+          renderList();
+        }
       });
-
+      
       document.getElementById('addConceptRow').addEventListener('click', ()=>{
         const name = prompt('Concept name');
         if(name){ 
-          const trimmed = name.trim(); 
+          const trimmed = name.trim();
           if(trimmed && !concepts.includes(trimmed)){ 
             concepts.push(trimmed);
             // Also add to conceptObjects for consistency
@@ -2211,10 +2392,28 @@
             });
           }
         }
-        renderList();
+        // Re-render using the appropriate function
+        if (document.getElementById('conceptSearch')) {
+          filterAndRenderConcepts();
+        } else {
+          renderList();
+        }
       });
 
       document.getElementById('conceptsContinue').addEventListener('click', next);
+      
+      // Add search functionality if search input exists
+      const conceptSearch = document.getElementById('conceptSearch');
+      if (conceptSearch) {
+        // Add search event listener
+        conceptSearch.addEventListener('input', filterAndRenderConcepts);
+        
+        // Initial render with all concepts
+        filterAndRenderConcepts();
+      } else {
+        // No search input, use the original renderList function
+        renderList();
+      }
       
     } catch (error) {
       console.error('Error loading concepts:', error);
@@ -2253,8 +2452,8 @@
         const allSelected = state.concepts.length === availableConcepts.length && availableConcepts.length > 0;
         const allRow = availableConcepts.length >= 2 ? `
           <div class="course-row ${allSelected ? 'selected' : ''}" data-select-all="1">
-            <div class="course-check" aria-hidden="true"></div>
-            <div class="course-text"><div class="course-title">All</div></div>
+          <div class="course-check" aria-hidden="true"></div>
+          <div class="course-text"><div class="course-title">All</div></div>
           </div>
         ` : '';
         
@@ -2303,7 +2502,7 @@
           conceptSearchResults.style.display = 'none';
           addConceptBtn.style.display = 'none';
         }
-      }
+        }
       
       // Add single click handler for concept selection (outside render function to avoid duplicates)
       selectedConceptsList.addEventListener('click', (e) => {
@@ -2375,7 +2574,7 @@
     }
   }
 
-  // Step 4: Knowledge state (slider)
+  // Step 4: Knowledge state (slider)  
   function renderKnowledge(){
     const sliderOptions = [
       'Not at all, start from scratch',
@@ -2405,7 +2604,7 @@
       `  <button class="primary-btn" id="knowledgeContinue">Continue</button>`+
       `  <button class="diagnostic-btn" id="diagnosticBtn">I don't know, help me diagnose</button>`+
       `</div>`;
-    
+
     const slider = document.getElementById('knowledgeSlider');
     const selectedText = document.getElementById('knowledgeSelectedText');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
@@ -2441,7 +2640,7 @@
         diagnosticBtn.classList.remove('selected');
       }
     }
-    
+
     let isDragging = false;
     let lastSnappedValue = 1; // Start with middle position
     
@@ -2482,6 +2681,31 @@
       }
     });
     
+    // Handle final snap when user releases
+    slider.addEventListener('change', (e) => {
+      isDragging = false;
+      const snappedValue = snapToNearestPosition(e.target.value);
+      e.target.value = snappedValue; // Snap slider position visually
+      lastSnappedValue = snappedValue;
+      updateSliderSelection(snappedValue);
+      updateGradientFill(snappedValue); // Update gradient fill to final position
+    });
+    
+    // Handle diagnostic button
+    diagnosticBtn.addEventListener('click', () => {
+      state.knowledge = "I don't know, help me diagnose";
+      selectedText.textContent = "I don't know, help me diagnose";
+      selectedText.classList.add('selected');
+      diagnosticBtn.classList.add('selected');
+      // Reset slider to middle position
+      slider.value = 1;
+      updateGradientFill(1);
+      // Automatically advance to next step
+      next();
+    });
+    
+<<<<<<< ours
+=======
     // Handle final snap when user releases
     slider.addEventListener('change', (e) => {
       isDragging = false;
@@ -2626,7 +2850,7 @@
     if (isMobile) {
       console.log('Mobile detected, using direct date input approach');
       replaceBtnWithDateInput();
-    } else {
+      } else {
       // Desktop: Click handler to open native date picker
       datePickerBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2796,7 +3020,7 @@
            <div class="loading-text">${loadingText}</div>
          </div>
        </div>`;
-
+    
 
 
     // Persist for bottom sheet
@@ -2806,6 +3030,7 @@
       localStorage.setItem('onboarding_sheet_open','true');
       localStorage.setItem('onboarding_knowledge_pill', pill);
       localStorage.setItem('onboarding_knowledge_headline', headline);
+      if(state.school) localStorage.setItem('onboarding_school', state.school);
       if(state.course) localStorage.setItem('onboarding_course', state.course);
       if(state.goals && state.goals.length>0) localStorage.setItem('onboarding_goals', JSON.stringify(state.goals));
       if(state.concepts && state.concepts.length>0) localStorage.setItem('onboarding_concepts', JSON.stringify(state.concepts));
@@ -2917,8 +3142,8 @@
   window.testStep2API = function() {
     console.log('Testing Step 2 API call with current state...');
     console.log('Current state:', { 
-      course: state.course, 
-      schoolId: state.schoolId,
+        course: state.course,
+        schoolId: state.schoolId,
       school: state.school 
     });
     
@@ -3132,7 +3357,7 @@
   window.forceReloadStep2 = function() {
     if (stepIndex === 2) {
       console.log('Forcing reload of step 2...');
-      render();
+    render();
     } else {
       console.log('Navigate to step 2 first, then call this function');
     }
