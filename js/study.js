@@ -1378,19 +1378,19 @@ function generateMatchingItems() {
     matchingItems = [];
     
     matchingQuestions.forEach((question, questionIndex) => {
-        // Add term (question)
+        // Add term (question) - truncated for matching
         matchingItems.push({
             id: `term-${questionIndex}`,
-            text: question.question,
+            text: truncateTextForMatching(question.question),
             type: 'term',
             pairId: `def-${questionIndex}`,
             questionIndex: questionIndex
         });
         
-        // Add definition (answer)
+        // Add definition (answer) - truncated for matching
         matchingItems.push({
             id: `def-${questionIndex}`,
-            text: question.correctAnswer,
+            text: truncateTextForMatching(question.correctAnswer),
             type: 'definition', 
             pairId: `term-${questionIndex}`,
             questionIndex: questionIndex
@@ -1399,6 +1399,32 @@ function generateMatchingItems() {
     
     // Shuffle all items for random positioning
     matchingItems.sort(() => 0.5 - Math.random());
+}
+
+// Helper function to truncate and optimize text for matching interface
+function truncateTextForMatching(text) {
+    if (!text) return '';
+    
+    // Remove common question words and simplify
+    let simplified = text
+        .replace(/^(What is|Which|What|Where|When|How|Why)\s+/i, '')
+        .replace(/^(the function of|the purpose of|responsible for)\s+/i, '')
+        .replace(/\s+(in the cell|of the cell|in cells)\s*$/i, '')
+        .replace(/\?$/, '')
+        .trim();
+    
+    // Truncate if still too long
+    if (simplified.length > 45) {
+        // Try to break at a natural point (comma, space after preposition)
+        const breakPoint = simplified.lastIndexOf(' ', 45);
+        if (breakPoint > 20) {
+            simplified = simplified.substring(0, breakPoint) + '...';
+        } else {
+            simplified = simplified.substring(0, 42) + '...';
+        }
+    }
+    
+    return simplified;
 }
 
 // Render all matching items in a single grid

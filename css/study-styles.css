@@ -727,23 +727,23 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 12px;
+    gap: 10px;
     width: 100%;
     height: 100%;
     flex: 1;
+    max-height: 60vh; /* Limit height to prevent items from being too tall */
 }
 
 .matching-item {
     background: var(--sys-surface-base);
     border: 2px solid var(--color-gray-300);
-    border-radius: 24px;
-    padding: 6px 8px;
+    border-radius: 20px;
+    padding: 8px 10px;
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-three);
+    font-size: 14px; /* Smaller font size for better fit */
     font-style: normal;
-    font-weight: var(--typography-fontWeight-subheading-three);
-    line-height: var(--typography-lineHeight-subheading-three);
-    letter-spacing: var(--typography-letterSpacing-subheading-three);
+    font-weight: 600;
+    line-height: 1.3; /* Tighter line height */
     color: var(--sys-text-primary);
     cursor: pointer;
     transition: all 0.15s ease-out;
@@ -755,12 +755,15 @@ body {
     position: relative;
     user-select: none;
     touch-action: manipulation; /* Disable double-tap zoom */
-    /* Text overflow handling */
+    /* Improved text handling */
     overflow: hidden;
     word-wrap: break-word;
+    word-break: break-word;
     hyphens: auto;
     /* Remove any default focus/active states */
     outline: none;
+    /* Minimum height to maintain consistency */
+    min-height: 76px;
 }
 
 /* Stack badges below text in matching items */
@@ -860,6 +863,19 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 375px) {
+    /* Smaller font for very small screens */
+    .matching-item {
+        font-size: 12px;
+        padding: 6px 8px;
+        min-height: 70px;
+    }
+    
+    .matching-grid {
+        gap: 8px;
+    }
+}
+
 @media (min-width: 768px) {
     .app-container {
         max-width: 520px;
@@ -877,6 +893,12 @@ body {
     
     .question-text {
         font-size: 28px;
+    }
+    
+    /* Larger font for larger screens */
+    .matching-item {
+        font-size: 15px;
+        min-height: 80px;
     }
 }
 
