@@ -749,6 +749,7 @@
     // State to track if we've requested location yet
     let locationRequested = false;
     let userLocation = null;
+    let cachedPermissionState = null;
     
     // Function to calculate distance between two coordinates in miles
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -835,12 +836,12 @@
     
     async function checkAndRequestLocation() {
       if (locationRequested) return;
-      locationRequested = true;
       
       // Check if geolocation is supported
       if (!('geolocation' in navigator)) {
         console.log('Geolocation not supported, showing fallback schools');
         showLocationSchools();
+        locationRequested = true;
         return;
       }
       
@@ -849,27 +850,33 @@
         try {
           const permission = await navigator.permissions.query({ name: 'geolocation' });
           console.log('Current geolocation permission status:', permission.state);
+          cachedPermissionState = permission.state;
           
           if (permission.state === 'granted') {
             // Permission already granted - get location without prompting
-            console.log('Location permission already granted, getting position...');
+            console.log('Location permission already granted, getting position silently...');
+            locationRequested = true;
             getCurrentLocationSilently();
           } else if (permission.state === 'denied') {
             // Permission explicitly denied - show fallback immediately
             console.log('Location permission denied, showing fallback schools');
+            locationRequested = true;
             showLocationSchools();
           } else {
             // Permission state is 'prompt' - ask for permission
             console.log('Location permission not yet determined, requesting...');
+            locationRequested = true;
             requestLocationAccess();
           }
         } catch (error) {
           console.log('Permissions API not supported or failed, requesting location directly:', error);
+          locationRequested = true;
           requestLocationAccess();
         }
       } else {
         // Permissions API not supported - request location directly
         console.log('Permissions API not supported, requesting location directly');
+        locationRequested = true;
         requestLocationAccess();
       }
     }
@@ -896,9 +903,9 @@
             showLocationSchools(); // Show fallback schools if location fails
           },
           { 
-            timeout: 10000,
+            timeout: 5000, // Shorter timeout for silent requests
             enableHighAccuracy: false,
-          maximumAge: 300000 // 5 minutes - use cached location if available
+            maximumAge: 600000 // 10 minutes - use cached location if available
         }
       );
     }
@@ -1507,8 +1514,9 @@
           getNearbySchools(userLocation.latitude, userLocation.longitude)
             .then(nearbySchools => showLocationSchools(nearbySchools));
         } else {
-          // Reset location request flag so we can check permission again
+          // Reset location request flag and cached permission state so we can check again
           locationRequested = false;
+          cachedPermissionState = null;
           checkAndRequestLocation();
         }
         
@@ -1821,10 +1829,10 @@
       }
       function renderList(){
         const allSelected = state.goals.length === goals.length && goals.length>0;
-        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+        const allRow = goals.length >= 2 ? `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
           <div class="course-check" aria-hidden="true"></div>
           <div class="course-text"><div class="course-title">All</div></div>
-        </div>`;
+        </div>` : '';
         const items = goals.map((g, index) => {
           const goal = goalObjects[index];
           return rowHtml(g, `data-goal="${g}"`, goal.id);
@@ -2254,10 +2262,10 @@
       }
       function renderList(){
         const allSelected = state.concepts.length === concepts.length && concepts.length>0;
-        const allRow = `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
+        const allRow = concepts.length >= 2 ? `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
           <div class="course-check" aria-hidden="true"></div>
           <div class="course-text"><div class="course-title">All</div></div>
-        </div>`;
+        </div>` : '';
         const items = concepts.map((c, index) => {
           const concept = conceptObjects[index];
           return rowHtml(c, `data-concept="${c}"`, concept.id);
