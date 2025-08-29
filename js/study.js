@@ -1807,9 +1807,13 @@ function showFeedback(isCorrect) {
                 if (btn.dataset.answer === currentQuestion.correctAnswer) {
                     if (isCorrect) {
                         btn.classList.add('correct-selected');
+                        console.log(`✅ Applied correct-selected to button: ${btn.textContent.substring(0, 20)}`);
                     } else {
                         btn.classList.add('correct');
+                        console.log(`✅ Applied correct to button: ${btn.textContent.substring(0, 20)}`);
                     }
+                } else {
+                    console.log(`⏭️ Skipping button (not correct): ${btn.textContent.substring(0, 20)}`);
                 }
                 // Show the incorrect selected answer if user got it wrong
                 if (btn.dataset.answer === selectedAnswer && !isCorrect) {
@@ -2901,6 +2905,78 @@ window.checkButtons = function() {
         explanationBtn: !!explanationBtn,
         continueClasses: continueBtn?.className,
         explanationClasses: explanationBtn?.className
+    });
+};
+
+// Debug function to test MCQ feedback manually
+window.testMCQFeedback = function() {
+    console.log('Testing MCQ feedback...');
+    
+    // Check if we have MCQ buttons
+    const optionBtns = document.querySelectorAll('.option-btn');
+    if (optionBtns.length === 0) {
+        console.log('No MCQ buttons found. Switch to multiple choice question first.');
+        return;
+    }
+    
+    console.log('Current question:', {
+        id: currentQuestion?.id,
+        format: currentQuestion?.currentFormat,
+        correctAnswer: currentQuestion?.correctAnswer,
+        options: currentQuestion?.options
+    });
+    
+    // Check button states
+    optionBtns.forEach((btn, index) => {
+        console.log(`Button ${index}:`, {
+            text: btn.textContent.substring(0, 20) + '...',
+            dataAnswer: btn.dataset.answer,
+            classes: btn.className,
+            isCorrect: btn.dataset.answer === currentQuestion?.correctAnswer
+        });
+    });
+    
+    // Test the feedback function with a wrong answer
+    console.log('Simulating wrong answer feedback...');
+    selectedAnswer = optionBtns[0].dataset.answer; // Pick first option
+    showFeedback(false); // Simulate incorrect answer
+};
+
+// Debug function to manually test button styling
+window.testButtonStyling = function() {
+    const optionBtns = document.querySelectorAll('.option-btn');
+    if (optionBtns.length === 0) {
+        console.log('No MCQ buttons found');
+        return;
+    }
+    
+    console.log('Testing button styling...');
+    
+    // Clear all classes first
+    optionBtns.forEach(btn => {
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+    });
+    
+    // Apply different states to different buttons
+    if (optionBtns[0]) {
+        optionBtns[0].classList.add('correct');
+        console.log('Applied .correct to button 0');
+    }
+    if (optionBtns[1]) {
+        optionBtns[1].classList.add('correct-selected');
+        console.log('Applied .correct-selected to button 1');
+    }
+    if (optionBtns[2]) {
+        optionBtns[2].classList.add('incorrect');
+        console.log('Applied .incorrect to button 2');
+    }
+    
+    // Log final states
+    optionBtns.forEach((btn, index) => {
+        console.log(`Button ${index} final state:`, {
+            classes: btn.className,
+            text: btn.textContent.substring(0, 20) + '...'
+        });
     });
 };
 

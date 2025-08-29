@@ -293,25 +293,29 @@ body {
 }
 
 .option-btn.correct {
-    border: 2px dashed var(--color-mint-600);
-    background: transparent;
-    color: var(--sys-text-primary);
+    border: 2px dashed var(--color-mint-600) !important;
+    background: transparent !important;
+    color: var(--sys-text-primary) !important;
     position: relative;
     border-radius: 12px;
+    /* Debug styling */
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
 }
 
 .option-btn.correct-selected {
-    border: 2px solid var(--color-mint-600);
-    background: transparent;
-    color: var(--sys-text-primary);
+    border: 2px solid var(--color-mint-600) !important;
+    background: transparent !important;
+    color: var(--sys-text-primary) !important;
     position: relative;
     border-radius: 12px;
+    /* Debug styling */
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3) !important;
 }
 
 .option-btn.correct::before,
 .option-btn.correct-selected::before {
     content: "check";
-    font-family: 'Material Icons Round';
+    font-family: 'Material Icons Round', 'Material Symbols Rounded', sans-serif;
     color: var(--color-mint-600);
     font-weight: bold;
     margin-right: 8px;
@@ -321,14 +325,27 @@ body {
     line-height: 1;
     position: relative;
     top: -2px;
+    /* Fallback text if icon font fails */
+    font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Fallback styling when Material Icons don't load */
+.option-btn.correct:not(.icon-loaded)::before,
+.option-btn.correct-selected:not(.icon-loaded)::before {
+    content: "✓";
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: bold;
 }
 
 .option-btn.incorrect {
-    border: 2px solid var(--color-sherbert-300);
-    background: transparent;
-    color: var(--sys-text-primary);
+    border: 2px solid var(--color-sherbert-300) !important;
+    background: transparent !important;
+    color: var(--sys-text-primary) !important;
     position: relative;
     border-radius: 12px;
+    /* Debug styling */
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
 }
 
 .option-btn.shake {
