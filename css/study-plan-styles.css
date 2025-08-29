@@ -657,12 +657,15 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     width: 100%;
+    gap: 16px; /* Ensure 16px spacing between text content and button */
 }
 
 .path-step.diagnostic .step-header > div:first-child {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0; /* Allow text to wrap by preventing flex item from growing beyond container */
+    overflow-wrap: break-word; /* Ensure long words can break if needed */
 }
 
 .path-step.diagnostic .step-title {
@@ -674,14 +677,17 @@ body {
     font-size: 14px;
     color: var(--sys-text-secondary);
     line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Truncate diagnostic concepts with ellipsis */
+/* Allow diagnostic concepts to wrap to multiple lines */
 .step-description.diagnostic-concepts {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    max-width: 280px; /* Increased space for more concept text */
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: none; /* Remove width restriction to allow proper wrapping */
+    flex: 1; /* Take available space but allow button to stay in view */
 }
 
 /* Hide progress bar for completed steps */

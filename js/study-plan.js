@@ -95,11 +95,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize progress ring first
     initializeProgressRing();
     
-    // Initialize header component
-    initializeHeader();
-
-    // Load onboarding data and plan first
+    // Load onboarding data first so we have course and goal info
     loadOnboardingData();
+    
+    // Initialize header component with proper title
+    initializeHeader();
+    
+    // Generate dynamic study plan and load path data
     generateDynamicStudyPlan();
     loadStudyPathData();
 
@@ -167,7 +169,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize header component
 function initializeHeader() {
+    // Generate header title from onboarding data
+    let headerTitle = 'Study Plan'; // Default fallback
+    
+    console.log('Header initialization - onboarding data:', {
+        courseName: studyPathData.courseName,
+        goals: onboardingData.goals
+    });
+    
+    if (studyPathData.courseName) {
+        // Extract course code (everything before " - " if it exists)
+        const courseCode = studyPathData.courseName.includes(' - ') ? 
+            studyPathData.courseName.split(' - ')[0] : studyPathData.courseName;
+        
+        // Get first goal from onboarding data
+        const firstGoal = Array.isArray(onboardingData.goals) && onboardingData.goals.length > 0 ? 
+            onboardingData.goals[0] : '';
+        
+        // Format as "FINC 301, Exam 1"
+        if (firstGoal) {
+            headerTitle = `${courseCode}, ${firstGoal}`;
+        } else {
+            headerTitle = courseCode;
+        }
+        
+        console.log('Generated header title:', headerTitle);
+    }
+    
     appHeader = new AppHeader({
+        title: headerTitle,
         backUrl: '../index.html',
         backButtonIcon: 'close',
         onBackClick: function() {
@@ -897,21 +927,7 @@ function loadOnboardingData() {
 // Generate dynamic study plan based on onboarding selections
 function generateDynamicStudyPlan() {
     try {
-        // Update header title with course code and goal name
-        const headerTitle = document.querySelector('.header-title');
-        if (headerTitle && studyPathData.courseName) {
-            // Extract course code (everything before " - " if it exists)
-            const courseCode = studyPathData.courseName.includes(' - ') ? 
-                studyPathData.courseName.split(' - ')[0] : studyPathData.courseName;
-            
-            // Get first goal from onboarding data
-            const firstGoal = Array.isArray(onboardingData.goals) && onboardingData.goals.length > 0 ? 
-                onboardingData.goals[0] : '';
-            
-            // Format as "BIO 201, Exam 1"
-            const title = [courseCode, firstGoal].filter(Boolean).join(', ');
-            headerTitle.textContent = title || courseCode; // Fallback to course code if no goal
-        }
+        // Header title is now handled in initializeHeader() function
         
         // Calculate total rounds based on concepts plus diagnostic tests
         const conceptCount = studyPathData.concepts.length;
