@@ -2087,7 +2087,7 @@ function nextQuestion() {
             submitBtn.style.cursor = 'pointer';
         }
         if (writtenFeedback) {
-            writtenFeedback.style.display = 'none';
+            writtenFeedback.classList.remove('show'); // Use class-based approach
         }
         
         // Reset flashcard state
@@ -2703,11 +2703,7 @@ function setupExplanationBottomSheetListeners() {
     // Close button handler
     closeExplanationSheetBtn.addEventListener('click', closeExplanationBottomSheet);
     
-    // Done button handler
-    const doneButton = document.getElementById('doneButton');
-    if (doneButton) {
-        doneButton.addEventListener('click', closeExplanationBottomSheet);
-    }
+    // Done button removed - no longer needed
     
     // Question input handler
     const questionInput = document.getElementById('questionInput');
@@ -2775,20 +2771,9 @@ function updateExplanationContent() {
     const formulaText = document.getElementById('formulaText');
     
     if (explanationText && currentQuestion && currentQuestion.explanation) {
+        // Show explanation text section
         explanationText.textContent = currentQuestion.explanation;
-        
-        // Add concept image if available
-        if (explanationImage && currentQuestion.conceptImage) {
-            explanationImage.innerHTML = `<img src="${currentQuestion.conceptImage}" alt="Concept illustration" />`;
-        } else if (explanationImage) {
-            // Default placeholder for concepts without images
-            explanationImage.innerHTML = `
-                <div style="padding: 40px; text-align: center; color: var(--color-gray-500);">
-                    <span class="material-icons-round" style="font-size: 48px; margin-bottom: 8px;">science</span>
-                    <p style="margin: 0; font-size: 14px;">Visual explanation coming soon</p>
-                </div>
-            `;
-        }
+        explanationText.style.display = 'block';
         
         // Add formula if available
         if (formulaSection && formulaText && currentQuestion.formula) {
@@ -2799,10 +2784,8 @@ function updateExplanationContent() {
         }
         
     } else if (explanationText) {
-        explanationText.textContent = 'No detailed explanation is available for this question.';
-        if (explanationImage) {
-            explanationImage.innerHTML = '';
-        }
+        // Hide explanation text section when no content available
+        explanationText.style.display = 'none';
         if (formulaSection) {
             formulaSection.style.display = 'none';
         }

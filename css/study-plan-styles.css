@@ -297,12 +297,17 @@ body {
     fill: none;
     stroke-linecap: round; /* Creates pill shape at start/end */
     stroke-width: 12;
-    /* Smooth animation with proper easing */
-    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* No animation by default - will be enabled by JavaScript when needed */
+    transition: none;
     /* stroke-dasharray and stroke-dashoffset will be set by JavaScript */
     /* Rotate to start from top (12 o'clock) and fill clockwise */
     transform: rotate(-90deg);
     transform-origin: center;
+}
+
+/* Enable animation only when explicitly requested */
+.progress-ring-fill.animate {
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Progress percentage text in center */

@@ -615,8 +615,8 @@ function updateOverviewCardProgress() {
         }
     }
     
-    // Update circular progress
-    updateCircularProgress(overallProgressPercentage, true);
+    // Update circular progress (no animation on page load)
+    updateCircularProgress(overallProgressPercentage, false);
     
     console.log('🔍 DEBUG: [STUDY PLAN] Overview card updated:', {
         progress: overallProgressPercentage,
@@ -734,11 +734,13 @@ function showCircularProgress() {
     
     // Check if user came from question screen for special animation
     const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
-    const shouldAnimate = !fromQuestionScreen; // Don't animate when coming from question screen
+    
+    // Don't animate on initial page load - only animate for user interactions
+    const shouldAnimate = false;
     
     // Don't clear the flag here - let individual progress text animations handle it
     
-    // Animate the progress after a small delay for page load
+    // Update the progress after a small delay for page load (no animation)
     setTimeout(() => {
         updateCircularProgress(overallProgressPercentage, shouldAnimate);
     }, 200);
@@ -760,8 +762,8 @@ function refreshAdaptiveLearningProgress() {
         if (adaptiveProgress !== null) {
             console.log('🔄 Updated adaptive learning progress:', adaptiveProgress);
             
-            // Update circular progress display
-            updateCircularProgress(adaptiveProgress, true);
+            // Update circular progress display (no animation on refresh)
+            updateCircularProgress(adaptiveProgress, false);
             
             // Update progress summary
             const overviewTitle = document.querySelector('.overview-title');
@@ -1270,7 +1272,7 @@ function initializeProgressRing() {
         
         progressRingFill.style.strokeDasharray = `${circumference} ${circumference}`;
         progressRingFill.style.strokeDashoffset = minOffset; // Start with small pill visible
-        progressRingFill.style.transition = 'none'; // No animation for initial setup
+        progressRingFill.classList.remove('animate'); // Ensure no animation on initial setup
     }
 }
 
@@ -1295,26 +1297,12 @@ function updateCircularProgress(percentage, animate = true) {
     progressRingFill.style.strokeDasharray = `${circumference} ${circumference}`;
     
     if (animate) {
-        // Temporarily disable transition to set starting position
-        progressRingFill.style.transition = 'none';
-        
-        // Get current offset or start from full circle (0% progress)
-        const currentOffset = parseFloat(progressRingFill.style.strokeDashoffset) || circumference;
-        progressRingFill.style.strokeDashoffset = currentOffset;
-        
-        // Force a reflow to ensure the transition:none takes effect
-        progressRingFill.offsetHeight;
-        
-        // Re-enable transition
-        progressRingFill.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
-        
-        // Animate to target position
-        setTimeout(() => {
-            progressRingFill.style.strokeDashoffset = targetOffset;
-        }, 10);
+        // Enable animation class and set target position
+        progressRingFill.classList.add('animate');
+        progressRingFill.style.strokeDashoffset = targetOffset;
     } else {
-        // Set directly without animation
-        progressRingFill.style.transition = 'none';
+        // Instant update (no animation)
+        progressRingFill.classList.remove('animate');
         progressRingFill.style.strokeDashoffset = targetOffset;
     }
     
