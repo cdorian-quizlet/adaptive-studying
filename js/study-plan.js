@@ -560,6 +560,72 @@ function updateProgressSummary() {
     showCircularProgress();
 }
 
+// Consolidated function to update overview card progress (replaces conflicting logic)
+function updateOverviewCardProgress() {
+    console.log('🔍 DEBUG: [STUDY PLAN] updateOverviewCardProgress() called');
+    
+    // Ensure progressSummary is available
+    if (!progressSummary) {
+        progressSummary = document.getElementById('progressSummary');
+        console.log('🔍 DEBUG: [STUDY PLAN] Re-initializing progressSummary element:', !!progressSummary);
+    }
+    
+    // Get DOM elements
+    const circularView = document.getElementById('circularProgressView');
+    const overviewTitle = document.querySelector('.overview-title');
+    
+    // First try to use adaptive learning progress
+    const adaptiveProgress = getAdaptiveLearningProgress();
+    let overallProgressPercentage = 0;
+    
+    if (adaptiveProgress !== null) {
+        console.log('🔍 DEBUG: [STUDY PLAN] Using adaptive learning progress:', adaptiveProgress);
+        overallProgressPercentage = adaptiveProgress;
+    } else {
+        // Fall back to traditional progress calculation
+        overallProgressPercentage = calculateOverallPlanProgress();
+        console.log('🔍 DEBUG: [STUDY PLAN] Using traditional progress calculation:', overallProgressPercentage);
+    }
+    
+    // Update overview card based on progress
+    if (overallProgressPercentage === 0) {
+        // 0% state - special styling and content
+        if (circularView) {
+            circularView.classList.add('zero-state');
+        }
+        if (progressSummary) {
+            progressSummary.style.display = 'none';
+        }
+        if (overviewTitle) {
+            const examDate = formatExamDate();
+            overviewTitle.textContent = examDate ? `Let's get ready for your test ${examDate}` : "let's get ready for Exam 1. You got this!";
+        }
+    } else {
+        // Progress state - normal display
+        if (circularView) {
+            circularView.classList.remove('zero-state');
+        }
+        if (progressSummary) {
+            progressSummary.style.display = 'block';
+            progressSummary.textContent = `Study plan ${overallProgressPercentage}% complete`;
+        }
+        if (overviewTitle) {
+            const examDate = formatExamDate();
+            overviewTitle.textContent = examDate ? `Keep up the momentum for your test ${examDate}` : 'Keep up the momentum';
+        }
+    }
+    
+    // Update circular progress
+    updateCircularProgress(overallProgressPercentage, true);
+    
+    console.log('🔍 DEBUG: [STUDY PLAN] Overview card updated:', {
+        progress: overallProgressPercentage,
+        progressSummaryText: progressSummary?.textContent,
+        progressSummaryVisible: progressSummary?.style.display !== 'none',
+        overviewTitleText: overviewTitle?.textContent
+    });
+}
+
 // Helper function to format exam date for headlines
 function formatExamDate() {
     try {
@@ -1153,12 +1219,11 @@ function updateUI() {
     // Check if any rounds need to be auto-completed based on progress
     checkForRoundCompletion();
     
-    // Update daily progress tracking and display
+    // Update daily progress tracking
     updateTodaysProgress();
-    updateProgressSummary();
     
-    // Sync daily progress with home page data
-    syncDailyProgressWithHome();
+    // Update overview card progress (consolidated logic)
+    updateOverviewCardProgress();
     
     // Update path steps
     updatePathSteps();

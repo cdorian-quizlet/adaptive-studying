@@ -1150,9 +1150,8 @@ body {
 
 /* Explanation Button and Bottom Sheet Styles */
 .explanation-button {
-    background: linear-gradient(transparent, transparent) padding-box, 
-                linear-gradient(135deg, var(--color-cherry-200), var(--color-gray-100)) border-box;
-    border: 2px solid transparent;
+    background: var(--color-twilight-100);
+    border: 2px solid var(--color-twilight-200);
     border-radius: var(--radius-full);
     padding: 16px;
     cursor: pointer;
@@ -1234,16 +1233,15 @@ body {
     width: 56px;
     height: 56px;
     flex-shrink: 0;
-    background: linear-gradient(transparent, transparent) padding-box, 
-                linear-gradient(135deg, var(--color-cherry-200), var(--color-gray-100)) border-box;
-    border: 2px solid transparent;
+    background: var(--color-twilight-100);
+    border: 2px solid var(--color-twilight-200);
     box-shadow: var(--shadow-medium);
 }
 
 .button-container .explanation-button:hover,
 .explanation-button:hover {
-    background: linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1)) padding-box, 
-                linear-gradient(135deg, var(--color-cherry-300), var(--color-gray-200)) border-box;
+    background: var(--color-twilight-200);
+    border-color: var(--color-twilight-300);
     transform: scale(1.05);
 }
 
@@ -1252,93 +1250,109 @@ body {
     outline-offset: 2px;
 }
 
-/* Explanation Bottom Sheet Styles */
+/* Explanation Bottom Sheet Styles - Gemini-inspired */
 .explanation-sheet {
     height: 90vh;
     display: flex;
     flex-direction: column;
-    background: var(--sys-surface-base);
+    background: #1a1a1a;
 }
 
 .explanation-sheet .bottom-sheet-header {
-    padding: 16px 20px 12px 20px;
+    padding: 32px 24px 24px 24px;
     border-bottom: none;
     flex-shrink: 0;
-    background: var(--sys-surface-base);
+    background: #1a1a1a;
+    text-align: center;
 }
 
 .explanation-header {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
 }
 
 .ai-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-full);
-    background: var(--color-gray-100);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #4285f4, #34a853, #fbbc05, #ea4335);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-gray-600);
+    color: white;
+    position: relative;
+}
+
+.ai-icon::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .ai-icon .material-icons-round {
-    font-size: 18px;
+    font-size: 24px;
+    z-index: 1;
+    color: #4285f4;
+}
+
+/* Update header title styling */
+.explanation-sheet .bottom-sheet-header h3 {
+    background: linear-gradient(45deg, #4285f4, #1a73e8, #9c27b0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
 }
 
 /* Bottom sheet body styles */
 .explanation-sheet .bottom-sheet-body {
-    padding: 0;
+    padding: 0 24px 24px 24px;
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 0;
-    background: var(--sys-surface-base);
+    background: #1a1a1a;
 }
 
 .explanation-content {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 24px;
     height: 100%;
 }
 
 .explanation-image {
-    width: 100%;
-    max-height: 300px;
-    border-radius: 0;
-    overflow: hidden;
-    background: var(--color-gray-50);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-bottom: 24px;
-}
-
-.explanation-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    display: none; /* Hide image for cleaner Gemini-style interface */
 }
 
 .explanation-text {
     flex: 1;
-    padding: 0 20px;
+    padding: 0;
 }
 
 .explanation-text p {
+    background: #2a2a2a;
+    border-radius: 16px;
+    padding: 20px;
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-body-two);
-    font-weight: var(--typography-fontWeight-body-two);
-    line-height: var(--typography-lineHeight-body-two);
-    color: var(--sys-text-primary);
-    margin: 0 0 24px 0;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #e8eaed;
+    margin: 0;
+    border: 1px solid #3c4043;
 }
 
 .formula-section {
-    margin: 32px 20px 0 20px;
+    margin: 24px 0 0 0;
     padding: 0;
     background: transparent;
     border-radius: 0;
@@ -1347,36 +1361,35 @@ body {
 
 .formula-section h4 {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-two);
-    font-weight: 700;
-    color: var(--sys-text-primary);
-    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #e8eaed;
+    margin: 0 0 12px 0;
     letter-spacing: -0.01em;
 }
 
 .formula {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
-    font-size: var(--typography-size-body-three);
-    color: var(--sys-text-primary);
-    background: var(--color-gray-50);
+    font-size: 14px;
+    color: #e8eaed;
+    background: #2a2a2a;
     padding: 16px 20px;
     border-radius: 12px;
-    border: 1px solid var(--color-gray-200);
+    border: 1px solid #3c4043;
     overflow-x: auto;
     line-height: 1.6;
     font-weight: 500;
 }
 
-/* Fixed bottom bar */
+/* Fixed bottom bar - Gemini style */
 .explanation-bottom-bar {
-    padding: 20px;
-    background: var(--sys-surface-base);
-    border-top: 1px solid var(--color-gray-100);
+    padding: 24px;
+    background: #1a1a1a;
+    border-top: 1px solid #3c4043;
     display: flex;
     gap: 12px;
     align-items: center;
     flex-shrink: 0;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .question-input-container {
@@ -1389,49 +1402,53 @@ body {
 .question-icon {
     position: absolute;
     left: 16px;
-    color: var(--color-twilight-500);
+    color: #9aa0a6;
     font-size: 20px;
     z-index: 1;
 }
 
 .question-input {
     width: 100%;
-    padding: 14px 16px 14px 48px;
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-full);
+    padding: 16px 16px 16px 48px;
+    border: 1px solid #3c4043;
+    border-radius: 24px;
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-body-three);
-    color: var(--sys-text-primary);
-    background: var(--color-gray-50);
+    font-size: 16px;
+    color: #e8eaed;
+    background: #2a2a2a;
     outline: none;
     transition: all 0.2s ease;
 }
 
 .question-input:focus {
-    border-color: var(--color-twilight-300);
-    background: var(--sys-surface-base);
+    border-color: #4285f4;
+    background: #303134;
+    box-shadow: 0 0 0 1px #4285f4;
 }
 
 .question-input::placeholder {
-    color: var(--color-gray-500);
+    color: #9aa0a6;
 }
 
 .done-button {
-    background: var(--sys-interactive-bg-primary-default);
+    background: #4285f4;
     color: white;
     border: none;
-    border-radius: var(--radius-full);
-    padding: 14px 20px;
+    border-radius: 20px;
+    padding: 16px 24px;
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-body-three);
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    min-width: 80px;
 }
 
 .done-button:hover {
-    background: var(--sys-interactive-bg-primary-hover);
+    background: #3367d6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
 }
 
 /* Removed - now using button container approach */

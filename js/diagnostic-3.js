@@ -193,6 +193,24 @@ function initializeHeader() {
     appHeader.init();
 }
 
+// Check if intro icon image loads successfully
+function checkIntroIconLoad() {
+    const introIcon = document.querySelector('.intro-icon');
+    if (!introIcon) return;
+    
+    // Create a test image to check if the background image loads
+    const testImg = new Image();
+    testImg.onload = function() {
+        // Image loaded successfully, hide fallback
+        introIcon.classList.add('loaded');
+    };
+    testImg.onerror = function() {
+        // Image failed to load, keep fallback visible
+        console.log('Intro icon image failed to load, showing fallback');
+    };
+    testImg.src = '../images/brand-practice-tests.png';
+}
+
 // Initialize the diagnostic test
 async function initDiagnosticTest() {
     // Initialize header component
@@ -217,6 +235,9 @@ async function initDiagnosticTest() {
     resultsScreen = document.getElementById('resultsScreen');
     resultsStats = document.getElementById('resultsStats');
     continueBtn = document.getElementById('continueBtn');
+    
+    // Check if intro icon loads
+    checkIntroIconLoad();
     
     // Select 10 random questions from cards 36-50
     const shuffled = diagnosticQuestions.sort(() => 0.5 - Math.random());

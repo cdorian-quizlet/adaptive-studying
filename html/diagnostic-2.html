@@ -38,6 +38,28 @@
             margin: 0 auto 24px;
             background: url('../images/brand-practice-tests.png') no-repeat center;
             background-size: contain;
+            /* Fallback styling in case image doesn't load */
+            border: 2px dashed var(--color-gray-300);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .intro-icon::before {
+            content: '📊';
+            font-size: 32px;
+            opacity: 0.5;
+        }
+        
+        /* Hide fallback when image loads */
+        .intro-icon.loaded::before {
+            display: none;
+        }
+        
+        .intro-icon.loaded {
+            border: none;
         }
         
         .intro-title {
