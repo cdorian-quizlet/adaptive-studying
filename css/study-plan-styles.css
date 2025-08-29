@@ -1302,7 +1302,7 @@ body {
     border: 2px solid var(--color-twilight-200);
     border-radius: var(--radius-full, 200px);
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-four);
+    font-size: max(16px, var(--typography-size-subheading-four)); /* Prevent mobile zoom by ensuring 16px minimum */
     font-weight: 600;
     color: var(--sys-text-primary);
     outline: none;
@@ -1322,6 +1322,8 @@ body {
 
 .make-change-input:focus {
     border-color: var(--color-twilight-200);
+    /* Ensure no zoom on mobile by maintaining 16px+ font size on focus */
+    font-size: max(16px, var(--typography-size-subheading-four));
 }
 
 /* Smooth transition positioning */
