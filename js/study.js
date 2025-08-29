@@ -1261,7 +1261,7 @@ function resetAllFeedbackStates() {
         submitBtn.style.cursor = 'pointer';
     }
     if (writtenFeedback) {
-        writtenFeedback.style.display = 'none';
+        writtenFeedback.classList.remove('show');
         writtenFeedback.style.visibility = '';
         writtenFeedback.style.opacity = '';
     }
@@ -1481,7 +1481,7 @@ function showTextInput() {
     submitBtn.disabled = false;
     submitBtn.classList.remove('show'); // Hidden until text is entered
     submitBtn.style.cursor = 'pointer';
-    writtenFeedback.style.display = 'none';
+    writtenFeedback.classList.remove('show'); // Hidden until user submits
     textAnswer.focus();
 }
 
@@ -1927,40 +1927,23 @@ function adaptDifficulty(isCorrect) {
 function showFeedback(isCorrect) {
     // Update UI to show correct/incorrect answers
     if (currentQuestion.currentFormat === 'multiple_choice') {
-        // Add a small delay for smoother transition
+        // Small delay for smoother transition
         setTimeout(() => {
             const optionBtns = document.querySelectorAll('.option-btn');
             
-            console.log('🔍 DEBUG FEEDBACK:', {
-                isCorrect: isCorrect,
-                selectedAnswer: selectedAnswer,
-                correctAnswer: currentQuestion.correctAnswer,
-                optionCount: optionBtns.length
-            });
-            
-            optionBtns.forEach((btn, index) => {
+            optionBtns.forEach((btn) => {
                 // Clear all previous states first
                 btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
                 
-                console.log(`Button ${index}:`, {
-                    text: btn.textContent,
-                    dataAnswer: btn.dataset.answer,
-                    isCorrectAnswer: btn.dataset.answer === currentQuestion.correctAnswer,
-                    isSelectedAnswer: btn.dataset.answer === selectedAnswer
-                });
-                
-                // Always show the correct answer
+                // Always highlight the correct answer
                 if (btn.dataset.answer === currentQuestion.correctAnswer) {
                     if (isCorrect) {
                         btn.classList.add('correct-selected');
-                        console.log(`✅ Applied correct-selected to button: ${btn.textContent.substring(0, 20)}`);
                     } else {
                         btn.classList.add('correct');
-                        console.log(`✅ Applied correct to button: ${btn.textContent.substring(0, 20)}`);
                     }
-                } else {
-                    console.log(`⏭️ Skipping button (not correct): ${btn.textContent.substring(0, 20)}`);
                 }
+                
                 // Show the incorrect selected answer if user got it wrong
                 if (btn.dataset.answer === selectedAnswer && !isCorrect) {
                     btn.classList.add('incorrect', 'shake');
@@ -1971,49 +1954,21 @@ function showFeedback(isCorrect) {
                     }, 500);
                 }
             });
-        }, 100); // Quicker feedback transition
+        }, 100);
     } else if (currentQuestion.currentFormat === 'written') {
-        console.log('🔍 WRITTEN FEEDBACK DEBUG:', {
-            writtenFeedback: !!writtenFeedback,
-            correctAnswerFeedback: !!correctAnswerFeedback,
-            currentAnswer: currentQuestion.correctAnswer,
-            textInputDisplay: textInput.style.display,
-            textInputComputed: getComputedStyle(textInput).display
-        });
-        
         // Show feedback for written questions
         if (isCorrect) {
             textAnswer.classList.add('correct');
             textInput.classList.add('correct');
-            correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
-            setSourceBadge(correctAnswerFeedback);
-            writtenFeedback.style.display = 'flex';
-            writtenFeedback.style.visibility = 'visible';
-            writtenFeedback.style.opacity = '1';
-            console.log('✅ Applied correct feedback styles');
         } else {
             textAnswer.classList.add('incorrect');
             textInput.classList.add('incorrect');
-            correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
-            setSourceBadge(correctAnswerFeedback);
-            writtenFeedback.style.display = 'flex';
-            writtenFeedback.style.visibility = 'visible';
-            writtenFeedback.style.opacity = '1';
-            console.log('❌ Applied incorrect feedback styles');
         }
         
-        // Force visibility check
-        setTimeout(() => {
-            const computedStyle = getComputedStyle(writtenFeedback);
-            console.log('Final feedback state:', {
-                display: writtenFeedback.style.display,
-                computedDisplay: computedStyle.display,
-                visibility: computedStyle.visibility,
-                opacity: computedStyle.opacity,
-                height: computedStyle.height,
-                feedbackText: correctAnswerFeedback.textContent
-            });
-        }, 100);
+        // Always show the correct answer feedback
+        correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
+        setSourceBadge(correctAnswerFeedback);
+        writtenFeedback.classList.add('show'); // Show feedback using class
         
         // Disable input and hide submit button  
         textAnswer.disabled = true;
