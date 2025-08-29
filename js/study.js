@@ -1784,9 +1784,24 @@ function showFeedback(isCorrect) {
         // Add a small delay for smoother transition
         setTimeout(() => {
             const optionBtns = document.querySelectorAll('.option-btn');
-            optionBtns.forEach(btn => {
+            
+            console.log('🔍 DEBUG FEEDBACK:', {
+                isCorrect: isCorrect,
+                selectedAnswer: selectedAnswer,
+                correctAnswer: currentQuestion.correctAnswer,
+                optionCount: optionBtns.length
+            });
+            
+            optionBtns.forEach((btn, index) => {
                 // Clear all previous states first
                 btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+                
+                console.log(`Button ${index}:`, {
+                    text: btn.textContent,
+                    dataAnswer: btn.dataset.answer,
+                    isCorrectAnswer: btn.dataset.answer === currentQuestion.correctAnswer,
+                    isSelectedAnswer: btn.dataset.answer === selectedAnswer
+                });
                 
                 // Always show the correct answer
                 if (btn.dataset.answer === currentQuestion.correctAnswer) {
