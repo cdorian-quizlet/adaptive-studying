@@ -213,7 +213,7 @@ body {
 }
 
 .question-text {
-    font-size: 28px;
+    font-size: 28px; /* Default fallback size */
     font-weight: 600;
     color: var(--sys-text-primary);
     margin: 0;
@@ -221,6 +221,34 @@ body {
     text-align: left;
     display: flex;
     align-items: center;
+}
+
+/* Dynamic text sizing classes based on character count */
+.question-text.text-subheading-1 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-one);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-one);
+    line-height: var(--typography-lineHeight-subheading-one);
+    letter-spacing: var(--typography-letterSpacing-subheading-one);
+}
+
+.question-text.text-subheading-3 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-three);
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-subheading-three);
+}
+
+.question-text.text-subheading-5 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-five);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-five);
+    line-height: var(--typography-lineHeight-subheading-five);
+    letter-spacing: var(--typography-letterSpacing-subheading-five);
 }
 
 .question-prompt {
@@ -661,10 +689,41 @@ body {
 
 .flashcard-term,
 .flashcard-definition {
-    font-size: 24px;
+    font-size: 24px; /* Default fallback size */
     font-weight: 600;
     color: var(--sys-text-primary);
     margin-bottom: 12px;
+}
+
+/* Dynamic text sizing for flashcard content */
+.flashcard-term.text-subheading-1,
+.flashcard-definition.text-subheading-1 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-one);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-one);
+    line-height: var(--typography-lineHeight-subheading-one);
+    letter-spacing: var(--typography-letterSpacing-subheading-one);
+}
+
+.flashcard-term.text-subheading-3,
+.flashcard-definition.text-subheading-3 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-three);
+    line-height: var(--typography-lineHeight-subheading-three);
+    letter-spacing: var(--typography-letterSpacing-subheading-three);
+}
+
+.flashcard-term.text-subheading-5,
+.flashcard-definition.text-subheading-5 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-five);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-five);
+    line-height: var(--typography-lineHeight-subheading-five);
+    letter-spacing: var(--typography-letterSpacing-subheading-five);
 }
 
 .flashcard-buttons {

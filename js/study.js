@@ -896,6 +896,39 @@ function updateHeaderTitle() {
     }
 }
 
+// Apply dynamic text sizing based on character count
+function applyDynamicTextSizing(element, text) {
+    if (!element || !text) return;
+    
+    const charCount = text.length;
+    
+    console.log('🔤 Applying dynamic text sizing:', {
+        text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        charCount: charCount,
+        targetClass: getDynamicTextClass(charCount)
+    });
+    
+    // Remove existing text size classes
+    element.classList.remove('text-subheading-1', 'text-subheading-3', 'text-subheading-5');
+    
+    // Apply appropriate class based on character count
+    element.classList.add(getDynamicTextClass(charCount));
+}
+
+// Helper function to determine text class based on character count
+function getDynamicTextClass(charCount) {
+    if (charCount <= 88) {
+        return 'text-subheading-1';
+    } else if (charCount <= 224) {
+        return 'text-subheading-3';
+    } else if (charCount <= 448) {
+        return 'text-subheading-5';
+    } else {
+        // For very long text, use the smallest size
+        return 'text-subheading-5';
+    }
+}
+
 // Get current concept from onboarding data based on current round
 function getCurrentConcept() {
     // First try to get concept from onboarding data based on current round
@@ -1223,6 +1256,8 @@ function showQuestion() {
     // Only set question text for question types that need it (not matching or flashcard)
     if (currentQuestion.currentFormat !== 'matching' && currentQuestion.currentFormat !== 'flashcard') {
         questionText.textContent = currentQuestion.question;
+        // Apply dynamic text styling based on character count
+        applyDynamicTextSizing(questionText, currentQuestion.question);
         // Add source badge next to the question text
         setSourceBadge(questionText);
     }
@@ -1314,6 +1349,11 @@ function showFlashcard() {
     
     termEl.textContent = currentQuestion.question;
     definitionEl.textContent = currentQuestion.correctAnswer;
+    
+    // Apply dynamic text sizing to flashcard elements
+    applyDynamicTextSizing(termEl, currentQuestion.question);
+    applyDynamicTextSizing(definitionEl, currentQuestion.correctAnswer);
+    
     // Add source badges to flashcard faces
     setSourceBadge(termEl);
     setSourceBadge(definitionEl);
@@ -2978,6 +3018,45 @@ window.testButtonStyling = function() {
             text: btn.textContent.substring(0, 20) + '...'
         });
     });
+};
+
+// Debug function to test dynamic text sizing
+window.testDynamicTextSizing = function() {
+    console.log('Testing dynamic text sizing...');
+    
+    const testTexts = [
+        { text: "Short question?", expected: "text-subheading-1" }, // 15 chars
+        { text: "What is the primary function of the cell membrane in regulating cellular processes?", expected: "text-subheading-1" }, // 85 chars
+        { text: "What is the primary function of the cell membrane and how does it contribute to maintaining homeostasis within the cell through selective permeability and transport mechanisms?", expected: "text-subheading-3" }, // 177 chars
+        { text: "What is the primary function of the cell membrane and how does it contribute to maintaining homeostasis within the cell through selective permeability, active transport, passive transport, endocytosis, exocytosis, and various signaling pathways that regulate cellular communication and metabolic processes throughout the organism?", expected: "text-subheading-5" } // 328 chars
+    ];
+    
+    testTexts.forEach((test, index) => {
+        const actualClass = getDynamicTextClass(test.text.length);
+        console.log(`Test ${index + 1}:`, {
+            length: test.text.length,
+            text: test.text.substring(0, 50) + '...',
+            expected: test.expected,
+            actual: actualClass,
+            match: test.expected === actualClass ? '✅' : '❌'
+        });
+    });
+    
+    // Test with current question if available
+    if (currentQuestion && currentQuestion.question) {
+        console.log('Current question sizing:', {
+            length: currentQuestion.question.length,
+            text: currentQuestion.question.substring(0, 50) + '...',
+            class: getDynamicTextClass(currentQuestion.question.length)
+        });
+        
+        // Apply sizing to current question for visual test
+        const questionTextEl = document.getElementById('questionText');
+        if (questionTextEl) {
+            applyDynamicTextSizing(questionTextEl, currentQuestion.question);
+            console.log('Applied dynamic sizing to current question element');
+        }
+    }
 };
 
 // Test the new button container approach
