@@ -326,8 +326,6 @@ body {
     color: var(--sys-text-primary) !important;
     position: relative;
     border-radius: 12px;
-    /* Debug styling */
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
 }
 
 .option-btn.correct-selected {
@@ -336,34 +334,33 @@ body {
     color: var(--sys-text-primary) !important;
     position: relative;
     border-radius: 12px;
-    /* Debug styling */
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3) !important;
 }
 
 .option-btn.correct::before,
 .option-btn.correct-selected::before {
-    content: "check";
-    font-family: 'Material Icons Round', 'Material Symbols Rounded', sans-serif;
-    color: var(--color-mint-600);
-    font-weight: bold;
-    margin-right: 8px;
-    font-size: 24px;
-    vertical-align: middle;
+    content: "";
     display: inline-block;
-    line-height: 1;
-    position: relative;
-    top: -2px;
-    /* Fallback text if icon font fails */
-    font-feature-settings: "liga";
-    -webkit-font-smoothing: antialiased;
+    width: 24px;
+    height: 24px;
+    background-image: url('../images/check-24.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 
-/* Fallback styling when Material Icons don't load */
+/* Fallback styling when check image doesn't load */
 .option-btn.correct:not(.icon-loaded)::before,
 .option-btn.correct-selected:not(.icon-loaded)::before {
+    background-image: none;
     content: "✓";
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: bold;
+    color: var(--color-mint-600);
+    font-size: 18px;
+    width: auto;
+    height: auto;
 }
 
 .option-btn.incorrect {
@@ -372,8 +369,6 @@ body {
     color: var(--sys-text-primary) !important;
     position: relative;
     border-radius: 12px;
-    /* Debug styling */
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
 }
 
 .option-btn.shake {
@@ -445,17 +440,16 @@ body {
 }
 
 .correct-answer-feedback::before {
-    content: "check";
-    font-family: 'Material Icons Round';
-    color: var(--color-mint-600);
-    font-weight: bold;
-    margin-right: 8px;
-    font-size: 24px;
-    vertical-align: middle;
+    content: "";
     display: inline-block;
-    line-height: 1;
-    position: relative;
-    top: -2px;
+    width: 24px;
+    height: 24px;
+    background-image: url('../images/check-24.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 
 .correct-answer-label {
@@ -526,11 +520,14 @@ body {
 
 /* Add check icon to correct text input - vertically centered with text */
 .text-input-container.correct::before {
-    content: "check";
-    font-family: 'Material Icons Round';
-    color: var(--color-mint-600);
-    font-weight: bold;
-    font-size: 24px;
+    content: "";
+    display: block;
+    width: 24px;
+    height: 24px;
+    background-image: url('../images/check-24.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position: center;
     position: absolute;
     left: 16px;
     top: calc(16px + 0.5em + 1px);
@@ -696,8 +693,12 @@ body {
 
 .flashcard-term,
 .flashcard-definition {
-    font-size: 24px; /* Default fallback size */
-    font-weight: 600;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-two);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-two);
+    line-height: var(--typography-lineHeight-subheading-two);
+    letter-spacing: var(--typography-letterSpacing-subheading-two);
     color: var(--sys-text-primary);
     margin-bottom: 12px;
 }
@@ -711,6 +712,16 @@ body {
     font-weight: var(--typography-fontWeight-subheading-one);
     line-height: var(--typography-lineHeight-subheading-one);
     letter-spacing: var(--typography-letterSpacing-subheading-one);
+}
+
+.flashcard-term.text-subheading-2,
+.flashcard-definition.text-subheading-2 {
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-two);
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-two);
+    line-height: var(--typography-lineHeight-subheading-two);
+    letter-spacing: var(--typography-letterSpacing-subheading-two);
 }
 
 .flashcard-term.text-subheading-3,
@@ -1256,7 +1267,8 @@ body {
 
 /* Explanation Bottom Sheet Styles - Light Mode */
 .explanation-sheet {
-    height: 90vh;
+    max-height: 80vh;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     background: var(--sys-surface-base);
@@ -1306,7 +1318,7 @@ body {
 /* Bottom sheet body styles */
 .explanation-sheet .bottom-sheet-body {
     padding: 0 24px 24px 24px;
-    flex: 1;
+    flex: 0 1 auto;
     overflow-y: auto;
     background: var(--sys-surface-base);
 }
@@ -1315,7 +1327,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    height: 100%;
 }
 
 .explanation-image {
@@ -1323,22 +1334,7 @@ body {
 }
 
 .explanation-text {
-    flex: 1;
     padding: 0;
-}
-
-.explanation-text p {
-    background: var(--sys-surface-raised);
-    border-radius: 12px;
-    padding: 20px;
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-body-three);
-    font-weight: var(--typography-fontWeight-body-three);
-    line-height: var(--typography-lineHeight-body-three);
-    color: var(--sys-text-primary);
-    margin: 0;
-    border: 1px solid var(--color-gray-200);
-    box-shadow: var(--shadow-small);
 }
 
 .formula-section {

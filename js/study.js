@@ -686,6 +686,22 @@ async function fetchAndLoadQuestionsFromApi() {
                         
                         // Map API question format to internal format
                         const mappedQuestion = mapApiQuestionToInternal(apiQuestion, allQuestions.length + 1);
+                        
+                        // Debug MCQ questions from API
+                        if (mappedQuestion.currentFormat === 'multiple_choice') {
+                            console.log('🔍 API MCQ DEBUG:', {
+                                questionId: mappedQuestion.id,
+                                question: mappedQuestion.question?.substring(0, 50) + '...',
+                                correctAnswer: mappedQuestion.correctAnswer,
+                                options: mappedQuestion.options,
+                                originalApiData: {
+                                    type: apiQuestion.type,
+                                    correctAnswer: apiQuestion.correctAnswer,
+                                    options: apiQuestion.options
+                                }
+                            });
+                        }
+                        
                         allQuestions.push(mappedQuestion);
                     }
                 });
@@ -788,14 +804,29 @@ function mapApiQuestionToInternal(apiQuestion, id) {
         originalType: questionType,
         mappedFormat: mappedFormat,
         hasOptions: !!(apiQuestion.options && apiQuestion.options.length > 0),
+        apiOptions: apiQuestion.options,
         question: apiQuestion.question?.substring(0, 50) + '...'
     });
+    
+    // Generate MCQ options if needed
+    let questionOptions = undefined;
+    if (mappedFormat === 'multiple_choice') {
+        if (apiQuestion.options && Array.isArray(apiQuestion.options) && apiQuestion.options.length > 0) {
+            // Use API provided options
+            questionOptions = apiQuestion.options;
+            console.log('✅ Using API options:', questionOptions);
+        } else {
+            // Generate fallback options for MCQ questions without proper options
+            console.log('⚠️ Generating fallback MCQ options for question:', id);
+            questionOptions = generateFallbackMCQOptions(apiQuestion);
+        }
+    }
     
     return {
         id: id,
         question: apiQuestion.question || 'Question not available',
         correctAnswer: getCorrectAnswerFromAPI(apiQuestion),
-        options: (mappedFormat === 'multiple_choice' && apiQuestion.options) ? apiQuestion.options : undefined,
+        options: questionOptions,
         difficulty: apiQuestion.difficulty || apiQuestion.type || "multiple_choice",
         attempts: 0,
         correct: 0,
@@ -806,6 +837,55 @@ function mapApiQuestionToInternal(apiQuestion, id) {
         taxonomy: apiQuestion.taxonomy || 'recall',
         source: 'api'
     };
+}
+
+// Ensure MCQ questions have options (for questions converted by adaptive learning)
+function ensureMCQOptions(question) {
+    if (!question.options || !Array.isArray(question.options) || question.options.length === 0) {
+        console.log('🔧 ENSURING MCQ OPTIONS: Question converted to MCQ but lacks options:', question.id);
+        question.options = generateFallbackMCQOptions(question);
+        console.log('✅ Generated options for converted MCQ question:', question.options);
+    }
+}
+
+// Generate fallback MCQ options when API doesn't provide them
+function generateFallbackMCQOptions(apiQuestion) {
+    const correctAnswer = getCorrectAnswerFromAPI(apiQuestion);
+    
+    // Common biology wrong answers for different question types
+    const biologyDistractors = [
+        'Nucleus', 'Mitochondria', 'Cell membrane', 'Ribosomes', 'Golgi apparatus',
+        'Endoplasmic reticulum', 'Lysosomes', 'Cytoplasm', 'Chloroplasts', 'Vacuoles',
+        'Cytoskeleton', 'Peroxisomes', 'Centrioles', 'Cell wall', 'Chromatin',
+        'Energy production', 'Protein synthesis', 'DNA storage', 'Waste breakdown',
+        'Transport materials', 'Cellular respiration', 'Photosynthesis', 'Cell division',
+        'Structural support', 'Enzyme production', 'Hormone regulation', 'Signal transduction'
+    ];
+    
+    // Filter out the correct answer from distractors
+    const availableDistractors = biologyDistractors.filter(distractor => 
+        distractor.toLowerCase() !== correctAnswer.toLowerCase() &&
+        !correctAnswer.toLowerCase().includes(distractor.toLowerCase()) &&
+        !distractor.toLowerCase().includes(correctAnswer.toLowerCase())
+    );
+    
+    // Shuffle and take 3 random distractors
+    const shuffledDistractors = availableDistractors.sort(() => Math.random() - 0.5);
+    const selectedDistractors = shuffledDistractors.slice(0, 3);
+    
+    // Create options array with correct answer and distractors
+    const options = [correctAnswer, ...selectedDistractors];
+    
+    // Shuffle the final options
+    const shuffledOptions = options.sort(() => Math.random() - 0.5);
+    
+    console.log('📋 Generated fallback MCQ options:', {
+        correctAnswer: correctAnswer,
+        allOptions: shuffledOptions,
+        source: 'generated'
+    });
+    
+    return shuffledOptions;
 }
 
 // Helper function to get correct answer from API question
@@ -910,7 +990,7 @@ function applyDynamicTextSizing(element, text) {
     });
     
     // Remove existing text size classes
-    element.classList.remove('text-subheading-1', 'text-subheading-3', 'text-subheading-5');
+    element.classList.remove('text-subheading-1', 'text-subheading-2', 'text-subheading-3', 'text-subheading-5');
     
     // Apply appropriate class based on character count
     element.classList.add(getDynamicTextClass(charCount));
@@ -918,8 +998,10 @@ function applyDynamicTextSizing(element, text) {
 
 // Helper function to determine text class based on character count
 function getDynamicTextClass(charCount) {
-    if (charCount <= 88) {
+    if (charCount <= 60) {
         return 'text-subheading-1';
+    } else if (charCount <= 120) {
+        return 'text-subheading-2';
     } else if (charCount <= 224) {
         return 'text-subheading-3';
     } else if (charCount <= 448) {
@@ -1386,6 +1468,8 @@ function showQuestion() {
     
     switch (currentQuestion.currentFormat) {
         case 'multiple_choice':
+            // Ensure MCQ questions have options before showing
+            ensureMCQOptions(currentQuestion);
             showMultipleChoice();
             break;
         case 'flashcard':
@@ -1426,18 +1510,56 @@ function showMultipleChoice() {
     questionPrompt.textContent = 'Choose the correct answer';
     const optionBtns = multipleChoice.querySelectorAll('.option-btn');
     
+    console.log('🔍 MCQ OPTIONS DEBUG:', {
+        questionId: currentQuestion?.id,
+        questionText: currentQuestion?.question?.substring(0, 50) + '...',
+        hasOptions: !!currentQuestion?.options,
+        options: currentQuestion?.options,
+        optionsLength: currentQuestion?.options?.length,
+        optionsType: typeof currentQuestion?.options,
+        currentQuestionKeys: currentQuestion ? Object.keys(currentQuestion) : 'no currentQuestion'
+    });
+    
+    // Check if options exist and are valid
+    if (!currentQuestion?.options || !Array.isArray(currentQuestion.options) || currentQuestion.options.length === 0) {
+        console.error('❌ MCQ OPTIONS ERROR: No valid options found for question', currentQuestion?.id);
+        console.error('Question data:', currentQuestion);
+        
+        // Fallback to placeholder options to prevent blank buttons
+        const fallbackOptions = ['Option A', 'Option B', 'Option C', 'Option D'];
+        optionBtns.forEach((btn, index) => {
+            btn.textContent = fallbackOptions[index] || `Option ${index + 1}`;
+            btn.dataset.answer = fallbackOptions[index] || `Option ${index + 1}`;
+            btn.className = 'option-btn';
+            btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+            btn.disabled = true; // Disable since these are invalid options
+            btn.style.cursor = 'not-allowed';
+            btn.style.opacity = '0.5';
+        });
+        return;
+    }
+    
     // Shuffle the options array to randomize answer position
     const shuffledOptions = [...currentQuestion.options].sort(() => Math.random() - 0.5);
     
+    console.log('✅ MCQ OPTIONS SUCCESS:', {
+        originalOptions: currentQuestion.options,
+        shuffledOptions: shuffledOptions
+    });
+    
     optionBtns.forEach((btn, index) => {
-        btn.textContent = shuffledOptions[index];
-        btn.dataset.answer = shuffledOptions[index];
+        const optionText = shuffledOptions[index];
+        btn.textContent = optionText || `Option ${index + 1}`;
+        btn.dataset.answer = optionText || `Option ${index + 1}`;
         btn.className = 'option-btn'; // Reset all classes
         btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake'); // Explicitly remove any lingering states
         btn.disabled = false;
         btn.style.cursor = 'pointer';
+        btn.style.opacity = '1'; // Reset opacity
         // Add source badge to each option
         setSourceBadge(btn);
+        
+        console.log(`Button ${index} set to:`, optionText);
     });
 }
 
@@ -1925,6 +2047,28 @@ function adaptDifficulty(isCorrect) {
 
 // Show feedback
 function showFeedback(isCorrect) {
+    // IMMEDIATE DEBUG: Print question and button state before any styling
+    if (currentQuestion.currentFormat === 'multiple_choice') {
+        console.log('🚨 IMMEDIATE MCQ FEEDBACK DEBUG:', {
+            questionId: currentQuestion?.id,
+            correctAnswer: currentQuestion?.correctAnswer,
+            isCorrect: isCorrect,
+            selectedAnswer: selectedAnswer,
+            currentFormat: currentQuestion?.currentFormat
+        });
+        
+        const optionBtns = document.querySelectorAll('.option-btn');
+        console.log('🔘 BUTTONS BEFORE STYLING:');
+        optionBtns.forEach((btn, index) => {
+            console.log(`  Button ${index}:`, {
+                textContent: btn.textContent?.substring(0, 30) + '...',
+                dataAnswer: btn.dataset.answer,
+                exactMatch: btn.dataset.answer === currentQuestion?.correctAnswer,
+                classes: btn.className
+            });
+        });
+    }
+    
     // Update UI to show correct/incorrect answers
     if (currentQuestion.currentFormat === 'multiple_choice') {
         // Small delay for smoother transition
@@ -1935,13 +2079,38 @@ function showFeedback(isCorrect) {
                 // Clear all previous states first
                 btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
                 
-                // Always highlight the correct answer
-                if (btn.dataset.answer === currentQuestion.correctAnswer) {
+                // Always highlight the correct answer - enhanced matching
+                const buttonText = btn.dataset.answer;
+                const correctAnswer = currentQuestion.correctAnswer;
+                
+                const isExactMatch = buttonText === correctAnswer;
+                const isTrimMatch = buttonText?.trim() === correctAnswer?.trim();
+                const isLowerMatch = buttonText?.toLowerCase().trim() === correctAnswer?.toLowerCase().trim();
+                
+                console.log('🔍 MCQ FEEDBACK DEBUG:', {
+                    buttonIndex: Array.from(optionBtns).indexOf(btn),
+                    buttonText: buttonText,
+                    buttonDataAnswer: btn.dataset.answer,
+                    buttonTextContent: btn.textContent,
+                    correctAnswer: correctAnswer,
+                    exactMatch: isExactMatch,
+                    trimMatch: isTrimMatch,
+                    lowerMatch: isLowerMatch,
+                    buttonTextLength: buttonText?.length,
+                    correctAnswerLength: correctAnswer?.length,
+                    buttonClasses: btn.className,
+                    isUserSelected: btn.dataset.answer === selectedAnswer
+                });
+                
+                // Use multiple matching strategies for better reliability
+                if (isExactMatch || isTrimMatch || isLowerMatch) {
+                    console.log('✅ MATCH FOUND - Adding correct styling to:', buttonText);
                     if (isCorrect) {
                         btn.classList.add('correct-selected');
                     } else {
                         btn.classList.add('correct');
                     }
+                    btn.setAttribute('data-is-correct', 'true'); // Mark as found for failsafe check
                 }
                 
                 // Show the incorrect selected answer if user got it wrong
@@ -1952,6 +2121,97 @@ function showFeedback(isCorrect) {
                     setTimeout(() => {
                         btn.classList.remove('shake');
                     }, 500);
+                }
+            });
+            
+            // Failsafe: If no button was marked as correct, try to find the best match
+            const markedCorrect = document.querySelector('[data-is-correct="true"]');
+            if (!markedCorrect && !isCorrect) {
+                console.log('🚑 EMERGENCY FAILSAFE: No correct answer was highlighted, finding best match...');
+                
+                let bestMatch = null;
+                let bestScore = 0;
+                
+                optionBtns.forEach((btn) => {
+                    const buttonText = btn.textContent?.trim();
+                    const buttonData = btn.dataset.answer?.trim();
+                    const correctAnswer = currentQuestion.correctAnswer?.trim();
+                    
+                    // Try different matching strategies and score them
+                    let score = 0;
+                    if (buttonData?.toLowerCase() === correctAnswer?.toLowerCase()) score = 100;
+                    else if (buttonText?.toLowerCase() === correctAnswer?.toLowerCase()) score = 90;
+                    else if (buttonData?.toLowerCase().includes(correctAnswer?.toLowerCase())) score = 70;
+                    else if (buttonText?.toLowerCase().includes(correctAnswer?.toLowerCase())) score = 60;
+                    else if (correctAnswer?.toLowerCase().includes(buttonData?.toLowerCase())) score = 50;
+                    else if (correctAnswer?.toLowerCase().includes(buttonText?.toLowerCase())) score = 40;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = btn;
+                    }
+                });
+                
+                if (bestMatch && bestScore > 0) {
+                    console.log(`🎯 FAILSAFE: Found best match with score ${bestScore}:`, bestMatch.textContent);
+                    bestMatch.classList.add('correct');
+                } else {
+                    console.log('❌ FAILSAFE: Could not find any suitable match');
+                    
+                    // ABSOLUTE LAST RESORT: Just highlight the first option with emergency styling
+                    if (optionBtns.length > 0) {
+                        console.log('🆘 LAST RESORT: Highlighting first option with emergency styling');
+                        const firstBtn = optionBtns[0];
+                        firstBtn.classList.add('correct');
+                        firstBtn.style.border = '2px dashed #10b981 !important';
+                        firstBtn.style.borderColor = '#10b981 !important';
+                        
+                        // Add emergency indicator text
+                        if (!firstBtn.querySelector('.emergency-indicator')) {
+                            const indicator = document.createElement('span');
+                            indicator.className = 'emergency-indicator';
+                            indicator.textContent = ' [DEBUG: Emergency highlight]';
+                            indicator.style.cssText = 'color: red; font-size: 10px; font-weight: bold;';
+                            firstBtn.appendChild(indicator);
+                        }
+                    }
+                }
+            }
+            
+            // Clean up the marker attribute and verify styling was applied
+            optionBtns.forEach((btn, index) => {
+                btn.removeAttribute('data-is-correct');
+                
+                // Log final button states for debugging
+                console.log(`🎨 FINAL BUTTON STATE ${index}:`, {
+                    text: btn.textContent.substring(0, 30) + '...',
+                    classes: btn.className,
+                    hasCorrectClass: btn.classList.contains('correct'),
+                    hasCorrectSelectedClass: btn.classList.contains('correct-selected'),
+                    hasIncorrectClass: btn.classList.contains('incorrect'),
+                    computedStyle: {
+                        borderColor: getComputedStyle(btn).borderColor,
+                        borderStyle: getComputedStyle(btn).borderStyle,
+                        borderWidth: getComputedStyle(btn).borderWidth,
+                        backgroundColor: getComputedStyle(btn).backgroundColor
+                    }
+                });
+                
+                // CSS OVERRIDE TEST: If this button should be correct but doesn't have correct styling, force it
+                if (btn.dataset.answer === currentQuestion?.correctAnswer && !btn.classList.contains('correct') && !btn.classList.contains('correct-selected')) {
+                    console.log(`🚨 CSS OVERRIDE TEST: Button ${index} should be correct but doesn't have styling. Forcing inline styles...`);
+                    btn.style.border = '2px dashed #10b981 !important';
+                    btn.style.borderColor = '#10b981 !important';
+                    btn.style.borderStyle = 'dashed !important';
+                    btn.style.borderWidth = '2px !important';
+                    
+                    setTimeout(() => {
+                        console.log(`🔍 AFTER FORCE STYLING: Button ${index} computed styles:`, {
+                            borderColor: getComputedStyle(btn).borderColor,
+                            borderStyle: getComputedStyle(btn).borderStyle,
+                            borderWidth: getComputedStyle(btn).borderWidth
+                        });
+                    }, 50);
                 }
             });
         }, 100);
@@ -2510,8 +2770,15 @@ function updateDebugUI() {
 
 // Update adaptive learning debug information
 function updateAdaptiveLearningDebugInfo() {
-    if (!window.AdaptiveLearning || !currentQuestion) {
-        // Clear debug info if no adaptive learning or question
+    console.log('🔍 DEBUG UPDATE: Checking adaptive learning availability:', {
+        hasAdaptiveLearning: !!window.AdaptiveLearning,
+        hasCurrentQuestion: !!currentQuestion,
+        currentQuestionId: currentQuestion?.id,
+        currentQuestionFormat: currentQuestion?.currentFormat
+    });
+    
+    if (!window.AdaptiveLearning) {
+        // Show that adaptive learning is not available
         const debugElements = [
             'currentDepth', 'currentDifficulty', 'currentType',
             'correctDepth', 'correctDifficulty', 'correctType',
@@ -2519,24 +2786,67 @@ function updateAdaptiveLearningDebugInfo() {
         ];
         debugElements.forEach(id => {
             const element = document.getElementById(id);
-            if (element) element.textContent = '-';
+            if (element) element.textContent = 'No AL engine';
         });
+        console.log('❌ DEBUG: Adaptive Learning engine not available');
+        return;
+    }
+    
+    if (!currentQuestion) {
+        // Show that no current question is available
+        const debugElements = [
+            'currentDepth', 'currentDifficulty', 'currentType',
+            'correctDepth', 'correctDifficulty', 'correctType',
+            'incorrectDepth', 'incorrectDifficulty', 'incorrectType'
+        ];
+        debugElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = 'No question';
+        });
+        console.log('❌ DEBUG: No current question available');
         return;
     }
     
     console.log(`🔍 UPDATING DEBUG INFO for question ${currentQuestion.id} (format: ${currentQuestion.currentFormat})`);
     
-    // Get current question debug info
-    const currentInfo = window.AdaptiveLearning.getDebugInfo(currentQuestion.id);
+    // Get current question debug info with error handling
+    let currentInfo;
+    try {
+        currentInfo = window.AdaptiveLearning.getDebugInfo(currentQuestion.id);
+        console.log('📊 Current question debug info:', currentInfo);
+    } catch (error) {
+        console.error('❌ Error getting adaptive learning debug info:', error);
+        const debugElements = [
+            'currentDepth', 'currentDifficulty', 'currentType',
+            'correctDepth', 'correctDifficulty', 'correctType',
+            'incorrectDepth', 'incorrectDifficulty', 'incorrectType'
+        ];
+        debugElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = 'AL Error';
+        });
+        return;
+    }
+    
+    // Validate current info
+    if (!currentInfo || typeof currentInfo !== 'object') {
+        console.error('❌ Invalid current info from adaptive learning:', currentInfo);
+        const debugElements = ['currentDepth', 'currentDifficulty', 'currentType'];
+        debugElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = 'Invalid data';
+        });
+        return;
+    }
     
     // Update current question info
     const currentDepthEl = document.getElementById('currentDepth');
     const currentDifficultyEl = document.getElementById('currentDifficulty');
     const currentTypeEl = document.getElementById('currentType');
     
-    if (currentDepthEl) currentDepthEl.textContent = currentInfo.depth;
-    if (currentDifficultyEl) currentDifficultyEl.textContent = currentInfo.difficulty;
-    if (currentTypeEl) currentTypeEl.textContent = getDisplayName(currentInfo.mode);
+    if (currentDepthEl) currentDepthEl.textContent = currentInfo.depth || 'Unknown';
+    if (currentDifficultyEl) currentDifficultyEl.textContent = currentInfo.difficulty || 'Unknown';
+    if (currentTypeEl) currentTypeEl.textContent = getDisplayName(currentInfo.mode) || 'Unknown';
     
     // Get correct answer preview with consecutive prevention applied
     const rawCorrectInfo = window.AdaptiveLearning.getNextQuestionPreview(currentQuestion.id, true);
@@ -2765,30 +3075,16 @@ function closeExplanationBottomSheet() {
 
 // Update explanation content with current question's explanation
 function updateExplanationContent() {
-    const explanationText = document.getElementById('explanationText');
     const explanationImage = document.getElementById('explanationImage');
     const formulaSection = document.getElementById('formulaSection');
     const formulaText = document.getElementById('formulaText');
     
-    if (explanationText && currentQuestion && currentQuestion.explanation) {
-        // Show explanation text section
-        explanationText.textContent = currentQuestion.explanation;
-        explanationText.style.display = 'block';
-        
-        // Add formula if available
-        if (formulaSection && formulaText && currentQuestion.formula) {
-            formulaText.textContent = currentQuestion.formula;
-            formulaSection.style.display = 'block';
-        } else if (formulaSection) {
-            formulaSection.style.display = 'none';
-        }
-        
-    } else if (explanationText) {
-        // Hide explanation text section when no content available
-        explanationText.style.display = 'none';
-        if (formulaSection) {
-            formulaSection.style.display = 'none';
-        }
+    // Only show formula if available
+    if (formulaSection && formulaText && currentQuestion && currentQuestion.formula) {
+        formulaText.textContent = currentQuestion.formula;
+        formulaSection.style.display = 'block';
+    } else if (formulaSection) {
+        formulaSection.style.display = 'none';
     }
 }
 
@@ -3083,6 +3379,43 @@ window.testMCQFeedback = function() {
     showFeedback(false); // Simulate incorrect answer
 };
 
+// Debug function to test correct feedback specifically
+window.testCorrectFeedback = function() {
+    console.log('Testing CORRECT feedback...');
+    
+    const optionBtns = document.querySelectorAll('.option-btn');
+    if (optionBtns.length === 0) {
+        console.log('No MCQ buttons found. Switch to multiple choice question first.');
+        return;
+    }
+    
+    console.log('Current question:', {
+        id: currentQuestion?.id,
+        format: currentQuestion?.currentFormat,
+        correctAnswer: currentQuestion?.correctAnswer
+    });
+    
+    // Find the correct answer button
+    const correctBtn = Array.from(optionBtns).find(btn => 
+        btn.dataset.answer === currentQuestion?.correctAnswer
+    );
+    
+    if (correctBtn) {
+        console.log('Found correct button:', correctBtn.dataset.answer);
+        
+        // Simulate selecting the correct answer
+        selectedAnswer = correctBtn.dataset.answer;
+        showFeedback(true); // Simulate correct answer
+        
+        console.log('Correct feedback applied. Button classes:', correctBtn.className);
+    } else {
+        console.log('Could not find correct answer button');
+        optionBtns.forEach((btn, index) => {
+            console.log(`Button ${index}: "${btn.dataset.answer}" vs correct: "${currentQuestion?.correctAnswer}"`);
+        });
+    }
+};
+
 // Debug function to manually test button styling
 window.testButtonStyling = function() {
     const optionBtns = document.querySelectorAll('.option-btn');
@@ -3121,13 +3454,317 @@ window.testButtonStyling = function() {
     });
 };
 
+// Simple test function to force correct styling on all buttons
+window.forceCorrectStyling = function() {
+    console.log('Force applying correct styling to all buttons...');
+    
+    const optionBtns = document.querySelectorAll('.option-btn');
+    optionBtns.forEach((btn, index) => {
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+        btn.classList.add('correct');
+        console.log(`Applied .correct to button ${index}: ${btn.textContent.substring(0, 30)}...`);
+    });
+    
+    console.log('All buttons should now have green dashed borders and checkmarks');
+};
+
+// Enhanced debug function to check exact matching issues
+window.debugAnswerMatching = function() {
+    console.log('🔍 DEBUGGING ANSWER MATCHING...');
+    
+    const optionBtns = document.querySelectorAll('.option-btn');
+    if (optionBtns.length === 0) {
+        console.log('❌ No MCQ buttons found');
+        return;
+    }
+    
+    console.log('📊 Current Question Data:', {
+        id: currentQuestion?.id,
+        correctAnswer: currentQuestion?.correctAnswer,
+        correctAnswerType: typeof currentQuestion?.correctAnswer,
+        correctAnswerLength: currentQuestion?.correctAnswer?.length,
+        options: currentQuestion?.options,
+        originalOptions: currentQuestion?.options,
+        questionText: currentQuestion?.question?.substring(0, 50) + '...'
+    });
+    
+    console.log('🔎 Button Analysis:');
+    let foundMatch = false;
+    let bestMatchIndex = -1;
+    let bestMatchScore = 0;
+    
+    optionBtns.forEach((btn, index) => {
+        const buttonAnswer = btn.dataset.answer;
+        const buttonText = btn.textContent;
+        const correctAnswer = currentQuestion?.correctAnswer;
+        
+        const isExactMatch = buttonAnswer === correctAnswer;
+        const isTrimMatch = buttonAnswer?.trim() === correctAnswer?.trim();
+        const isLowerMatch = buttonAnswer?.toLowerCase().trim() === correctAnswer?.toLowerCase().trim();
+        const isTextMatch = buttonText?.trim() === correctAnswer?.trim();
+        const isTextLowerMatch = buttonText?.toLowerCase().trim() === correctAnswer?.toLowerCase().trim();
+        
+        // Calculate match score for finding best candidate
+        let matchScore = 0;
+        if (isExactMatch) matchScore = 100;
+        else if (isTrimMatch || isTextMatch) matchScore = 90;
+        else if (isLowerMatch || isTextLowerMatch) matchScore = 80;
+        
+        console.log(`Button ${index}:`, {
+            text: buttonText,
+            dataAnswer: buttonAnswer,
+            correctAnswer: correctAnswer,
+            exactMatch: isExactMatch,
+            trimMatch: isTrimMatch,
+            lowerMatch: isLowerMatch,
+            textMatch: isTextMatch,
+            textLowerMatch: isTextLowerMatch,
+            matchScore: matchScore,
+            classes: btn.className
+        });
+        
+        if (matchScore > bestMatchScore) {
+            bestMatchScore = matchScore;
+            bestMatchIndex = index;
+        }
+        
+        if (isExactMatch || isTrimMatch || isLowerMatch || isTextMatch || isTextLowerMatch) {
+            foundMatch = true;
+            console.log(`✅ MATCH FOUND on button ${index} (score: ${matchScore})`);
+        }
+    });
+    
+    if (!foundMatch) {
+        console.log('❌ NO MATCHING BUTTON FOUND!');
+        console.log(`🎯 Best candidate is button ${bestMatchIndex} with score ${bestMatchScore}`);
+        console.log('🔧 Possible issues:');
+        console.log('1. Case sensitivity mismatch');
+        console.log('2. Extra whitespace in data');
+        console.log('3. Options shuffling created new text');
+        console.log('4. API data formatting issue');
+        console.log('5. correctAnswer not in options array');
+    } else {
+        console.log(`🎯 Best match is button ${bestMatchIndex} with score ${bestMatchScore}`);
+    }
+    
+    return { 
+        foundMatch, 
+        bestMatchIndex, 
+        bestMatchScore, 
+        currentQuestion, 
+        buttons: Array.from(optionBtns).map(btn => ({
+            text: btn.textContent,
+            dataAnswer: btn.dataset.answer
+        }))
+    };
+};
+
+// Force highlight the correct answer as a failsafe
+window.forceHighlightCorrectAnswer = function() {
+    console.log('🚑 FORCE HIGHLIGHTING CORRECT ANSWER...');
+    
+    const debug = debugAnswerMatching();
+    if (debug.bestMatchIndex >= 0) {
+        const optionBtns = document.querySelectorAll('.option-btn');
+        const bestBtn = optionBtns[debug.bestMatchIndex];
+        
+        if (bestBtn) {
+            bestBtn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+            bestBtn.classList.add('correct');
+            console.log(`✅ FORCED correct styling on button ${debug.bestMatchIndex}: ${bestBtn.textContent}`);
+            return true;
+        }
+    }
+    
+    console.log('❌ Could not force highlight - no suitable button found');
+    return false;
+};
+
+// Comprehensive correct answer highlighting test
+window.testCorrectAnswerHighlighting = function() {
+    console.log('🧪 COMPREHENSIVE CORRECT ANSWER HIGHLIGHTING TEST');
+    
+    const optionBtns = document.querySelectorAll('.option-btn');
+    if (optionBtns.length === 0) {
+        console.log('❌ No MCQ buttons found. Switch to a multiple choice question first.');
+        return;
+    }
+    
+    console.log('📊 CURRENT STATE:');
+    console.log('Current question:', currentQuestion);
+    console.log('Selected answer:', selectedAnswer);
+    console.log('Correct answer:', currentQuestion?.correctAnswer);
+    
+    // Step 1: Test CSS classes directly
+    console.log('\n🎨 STEP 1: Testing CSS styling directly');
+    optionBtns.forEach((btn, index) => {
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+        if (index === 0) {
+            btn.classList.add('correct');
+            console.log(`Applied .correct to button 0, classes now: ${btn.className}`);
+            setTimeout(() => {
+                console.log(`Button 0 computed styles:`, {
+                    borderColor: getComputedStyle(btn).borderColor,
+                    borderStyle: getComputedStyle(btn).borderStyle,
+                    borderWidth: getComputedStyle(btn).borderWidth
+                });
+            }, 50);
+        }
+    });
+    
+    // Step 2: Test the actual matching logic
+    setTimeout(() => {
+        console.log('\n🔍 STEP 2: Testing matching logic');
+        const correctAnswer = currentQuestion?.correctAnswer;
+        let foundMatch = false;
+        
+        optionBtns.forEach((btn, index) => {
+            const buttonText = btn.dataset.answer;
+            const match1 = buttonText === correctAnswer;
+            const match2 = buttonText?.trim() === correctAnswer?.trim();
+            const match3 = buttonText?.toLowerCase().trim() === correctAnswer?.toLowerCase().trim();
+            
+            console.log(`Button ${index} matching:`, {
+                buttonText: buttonText,
+                correctAnswer: correctAnswer,
+                exactMatch: match1,
+                trimMatch: match2,
+                lowerMatch: match3,
+                anyMatch: match1 || match2 || match3
+            });
+            
+            if (match1 || match2 || match3) {
+                foundMatch = true;
+                console.log(`🎯 SHOULD HIGHLIGHT BUTTON ${index}`);
+            }
+        });
+        
+        if (!foundMatch) {
+            console.log('⚠️ NO MATCHES FOUND - This is why correct answer isn\'t highlighted!');
+            console.log('Possible solutions:');
+            console.log('1. Check if correctAnswer matches any button text exactly');
+            console.log('2. Check if API data is formatted correctly');
+            console.log('3. Check if question options were generated properly');
+        }
+        
+        // Step 3: Force apply styles to see if CSS is working
+        console.log('\n🚨 STEP 3: Force applying styles to all buttons');
+        optionBtns.forEach((btn, index) => {
+            btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+        });
+        
+        // Apply different styles to different buttons
+        if (optionBtns[0]) {
+            optionBtns[0].classList.add('correct');
+            console.log('Applied .correct to button 0');
+        }
+        if (optionBtns[1]) {
+            optionBtns[1].classList.add('correct-selected');
+            console.log('Applied .correct-selected to button 1');
+        }
+        if (optionBtns[2]) {
+            optionBtns[2].classList.add('incorrect');
+            console.log('Applied .incorrect to button 2');
+        }
+        
+        console.log('\n✅ TEST COMPLETE - Check the buttons visually!');
+        console.log('If buttons don\'t show styling, there\'s a CSS issue.');
+        console.log('If buttons show styling but normal feedback doesn\'t work, there\'s a data/matching issue.');
+        
+    }, 200);
+};
+
+// Simple test to just verify CSS styles work
+window.testCSSStyles = function() {
+    console.log('🎨 TESTING CSS STYLES');
+    
+    const optionBtns = document.querySelectorAll('.option-btn');
+    if (optionBtns.length === 0) {
+        console.log('❌ No MCQ buttons found');
+        return;
+    }
+    
+    // Clear all existing classes
+    optionBtns.forEach(btn => {
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+    });
+    
+    // Apply styles one by one and check
+    if (optionBtns[0]) {
+        console.log('Testing .correct class on button 0...');
+        optionBtns[0].classList.add('correct');
+        
+        setTimeout(() => {
+            const styles = getComputedStyle(optionBtns[0]);
+            console.log('Button 0 with .correct:', {
+                borderColor: styles.borderColor,
+                borderStyle: styles.borderStyle,
+                borderWidth: styles.borderWidth,
+                classes: optionBtns[0].className,
+                hasCorrectClass: optionBtns[0].classList.contains('correct')
+            });
+            
+            // Check if the CSS rule is being applied
+            console.log('Expected: dashed border with mint-600 color');
+            console.log('Actual border style:', styles.borderStyle);
+            console.log('Style includes "dashed":', styles.borderStyle.includes('dashed'));
+            
+        }, 100);
+    }
+};
+
+// Debug function to examine question and button data thoroughly
+window.examineQuestionData = function() {
+    console.log('🔬 EXAMINING QUESTION AND BUTTON DATA');
+    
+    const optionBtns = document.querySelectorAll('.option-btn');
+    
+    console.log('📊 CURRENT QUESTION FULL DATA:');
+    console.log(currentQuestion);
+    
+    console.log('\n📊 CURRENT QUESTION KEY FIELDS:');
+    console.log({
+        id: currentQuestion?.id,
+        question: currentQuestion?.question,
+        correctAnswer: currentQuestion?.correctAnswer,
+        options: currentQuestion?.options,
+        currentFormat: currentQuestion?.currentFormat,
+        source: currentQuestion?.source
+    });
+    
+    console.log('\n🔘 BUTTON DATA:');
+    optionBtns.forEach((btn, index) => {
+        console.log(`Button ${index}:`, {
+            textContent: btn.textContent,
+            dataAnswer: btn.dataset.answer,
+            className: btn.className,
+            id: btn.id,
+            innerHTML: btn.innerHTML
+        });
+    });
+    
+    console.log('\n🎯 EXACT MATCHING TEST:');
+    const correctAnswer = currentQuestion?.correctAnswer;
+    optionBtns.forEach((btn, index) => {
+        const buttonText = btn.dataset.answer;
+        console.log(`Button ${index}: "${buttonText}" === "${correctAnswer}" = ${buttonText === correctAnswer}`);
+    });
+    
+    console.log('\n🔍 CASE INSENSITIVE MATCHING TEST:');
+    optionBtns.forEach((btn, index) => {
+        const buttonText = btn.dataset.answer?.toLowerCase().trim();
+        const correctLower = correctAnswer?.toLowerCase().trim();
+        console.log(`Button ${index}: "${buttonText}" === "${correctLower}" = ${buttonText === correctLower}`);
+    });
+};
+
 // Debug function to test dynamic text sizing
 window.testDynamicTextSizing = function() {
     console.log('Testing dynamic text sizing...');
     
     const testTexts = [
         { text: "Short question?", expected: "text-subheading-1" }, // 15 chars
-        { text: "What is the primary function of the cell membrane in regulating cellular processes?", expected: "text-subheading-1" }, // 85 chars
+        { text: "What is the primary function of the cell membrane in regulating?", expected: "text-subheading-2" }, // 65 chars
         { text: "What is the primary function of the cell membrane and how does it contribute to maintaining homeostasis within the cell through selective permeability and transport mechanisms?", expected: "text-subheading-3" }, // 177 chars
         { text: "What is the primary function of the cell membrane and how does it contribute to maintaining homeostasis within the cell through selective permeability, active transport, passive transport, endocytosis, exocytosis, and various signaling pathways that regulate cellular communication and metabolic processes throughout the organism?", expected: "text-subheading-5" } // 328 chars
     ];

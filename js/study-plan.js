@@ -2002,12 +2002,12 @@ function expandAccordion(step, roundNumber) {
     // Set initial dynamic line height for normal accordion expansion
     // Calculate height to reach the bottom of the last text line
     setTimeout(() => {
-        // Find the "Next round:" section using the same reliable method as re-planning
+        // Find the "Up next:" section using the same reliable method as re-planning
         const allSections = accordionContent.querySelectorAll('.accordion-section');
         let nextRoundSection = null;
         allSections.forEach(section => {
             const title = section.querySelector('.accordion-section-title');
-            if (title && title.textContent.includes('Next round:')) {
+            if (title && title.textContent.includes('Up next:')) {
                 nextRoundSection = section;
             }
         });
@@ -2084,12 +2084,12 @@ function toggleAccordion(step, roundNumber) {
         // Set initial dynamic line height for normal accordion expansion
         // Calculate height to reach the bottom of the last text line
         setTimeout(() => {
-            // Find the "Next round:" section using the same reliable method as re-planning
+            // Find the "Up next:" section using the same reliable method as re-planning
             const allSections = accordionContent.querySelectorAll('.accordion-section');
             let nextRoundSection = null;
             allSections.forEach(section => {
                 const title = section.querySelector('.accordion-section-title');
-                if (title && title.textContent.includes('Next round:')) {
+                if (title && title.textContent.includes('Up next:')) {
                     nextRoundSection = section;
                 }
             });
@@ -2128,7 +2128,7 @@ function startPlanningAnimation(step) {
     if (!loadingItem || !loadingIcon || !loadingText) return;
     
     // Set initial state with ellipsis
-    loadingText.textContent = 'Planning next round...';
+    loadingText.textContent = 'Planning...';
     loadingIcon.classList.add('spinning');
     
     // Store the animation timer on the step element
@@ -2158,7 +2158,7 @@ function clearAccordionAnimations(step) {
     if (loadingIcon && loadingText) {
         loadingIcon.classList.remove('spinning');
         loadingIcon.style.background = 'url("../images/spinner.png") center/contain no-repeat';
-        loadingText.textContent = 'Planning next round';
+        loadingText.textContent = 'Planning...';
     }
 }
 
@@ -2284,13 +2284,13 @@ function restoreButton(accordionAction) {
 
 // Start the re-planning animation sequence
 function startReplanningAnimation(accordionContent, userRequest) {
-    // Find the "Next round:" section by looking for the section title
+    // Find the "Up next:" section by looking for the section title
     const allSections = accordionContent.querySelectorAll('.accordion-section');
     
     let nextRoundSection = null;
     allSections.forEach(section => {
         const title = section.querySelector('.accordion-section-title');
-        if (title && title.textContent.includes('Next round:')) {
+        if (title && title.textContent.includes('Up next:')) {
             nextRoundSection = section;
         }
     });
@@ -2307,7 +2307,7 @@ function startReplanningAnimation(accordionContent, userRequest) {
     // Reset vertical line height to 0 first
     step.style.setProperty('--dynamic-line-height', '0px');
     
-    // Animate vertical line to the bottom of the first line below "Next round:" text
+    // Animate vertical line to the bottom of the first line below "Up next:" text
     setTimeout(() => {
         if (nextRoundSection) {
             const firstItem = nextRoundItems.querySelector('.accordion-item:first-child');
@@ -2439,33 +2439,12 @@ function transitionToFinalState(item, itemData) {
 function getAccordionContent(roundNumber) {
     let html = '';
     
-    // Last round section (only show if not the first round)
-    if (roundNumber > 1) {
-        html += `
-            <div class="accordion-section">
-                <h4 class="accordion-section-title">Last round:</h4>
-                <div class="accordion-items">
-                    <div class="accordion-item completed">
-                        <div class="accordion-icon"></div>
-                        <span class="accordion-text">Stepped up a level</span>
-                    </div>
-                    <div class="accordion-item completed">
-                        <div class="accordion-icon"></div>
-                        <span class="accordion-text">Revisited a few misses</span>
-                    </div>
-                    <div class="accordion-item completed">
-                        <div class="accordion-icon"></div>
-                        <span class="accordion-text">Quick flashcard/matching break</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+    // Last round section removed - no longer showing
     
-    // Next round section (show for all rounds)
+    // Up next section (show for all rounds)
     html += `
         <div class="accordion-section">
-            <h4 class="accordion-section-title">Next round:</h4>
+            <h4 class="accordion-section-title">Up next:</h4>
             <div class="accordion-items">
                 <div class="accordion-item planned">
                     <div class="accordion-icon"></div>
@@ -2477,7 +2456,7 @@ function getAccordionContent(roundNumber) {
                 </div>
                 <div class="accordion-item loading">
                     <div class="accordion-icon"></div>
-                    <span class="accordion-text">Planning next round</span>
+                    <span class="accordion-text">Planning...</span>
                 </div>
             </div>
         </div>
