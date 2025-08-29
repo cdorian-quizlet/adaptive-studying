@@ -417,10 +417,12 @@ body {
 
 /* Written question feedback */
 .written-feedback {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
     margin-top: 20px;
+    position: relative;
+    z-index: 150; /* Higher than submit button (z-index: 100) */
 }
 
 /* User answer feedback removed - reusing input field instead */
@@ -435,6 +437,7 @@ body {
     font-weight: var(--typography-fontWeight-body-three);
     color: var(--sys-text-primary);
     position: relative;
+    display: block;
 }
 
 .correct-answer-feedback::before {

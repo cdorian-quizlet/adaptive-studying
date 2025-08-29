@@ -10,6 +10,7 @@ let questionsPerRound = 7;
 let currentRoundNumber = 1; // Track current round number
 let roundProgressData = {}; // Track progress within each round
 let lastShownQuestionFormat = null; // Track last shown format to prevent consecutive matching/flashcard
+let isTransitioning = false; // Prevent race conditions in question transitions
 
 // Matching question state
 let matchingPairs = [];
@@ -1229,9 +1230,111 @@ function initFirstRound() {
     showQuestion();
 }
 
+// Reset all feedback states from previous question
+function resetAllFeedbackStates() {
+    console.log('🧹 RESET: Clearing all feedback states');
+    
+    // Reset global state
+    selectedAnswer = null;
+    isAnswered = false;
+    
+    // Reset multiple choice buttons
+    const optionBtns = document.querySelectorAll('.option-btn');
+    optionBtns.forEach(btn => {
+        btn.classList.remove('selected', 'correct', 'correct-selected', 'incorrect', 'shake');
+        btn.disabled = false;
+        btn.style.cursor = 'pointer';
+    });
+    
+    // Reset written question elements
+    if (textAnswer) {
+        textAnswer.classList.remove('incorrect', 'correct');
+        textAnswer.disabled = false;
+        textAnswer.value = '';
+    }
+    if (textInput) {
+        textInput.classList.remove('incorrect', 'correct');
+    }
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('show');
+        submitBtn.style.cursor = 'pointer';
+    }
+    if (writtenFeedback) {
+        writtenFeedback.style.display = 'none';
+        writtenFeedback.style.visibility = '';
+        writtenFeedback.style.opacity = '';
+    }
+    if (correctAnswerFeedback) {
+        correctAnswerFeedback.textContent = '';
+    }
+    
+    // Reset flashcard elements
+    if (flashcardElement) {
+        flashcardElement.classList.remove('flipped');
+    }
+    if (gotItBtn && studyAgainBtn) {
+        gotItBtn.style.display = 'none';
+        studyAgainBtn.style.display = 'none';
+    }
+    
+    // Reset matching elements
+    selectedItems = [];
+    matchingPairs = [];
+    const matchingItems = document.querySelectorAll('.matching-item');
+    matchingItems.forEach(item => {
+        item.classList.remove('selected', 'matched', 'lightspeed', 'hidden', 'shake', 'incorrect', 'correct-match');
+        item.style.pointerEvents = '';
+    });
+    
+    // Remove any button containers from previous question
+    const buttonContainer = document.querySelector('.button-container');
+    if (buttonContainer) {
+        buttonContainer.remove();
+    }
+    const continueBtn = document.querySelector('.continue-btn');
+    if (continueBtn) {
+        continueBtn.remove();
+    }
+    removeExplanationButton();
+    
+    console.log('✅ RESET: All feedback states cleared');
+}
+
 // Show the current question
 function showQuestion() {
+    // Add bounds checking to prevent showing undefined questions
+    if (currentQuestionIndex >= questionsInRound.length) {
+        console.error('🚨 BOUNDS ERROR: currentQuestionIndex out of bounds:', {
+            currentQuestionIndex,
+            questionsInRoundLength: questionsInRound.length,
+            roundNumber: currentRoundNumber
+        });
+        // Complete round immediately if we're past the last question
+        completeRound();
+        return;
+    }
+    
     currentQuestion = questionsInRound[currentQuestionIndex];
+    
+    // Validate that we have a valid question
+    if (!currentQuestion) {
+        console.error('🚨 QUESTION ERROR: No question found at index:', {
+            currentQuestionIndex,
+            questionsInRound: questionsInRound.map(q => ({ id: q?.id, format: q?.currentFormat }))
+        });
+        // Try to complete round gracefully
+        completeRound();
+        return;
+    }
+    
+    console.log('📝 SHOWING QUESTION:', {
+        questionIndex: currentQuestionIndex,
+        questionId: currentQuestion.id,
+        totalQuestions: questionsInRound.length,
+        roundProgress: currentRoundProgress,
+        questionFormat: currentQuestion.currentFormat
+    });
     
     // Apply consecutive matching/flashcard prevention when showing questions
     if (lastShownQuestionFormat && 
@@ -1250,8 +1353,11 @@ function showQuestion() {
     // Update header title with current concept
     updateHeaderTitle();
     
-    // Reset question prompt classes
-    questionPrompt.classList.remove('flashcard-prompt');
+    // Reset ALL feedback states from previous question
+    resetAllFeedbackStates();
+    
+    // Reset question prompt classes and text
+    questionPrompt.classList.remove('flashcard-prompt', 'feedback', 'incorrect');
     
     // Only set question text for question types that need it (not matching or flashcard)
     if (currentQuestion.currentFormat !== 'matching' && currentQuestion.currentFormat !== 'flashcard') {
@@ -1867,23 +1973,47 @@ function showFeedback(isCorrect) {
             });
         }, 100); // Quicker feedback transition
     } else if (currentQuestion.currentFormat === 'written') {
+        console.log('🔍 WRITTEN FEEDBACK DEBUG:', {
+            writtenFeedback: !!writtenFeedback,
+            correctAnswerFeedback: !!correctAnswerFeedback,
+            currentAnswer: currentQuestion.correctAnswer,
+            textInputDisplay: textInput.style.display,
+            textInputComputed: getComputedStyle(textInput).display
+        });
+        
         // Show feedback for written questions
         if (isCorrect) {
             textAnswer.classList.add('correct');
             textInput.classList.add('correct');
-            // For correct answers, just show the correct answer in green
             correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
             setSourceBadge(correctAnswerFeedback);
             writtenFeedback.style.display = 'flex';
+            writtenFeedback.style.visibility = 'visible';
+            writtenFeedback.style.opacity = '1';
+            console.log('✅ Applied correct feedback styles');
         } else {
             textAnswer.classList.add('incorrect');
             textInput.classList.add('incorrect');
-            // User's incorrect answer stays in the input field with red styling
-            // Just show the correct answer below
             correctAnswerFeedback.textContent = currentQuestion.correctAnswer;
             setSourceBadge(correctAnswerFeedback);
             writtenFeedback.style.display = 'flex';
+            writtenFeedback.style.visibility = 'visible';
+            writtenFeedback.style.opacity = '1';
+            console.log('❌ Applied incorrect feedback styles');
         }
+        
+        // Force visibility check
+        setTimeout(() => {
+            const computedStyle = getComputedStyle(writtenFeedback);
+            console.log('Final feedback state:', {
+                display: writtenFeedback.style.display,
+                computedDisplay: computedStyle.display,
+                visibility: computedStyle.visibility,
+                opacity: computedStyle.opacity,
+                height: computedStyle.height,
+                feedbackText: correctAnswerFeedback.textContent
+            });
+        }, 100);
         
         // Disable input and hide submit button  
         textAnswer.disabled = true;
@@ -1927,11 +2057,38 @@ function showFeedback(isCorrect) {
 
 // Move to next question
 function nextQuestion() {
+    // Prevent race conditions from multiple simultaneous calls
+    if (isTransitioning) {
+        console.log('⚠️ BLOCKED: nextQuestion() already in progress');
+        return;
+    }
+    
+    isTransitioning = true;
+    
+    console.log('⏭️ NEXT QUESTION called:', {
+        currentIndex: currentQuestionIndex,
+        currentProgress: currentRoundProgress,
+        totalQuestions: questionsInRound.length,
+        isLastQuestion: currentQuestionIndex >= questionsInRound.length - 1
+    });
+    
     currentQuestionIndex++;
     currentRoundProgress++;
     
+    console.log('⏭️ AFTER INCREMENT:', {
+        newIndex: currentQuestionIndex,
+        newProgress: currentRoundProgress,
+        totalQuestions: questionsInRound.length,
+        shouldCompleteRound: currentQuestionIndex >= questionsInRound.length
+    });
+    
     if (currentQuestionIndex >= questionsInRound.length) {
         // End of current round - return to study path
+        console.log('🏁 COMPLETING ROUND:', {
+            roundNumber: currentRoundNumber,
+            questionsCompleted: currentQuestionIndex,
+            totalQuestions: questionsInRound.length
+        });
         totalRoundsCompleted++;
         saveRoundProgress();
         completeRound();
@@ -1997,6 +2154,9 @@ function nextQuestion() {
         
         // Fade back in
         questionContainer.classList.remove('fade-out');
+        
+        // Reset transition flag
+        isTransitioning = false;
     }, 150);
 }
 
@@ -2096,6 +2256,9 @@ function restoreRoundProgress() {
 
 // Complete current round and return to study path
 function completeRound() {
+    // Reset transition flag to clean up state
+    isTransitioning = false;
+    
     // Mark round as completed in study path
     if (window.StudyPath) {
         window.StudyPath.markRoundCompleted(currentRoundNumber);
@@ -3057,6 +3220,75 @@ window.testDynamicTextSizing = function() {
             console.log('Applied dynamic sizing to current question element');
         }
     }
+};
+
+// Debug function to test written question feedback
+window.testWrittenFeedback = function() {
+    console.log('Testing written question feedback...');
+    
+    // Check if we have written question elements
+    const textAnswerEl = document.getElementById('textAnswer');
+    const textInputEl = document.getElementById('textInput');
+    const writtenFeedbackEl = document.getElementById('writtenFeedback');
+    const correctAnswerFeedbackEl = document.getElementById('correctAnswerFeedback');
+    
+    console.log('Written feedback elements:', {
+        textAnswer: !!textAnswerEl,
+        textInput: !!textInputEl,
+        writtenFeedback: !!writtenFeedbackEl,
+        correctAnswerFeedback: !!correctAnswerFeedbackEl,
+        currentQuestionFormat: currentQuestion?.currentFormat,
+        currentQuestionAnswer: currentQuestion?.correctAnswer
+    });
+    
+    if (!textAnswerEl || !writtenFeedbackEl) {
+        console.log('❌ Missing written feedback elements. Make sure you\'re on a written question.');
+        return;
+    }
+    
+    // Log initial state
+    console.log('Initial state:', {
+        feedbackDisplay: writtenFeedbackEl.style.display,
+        feedbackClasses: writtenFeedbackEl.className,
+        inlineStyles: writtenFeedbackEl.getAttribute('style')
+    });
+    
+    // Simulate incorrect answer feedback
+    console.log('Simulating incorrect written answer feedback...');
+    selectedAnswer = 'wrong answer';
+    
+    // Apply feedback manually with all possible overrides
+    textAnswerEl.classList.add('incorrect');
+    textInputEl.classList.add('incorrect');
+    correctAnswerFeedbackEl.textContent = currentQuestion?.correctAnswer || 'Test correct answer';
+    
+    // Force show feedback with multiple approaches
+    writtenFeedbackEl.style.display = 'flex';
+    writtenFeedbackEl.style.visibility = 'visible';
+    writtenFeedbackEl.style.opacity = '1';
+    writtenFeedbackEl.style.height = 'auto';
+    writtenFeedbackEl.removeAttribute('hidden');
+    writtenFeedbackEl.classList.remove('hidden');
+    
+    textAnswerEl.disabled = true;
+    
+    console.log('Applied feedback styles. Check if feedback is visible.');
+    
+    // Log final state with computed styles
+    setTimeout(() => {
+        const computed = getComputedStyle(writtenFeedbackEl);
+        console.log('Final state after manual application:', {
+            feedbackDisplay: writtenFeedbackEl.style.display,
+            computedDisplay: computed.display,
+            computedVisibility: computed.visibility,
+            computedOpacity: computed.opacity,
+            computedHeight: computed.height,
+            feedbackText: correctAnswerFeedbackEl.textContent,
+            inputClasses: textAnswerEl.className,
+            containerClasses: textInputEl.className,
+            parentDisplay: getComputedStyle(textInputEl).display
+        });
+    }, 100);
 };
 
 // Test the new button container approach
