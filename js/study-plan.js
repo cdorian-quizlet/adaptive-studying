@@ -1089,6 +1089,7 @@ function generatePathStepsHTML() {
                     <div class="step-content">
                         <div class="step-text-group">
                             <h3 class="step-title">${concept}</h3>
+                            ${roundNumber === 2 || roundNumber === 4 ? '<div class="top-focus-pill"><span class="top-focus-pill-icon"></span>Top focus area</div>' : ''}
                             <div class="step-progress">
                                 <div class="step-progress-bar">
                                     <div class="step-progress-fill" style="width: 0%"></div>
@@ -1732,9 +1733,10 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('completed');
         stepCircle.querySelector('.step-icon').textContent = 'check';
         
-        // Hide play button for completed rounds
-        stepStatus.style.display = 'none';
+        // Show replay button for completed rounds (make them clickable to restart)
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">replay</span>`;
         stepStatus.classList.add('completed');
+        stepStatus.style.display = 'flex';
         
         stepProgressFill.style.width = '100%';
         stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for completed progress
@@ -1827,10 +1829,11 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.remove('in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        // Hide play button for disabled rounds
-        stepStatus.style.display = 'none';
+        // Show play button for disabled rounds (make them clickable to skip ahead)
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('next');
         stepStatus.classList.remove('in-progress');
+        stepStatus.style.display = 'flex';
         
         stepProgressFill.style.width = '0%';
         stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for disabled/next rounds
@@ -1855,9 +1858,10 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        // Hide play button for next/future rounds
-        stepStatus.style.display = 'none';
+        // Show play button for next/future rounds (make them clickable to skip ahead)
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('next');
+        stepStatus.style.display = 'flex';
         
         stepProgressFill.style.width = '0%';
         stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for disabled/next rounds
@@ -1881,9 +1885,10 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        // Hide play button for rounds with diagnostic progress (not current)
-        stepStatus.style.display = 'none';
+        // Show play button for rounds with diagnostic progress (make them clickable)
+        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
         stepStatus.classList.add('next');
+        stepStatus.style.display = 'flex';
         
         // Show diagnostic progress
         const progressPercentage = (roundProgress / studyPathData.questionsPerRound) * 100;

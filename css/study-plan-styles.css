@@ -62,6 +62,37 @@ body {
 .onboarding-sheet[style*="display: block"] .onboarding-content { transform: translateY(0); }
 .onboarding-header { margin-bottom: 16px; }
 .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:var(--color-skyblue-200); color:var(--sys-text-primary); font-weight:600; font-size:12px; }
+
+/* Top focus area pill */
+.top-focus-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  background: var(--color-skyblue-100);
+  color: var(--color-mint-700);
+  border-radius: 999px;
+  font-family: var(--typography-fontFamily);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  margin: 4px 0 0 0;
+  text-align: center;
+  max-width: fit-content;
+  gap: 6px;
+}
+
+.top-focus-pill-icon {
+  width: 16px;
+  height: 16px;
+  background: url('../images/upward-graph.png') center/contain no-repeat;
+  flex-shrink: 0;
+}
+
+/* Hide top focus pill when step is current (progress bar is shown) */
+.path-step.current .top-focus-pill {
+  display: none;
+}
 .onboarding-title { 
   font-family: var(--typography-fontFamily);
   font-size: var(--typography-size-subheading-two);
@@ -412,7 +443,7 @@ body {
 
 /* Study Path Section */
 .study-path-section {
-    padding: 0 20px 24px;
+    padding: 0 20px 120px; /* Increased bottom padding from 24px to 120px to prevent floating input from covering last step */
 }
 
 .path-container {
@@ -870,31 +901,22 @@ body {
     transform: scale(1.05);
 }
 
-/* Allow next rounds to be interactive with tertiary button style */
-.path-step.next:not(.diagnostic) {
+/* Make all non-current steps clickable and interactive */
+.path-step.completed,
+.path-step.next {
     cursor: pointer; /* Make clickable */
     pointer-events: auto; /* Enable interactions */
 }
 
-/* Allow diagnostic steps with "Skip ahead" to be clickable */
-.path-step.next.diagnostic {
-    cursor: pointer;
-    pointer-events: auto;
-}
-
-/* Allow completed steps to have subtle hover effects */
-.path-step.completed:hover {
-    transform: translateY(-1px); /* Subtle lift for completed rounds */
-}
-
-/* Allow next rounds to have subtle hover effects */
+/* Hover effects for all non-current steps */
+.path-step.completed:hover,
 .path-step.next:hover {
-    transform: translateY(-1px); /* Subtle lift for next rounds */
+    transform: translateY(-1px); /* Subtle lift for non-current steps */
 }
 
-/* Allow diagnostic next steps to have hover effects for skip-ahead functionality */
+/* Additional hover effect for diagnostic steps */
 .path-step.next.diagnostic:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px); /* Slightly more lift for diagnostic skip-ahead */
 }
 
 /* Disabled appearance for rounds below current diagnostic - exclude diagnostics */
