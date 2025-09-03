@@ -1965,7 +1965,7 @@ function setupEventListeners() {
             const makeChangeBtn = e.target.closest('.make-change-btn');
             if (makeChangeBtn) {
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopPropagation(); // Prevent accordion from closing
                 transformButtonToInput(makeChangeBtn);
                 return;
             }
@@ -2013,6 +2013,16 @@ function setupEventListeners() {
             // Check if click was on accordion content (to close accordion)
             const accordionContent = e.target.closest('.step-accordion-content');
             if (accordionContent) {
+                // Don't close accordion if clicking on "Make a change" button or input
+                const makeChangeBtn = e.target.closest('.make-change-btn');
+                const makeChangeInput = e.target.closest('.make-change-input');
+                const accordionAction = e.target.closest('.accordion-action');
+                
+                if (makeChangeBtn || makeChangeInput || accordionAction) {
+                    console.log('📋 Ignoring accordion close - clicked on make change element');
+                    return; // Don't close accordion when interacting with make change elements
+                }
+                
                 const step = accordionContent.closest('.path-step');
                 if (step && step.classList.contains('expanded')) {
                     const roundType = step.dataset.round;
@@ -2343,6 +2353,7 @@ function transformButtonToInput(button) {
     
     // Handle input events
     input.addEventListener('keydown', function(e) {
+        e.stopPropagation(); // Prevent event bubbling to accordion
         if (e.key === 'Enter') {
             handleInputSubmit(input);
         } else if (e.key === 'Escape') {
@@ -2350,7 +2361,8 @@ function transformButtonToInput(button) {
         }
     });
     
-    input.addEventListener('blur', function() {
+    input.addEventListener('blur', function(e) {
+        e.stopPropagation(); // Prevent event bubbling to accordion
         // Small delay to allow for potential enter key press
         setTimeout(() => {
             if (input.value.trim()) {
@@ -2359,6 +2371,14 @@ function transformButtonToInput(button) {
                 restoreButton(accordionAction);
             }
         }, 100);
+    });
+    
+    input.addEventListener('focus', function(e) {
+        e.stopPropagation(); // Prevent event bubbling to accordion
+    });
+    
+    input.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent event bubbling to accordion
     });
 }
 

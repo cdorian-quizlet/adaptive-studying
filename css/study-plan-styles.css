@@ -1325,7 +1325,7 @@ body {
     border: 2px solid var(--color-twilight-200);
     border-radius: var(--radius-full, 200px);
     font-family: var(--typography-fontFamily);
-    font-size: max(16px, var(--typography-size-subheading-four)); /* Prevent mobile zoom by ensuring 16px minimum */
+    font-size: 16px !important; /* Force 16px to prevent mobile zoom - no fallback needed */
     font-weight: 600;
     color: var(--sys-text-primary);
     outline: none;
@@ -1336,6 +1336,8 @@ body {
     background-size: 16px 16px;
     background-repeat: no-repeat;
     background-position: 16px center; /* Position icon 16px from left, centered vertically */
+    -webkit-text-size-adjust: 100%; /* Prevent text size adjustment on iOS */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
 }
 
 .make-change-input::placeholder {
@@ -1345,8 +1347,8 @@ body {
 
 .make-change-input:focus {
     border-color: var(--color-twilight-200);
-    /* Ensure no zoom on mobile by maintaining 16px+ font size on focus */
-    font-size: max(16px, var(--typography-size-subheading-four));
+    font-size: 16px !important; /* Force 16px on focus to prevent mobile zoom */
+    -webkit-text-size-adjust: 100%; /* Prevent text size adjustment on iOS */
 }
 
 /* Smooth transition positioning */
