@@ -95,6 +95,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize progress ring first
     initializeProgressRing();
     
+    // Initialize floating feedback input
+    initFloatingFeedback();
+    
     // Load onboarding data first so we have course and goal info
     loadOnboardingData();
     
@@ -105,50 +108,46 @@ document.addEventListener('DOMContentLoaded', function() {
     generateDynamicStudyPlan();
     loadStudyPathData();
 
-    // Check if adaptive learning system is available and try to use it for progress
+    // Use simplified progress system (no adaptive learning dependency)
     setTimeout(() => {
-        const adaptiveProgressUpdated = refreshAdaptiveLearningProgress();
-        
-        if (!adaptiveProgressUpdated) {
-            // Check if progress has been reset FIRST, before loading any data
-            const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-            if (!hasProgressData) {
-                console.log('No progress data found on page load, resetting overview card');
-                // Reset overview card immediately for 0% state
-                const overviewTitle = document.querySelector('.overview-title');
-                
-                if (progressSummary) {
-                    progressSummary.style.display = 'none'; // Hide progress summary for 0% state
-                }
-                if (overviewTitle) {
-                    const examDate = formatExamDate();
-                    if (examDate) {
-                        overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
-                    } else {
-                        overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
-                    }
-                }
-                
-                // Initialize circular progress properly to start from 0% (with visible pill)
-                initializeProgressRing();
-                
-                // Reset circular progress and ensure circular view is shown
-                updateCircularProgress(0, false); // Don't animate the initial 0% reset
-                
-                // Make sure circular view is visible and add zero-state class
-                const circularView = document.getElementById('circularProgressView');
-                const trendView = document.getElementById('trendGraphView');
-                if (circularView) {
-                    circularView.style.display = 'flex';
-                    circularView.classList.add('zero-state');
-                }
-                if (trendView) trendView.style.display = 'none';
-            } else {
-                // Fall back to traditional sync
-                syncDailyProgressWithHome();
+        // Check if progress has been reset FIRST, before loading any data
+        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+        if (!hasProgressData) {
+            console.log('No progress data found on page load, resetting overview card');
+            // Reset overview card immediately for 0% state
+            const overviewTitle = document.querySelector('.overview-title');
+            
+            if (progressSummary) {
+                progressSummary.style.display = 'none'; // Hide progress summary for 0% state
             }
+            if (overviewTitle) {
+                const examDate = formatExamDate();
+                if (examDate) {
+                    overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
+                } else {
+                    overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+                }
+            }
+            
+            // Initialize circular progress properly to start from 0% (with visible pill)
+            initializeProgressRing();
+            
+            // Reset circular progress and ensure circular view is shown
+            updateCircularProgress(0, false); // Don't animate the initial 0% reset
+            
+            // Make sure circular view is visible and add zero-state class
+            const circularView = document.getElementById('circularProgressView');
+            const trendView = document.getElementById('trendGraphView');
+            if (circularView) {
+                circularView.style.display = 'flex';
+                circularView.classList.add('zero-state');
+            }
+            if (trendView) trendView.style.display = 'none';
+        } else {
+            // Use simplified sync with traditional calculation
+            syncDailyProgressWithHome();
         }
-    }, 200); // Small delay to ensure adaptive learning is fully loaded
+    }, 200); // Small delay to ensure DOM is ready
 
     updateUI();
     setupEventListeners();
@@ -174,26 +173,35 @@ function initializeHeader() {
     
     console.log('Header initialization - onboarding data:', {
         courseName: studyPathData.courseName,
-        goals: onboardingData.goals
+        goals: onboardingData.goals,
+        courseIncludesDash: studyPathData.courseName?.includes(' - '),
+        extractedCourseCode: studyPathData.courseName?.includes(' - ') ? 
+            studyPathData.courseName.split(' - ')[0] : studyPathData.courseName
     });
     
     if (studyPathData.courseName) {
         // Extract course code (everything before " - " if it exists)
         const courseCode = studyPathData.courseName.includes(' - ') ? 
-            studyPathData.courseName.split(' - ')[0] : studyPathData.courseName;
+            studyPathData.courseName.split(' - ')[0].trim() : studyPathData.courseName.trim();
         
-        // Get first goal from onboarding data
-        const firstGoal = Array.isArray(onboardingData.goals) && onboardingData.goals.length > 0 ? 
-            onboardingData.goals[0] : '';
+        // Get first goal from onboarding data (exam name)
+        const examName = Array.isArray(onboardingData.goals) && onboardingData.goals.length > 0 ? 
+            onboardingData.goals[0].trim() : '';
         
-        // Format as "FINC 301, Exam 1"
-        if (firstGoal) {
-            headerTitle = `${courseCode}, ${firstGoal}`;
+        // Format as "BIOL 210, Exam 1" - just course code and exam name
+        if (examName) {
+            headerTitle = `${courseCode}, ${examName}`;
         } else {
             headerTitle = courseCode;
         }
         
-        console.log('Generated header title:', headerTitle);
+        console.log('🎯 Generated header title:', headerTitle, {
+            courseCode,
+            examName,
+            originalCourseName: studyPathData.courseName
+        });
+    } else {
+        console.log('⚠️ No course name found in studyPathData');
     }
     
     appHeader = new AppHeader({
@@ -278,29 +286,35 @@ function updateTodaysProgress() {
     return dailyData;
 }
 
-// Calculate overall study plan progress using adaptive learning data
+// Calculate overall study plan progress using simplified grading system
 function calculateOverallPlanProgress() {
     try {
-        // Use the global studyPathData if available
-        if (!studyPathData || !studyPathData.concepts) {
+        // First try to load fresh studyPathData from localStorage
+        const studyPathDataString = localStorage.getItem('studyPathData');
+        let currentStudyPathData = studyPathData; // Use global if available
+        
+        if (studyPathDataString) {
+            try {
+                currentStudyPathData = JSON.parse(studyPathDataString);
+                console.log('🔍 DEBUG: [STUDY PLAN] Loaded fresh studyPathData from localStorage');
+            } catch (e) {
+                console.warn('Failed to parse studyPathData from localStorage, using global');
+            }
+        }
+        
+        // Use the loaded studyPathData
+        if (!currentStudyPathData || !currentStudyPathData.concepts) {
             console.log('🔍 DEBUG: [STUDY PLAN] No study path data found, progress is 0%');
             return 0;
         }
         
-        // Try to get adaptive learning progress first
-        const adaptiveProgress = getAdaptiveLearningProgress();
-        if (adaptiveProgress !== null) {
-            console.log('🔍 DEBUG: [STUDY PLAN] Using adaptive learning progress:', adaptiveProgress);
-            return adaptiveProgress;
-        }
-        
-        // Fallback to traditional calculation
-        const questionsPerRound = studyPathData.questionsPerRound || 7;
-        const completedRounds = studyPathData.completedRounds || 0;
-        const currentRoundProgress = studyPathData.currentRoundProgress || 0;
+        // Use simplified traditional calculation only
+        const questionsPerRound = currentStudyPathData.questionsPerRound || 7;
+        const completedRounds = currentStudyPathData.completedRounds || 0;
+        const currentRoundProgress = currentStudyPathData.currentRoundProgress || 0;
         
         // Get total rounds from concepts
-        const totalRounds = studyPathData.concepts.length || 4; // Fallback to 4 if no concepts
+        const totalRounds = currentStudyPathData.concepts.length || 4; // Fallback to 4 if no concepts
         
         // Calculate total questions in plan
         const totalQuestions = totalRounds * questionsPerRound;
@@ -311,7 +325,7 @@ function calculateOverallPlanProgress() {
         // Calculate percentage
         const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
         
-        console.log('🔍 DEBUG: [STUDY PLAN] Traditional progress calculation:', {
+        console.log('🔍 DEBUG: [STUDY PLAN] Simplified progress calculation:', {
             totalRounds,
             questionsPerRound,
             totalQuestions,
@@ -519,28 +533,7 @@ function updateProgressSummary() {
         console.log('🔍 DEBUG: [STUDY PLAN] Re-initializing progressSummary element:', !!progressSummary);
     }
     
-    // First try to use adaptive learning progress
-    const adaptiveProgress = getAdaptiveLearningProgress();
-    if (adaptiveProgress !== null) {
-        console.log('🔍 DEBUG: [STUDY PLAN] Using adaptive learning progress in updateProgressSummary:', adaptiveProgress);
-        
-        // Update UI based on adaptive learning progress
-        if (progressSummary) {
-            if (adaptiveProgress === 0) {
-                progressSummary.style.display = 'none'; // Hide for 0% state
-            } else {
-                progressSummary.style.display = 'block';
-                progressSummary.textContent = `Study plan ${adaptiveProgress}% complete`;
-            }
-        }
-        
-        // Update circular progress
-        updateCircularProgress(adaptiveProgress, false);
-        showCircularProgress();
-        return;
-    }
-    
-    // Fall back to traditional progress calculation
+    // Use simplified progress calculation
     const dailyData = getDailyProgress();
     const today = getTodayDateString();
     const yesterday = new Date();
@@ -604,18 +597,26 @@ function updateOverviewCardProgress() {
     const circularView = document.getElementById('circularProgressView');
     const overviewTitle = document.querySelector('.overview-title');
     
-    // First try to use adaptive learning progress
-    const adaptiveProgress = getAdaptiveLearningProgress();
-    let overallProgressPercentage = 0;
-    
-    if (adaptiveProgress !== null) {
-        console.log('🔍 DEBUG: [STUDY PLAN] Using adaptive learning progress:', adaptiveProgress);
-        overallProgressPercentage = adaptiveProgress;
-    } else {
-        // Fall back to traditional progress calculation
-        overallProgressPercentage = calculateOverallPlanProgress();
-        console.log('🔍 DEBUG: [STUDY PLAN] Using traditional progress calculation:', overallProgressPercentage);
+    // Validate critical DOM elements
+    if (!progressSummary) {
+        console.error('❌ [STUDY PLAN] progressSummary element not found');
     }
+    if (!circularView) {
+        console.error('❌ [STUDY PLAN] circularProgressView element not found');
+    }
+    
+    // Use simplified progress calculation directly
+    let overallProgressPercentage = calculateOverallPlanProgress();
+    console.log('🔍 DEBUG: [STUDY PLAN] Using simplified progress calculation:', overallProgressPercentage);
+    
+    // Validate and sanitize progress value
+    if (isNaN(overallProgressPercentage) || overallProgressPercentage < 0) {
+        console.warn('⚠️ [STUDY PLAN] Invalid progress percentage, defaulting to 0:', overallProgressPercentage);
+        overallProgressPercentage = 0;
+    }
+    
+    // Cap at 100%
+    overallProgressPercentage = Math.min(overallProgressPercentage, 100);
     
     // Update overview card based on progress
     if (overallProgressPercentage === 0) {
@@ -655,6 +656,55 @@ function updateOverviewCardProgress() {
         overviewTitleText: overviewTitle?.textContent
     });
 }
+
+// Debug function to test progress tracking
+window.debugProgressTracking = function() {
+    console.log('🐛 DEBUG: Progress tracking debug info:');
+    
+    // Check localStorage data
+    const studyPathDataStr = localStorage.getItem('studyPathData');
+    const currentRoundProgress = localStorage.getItem('currentRoundProgress');
+    const currentRoundNumber = localStorage.getItem('currentRoundNumber');
+    const studyProgress = localStorage.getItem('studyProgress');
+    const roundProgressData = localStorage.getItem('roundProgressData');
+    
+    console.log('📁 localStorage data:', {
+        studyPathData: studyPathDataStr ? JSON.parse(studyPathDataStr) : null,
+        currentRoundProgress: currentRoundProgress,
+        currentRoundNumber: currentRoundNumber,
+        studyProgress: studyProgress,
+        roundProgressData: roundProgressData ? JSON.parse(roundProgressData) : null
+    });
+    
+    // Test progress calculation
+    const calculatedProgress = calculateOverallPlanProgress();
+    console.log('🧮 Calculated progress:', calculatedProgress);
+    
+    // Check DOM elements
+    const progressSummary = document.getElementById('progressSummary');
+    const progressPercentageText = document.getElementById('progressPercentageText');
+    const circularView = document.getElementById('circularProgressView');
+    
+    console.log('🎯 DOM elements:', {
+        progressSummary: {
+            exists: !!progressSummary,
+            text: progressSummary?.textContent,
+            display: progressSummary?.style.display
+        },
+        progressPercentageText: {
+            exists: !!progressPercentageText,
+            text: progressPercentageText?.textContent
+        },
+        circularView: {
+            exists: !!circularView,
+            classes: circularView?.className
+        }
+    });
+    
+    // Force update
+    console.log('🔄 Force updating overview card...');
+    updateOverviewCardProgress();
+};
 
 // Helper function to format exam date for headlines
 function formatExamDate() {
@@ -830,30 +880,50 @@ function refreshAdaptiveLearningProgress() {
 // Refresh progress when returning from study screen
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        console.log('Study plan page became visible, refreshing progress data');
+        console.log('🔄 STUDY PLAN BECAME VISIBLE - Refreshing progress data');
+        
+        // Debug current localStorage state
+        const currentRoundProgressLS = localStorage.getItem('currentRoundProgress');
+        const currentRoundNumberLS = localStorage.getItem('currentRoundNumber');
+        const studyPathDataLS = localStorage.getItem('studyPathData');
+        
+        console.log('📱 VISIBILITY CHANGE - Current localStorage:', {
+            currentRoundProgress: currentRoundProgressLS,
+            currentRoundNumber: currentRoundNumberLS,
+            studyPathData: studyPathDataLS ? JSON.parse(studyPathDataLS) : null,
+            fromQuestionScreen: sessionStorage.getItem('fromQuestionScreen')
+        });
 
         // Store current progress before updating
         const currentRound = studyPathData.currentRound;
         const currentProgress = studyPathData.currentRoundProgress;
-
-        // First try to refresh adaptive learning progress
-        const adaptiveProgressUpdated = refreshAdaptiveLearningProgress();
         
-        // Load new data and sync with home page
+        console.log('📊 BEFORE REFRESH - studyPathData:', {
+            currentRound,
+            currentProgress,
+            completedRounds: studyPathData.completedRounds
+        });
+
+        // Load new data from localStorage (no adaptive learning dependency)
+        console.log('📥 Loading studyPathData from localStorage...');
         loadStudyPathData();
         
-        if (!adaptiveProgressUpdated) {
-            // Fall back to traditional sync if adaptive learning not available
-            syncDailyProgressWithHome();
-        }
+        console.log('📊 AFTER REFRESH - studyPathData:', {
+            currentRound: studyPathData.currentRound,
+            currentProgress: studyPathData.currentRoundProgress,
+            completedRounds: studyPathData.completedRounds
+        });
+        
+        // Sync with home page using traditional calculation
+        syncDailyProgressWithHome();
         
         // Ensure current round progress is properly synced after loading
         syncCurrentRoundProgressFromRoundData();
 
         // Check if progress has been reset (no data in localStorage)
         const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-        if (!hasProgressData && !adaptiveProgressUpdated) {
-            console.log('Progress data has been reset, updating overview card');
+        if (!hasProgressData) {
+            console.log('❌ Progress data has been reset, updating overview card');
             // Reset overview card display for 0% state
             const overviewTitle = document.querySelector('.overview-title');
             
@@ -875,15 +945,30 @@ document.addEventListener('visibilitychange', function() {
 
         // Check if current round progress increased and trigger animation
         const newProgress = studyPathData.currentRoundProgress;
+        console.log('🎯 PROGRESS COMPARISON:', {
+            oldRound: currentRound,
+            newRound: studyPathData.currentRound,
+            oldProgress: currentProgress,
+            newProgress: newProgress,
+            progressIncreased: studyPathData.currentRound === currentRound && newProgress > currentProgress
+        });
+        
         if (studyPathData.currentRound === currentRound && newProgress > currentProgress) {
-            console.log(`Progress increased from ${currentProgress} to ${newProgress} for round ${currentRound}`);
+            console.log(`📈 Progress increased from ${currentProgress} to ${newProgress} for round ${currentRound}`);
             previousProgress.set(currentRound, currentProgress);
             setTimeout(() => {
                 animateProgressUpdate(currentRound, currentProgress, newProgress);
             }, 100); // Small delay to ensure DOM is ready
         } else {
+            console.log('🔄 No progress increase detected, calling updateUI');
             updateUI();
         }
+        
+        // Force overview card update after everything
+        setTimeout(() => {
+            console.log('🔄 Force updating overview card after visibility change...');
+            updateOverviewCardProgress();
+        }, 500);
     }
 });
 
@@ -1054,6 +1139,8 @@ function generatePathStepsHTML() {
             const startIndex = roundNumber - 2; // Start from 2 rounds ago
             const endIndex = roundNumber; // Up to current round
             conceptsCovered = studyPathData.concepts.slice(startIndex, endIndex);
+            
+            console.log(`Quiz ${quizNumber} will test concepts:`, conceptsCovered);
             
             const hasNextStepAfterDiagnostic = index < studyPathData.concepts.length - 1;
             html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, '', conceptsCovered);
@@ -1359,16 +1446,23 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
     const oldPercentage = (oldProgress / studyPathData.questionsPerRound) * 100;
     const newPercentage = (newProgress / studyPathData.questionsPerRound) * 100;
     
-    // Set initial state
-    stepProgressFill.style.width = `${oldPercentage}%`;
-    
-    // Show progress bar if needed
-    if (newProgress > 0) {
-        stepProgress.classList.add('has-progress');
+    // Set initial state with minimum 8px width for 0% state
+    const stepProgressBar = step.querySelector('.step-progress-bar');
+    if (oldPercentage === 0) {
+        stepProgressFill.style.width = '8px';
+        stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+        if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
+    } else {
+        stepProgressFill.style.width = `${oldPercentage}%`;
+        stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for actual progress
+        if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)'; // Twilight background for progress
     }
     
-    // Animate text update
-    if (stepProgressText && newProgress > 0) {
+    // Always show progress bar for current step
+    stepProgress.classList.add('has-progress');
+    
+    // Always animate text update
+    if (stepProgressText) {
         stepProgressText.classList.add('updating');
         clearProgressTextFade(); // Clear any existing fade
         stepProgressText.style.opacity = '1';
@@ -1377,6 +1471,13 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
         setTimeout(() => {
             stepProgressText.textContent = `${Math.round(newPercentage)}% complete`;
             stepProgressText.classList.remove('updating');
+            
+            // Set text color based on progress
+            if (newPercentage === 0) {
+                stepProgressText.style.color = 'var(--color-gray-500)';
+            } else {
+                stepProgressText.style.color = 'var(--sys-text-highlight)';
+            }
             
             // Check if user came from question screen for special animation
             const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
@@ -1388,16 +1489,19 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
                 startProgressTextFade(stepProgressText);
             }
         }, 150);
-    } else if (stepProgressText && newProgress === 0) {
-        // Handle case where progress goes to 0
-        stepProgressText.textContent = '';
-        clearProgressTextFade(); // Clear any existing fade
-        stepProgressText.style.opacity = '1';
     }
     
     // Animate progress bar
     setTimeout(() => {
-        stepProgressFill.style.width = `${newPercentage}%`;
+        if (newPercentage === 0) {
+            stepProgressFill.style.width = '8px';
+            stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+            if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
+        } else {
+            stepProgressFill.style.width = `${newPercentage}%`;
+            stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for actual progress
+            if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)'; // Twilight background for progress
+        }
     }, 50);
     
     // Update the rest of the UI after animation starts
@@ -1628,11 +1732,14 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('completed');
         stepCircle.querySelector('.step-icon').textContent = 'check';
         
-        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
-        stepStatus.style.display = 'flex'; // Show tertiary button for completed rounds
+        // Hide play button for completed rounds
+        stepStatus.style.display = 'none';
         stepStatus.classList.add('completed');
         
         stepProgressFill.style.width = '100%';
+        stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for completed progress
+        const stepProgressBar = step.querySelector('.step-progress-bar');
+        if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)'; // Twilight background for completed
         stepProgress.classList.remove('has-progress'); // Remove progress display
         
         // Hide progress text for completed rounds
@@ -1665,35 +1772,44 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         }
         
         const progressPercentage = (studyPathData.currentRoundProgress / studyPathData.questionsPerRound) * 100;
-        stepProgressFill.style.width = `${progressPercentage}%`;
         
-        // Only show progress bar and text when there's actual progress
-        if (studyPathData.currentRoundProgress > 0) {
-            stepProgress.classList.add('has-progress');
-            // Update progress text for current round (only if not currently animating)
-            if (stepProgressText && !stepProgressText.classList.contains('updating')) {
-                stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
-                
-                // Check if user came from question screen for special animation
-                const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
-                if (fromQuestionScreen) {
-                    // Show immediately when coming from question screen
-                    console.log('🎬 Triggering progress text entry animation for current round');
-                    showProgressTextWithFadeOut(stepProgressText);
-                } else {
-                    // Normal visibility for regular updates
-                    stepProgressText.style.opacity = '1';
-                    // Start fade out animation after brief display
-                    startProgressTextFade(stepProgressText);
-                }
-            }
+        // Add minimum visible progress (8px) for encouragement - creates 8x8px square at 0%
+        const stepProgressBar = step.querySelector('.step-progress-bar');
+        if (progressPercentage === 0) {
+            stepProgressFill.style.width = '8px';
+            stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+            if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
         } else {
-            stepProgress.classList.remove('has-progress');
-            // Hide progress text when no progress
-            if (stepProgressText && !stepProgressText.classList.contains('updating')) {
-                stepProgressText.textContent = '';
-                clearProgressTextFade(); // Clear any existing fade
+            stepProgressFill.style.width = `${progressPercentage}%`;
+            stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for actual progress
+            if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)'; // Twilight background for progress
+        }
+        
+        // Always show progress bar for current step, even at 0%
+        stepProgress.classList.add('has-progress');
+        
+        // Always show progress text for current step, even at 0%
+        if (stepProgressText && !stepProgressText.classList.contains('updating')) {
+            stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
+            
+            // Set text color based on progress
+            if (progressPercentage === 0) {
+                stepProgressText.style.color = 'var(--color-gray-500)';
+            } else {
+                stepProgressText.style.color = 'var(--sys-text-highlight)';
+            }
+            
+            // Check if user came from question screen for special animation
+            const fromQuestionScreen = sessionStorage.getItem('fromQuestionScreen') === 'true';
+            if (fromQuestionScreen) {
+                // Show immediately when coming from question screen
+                console.log('🎬 Triggering progress text entry animation for current round');
+                showProgressTextWithFadeOut(stepProgressText);
+            } else {
+                // Normal visibility for regular updates
                 stepProgressText.style.opacity = '1';
+                // Start fade out animation after brief display
+                startProgressTextFade(stepProgressText);
             }
         }
         
@@ -1711,12 +1827,15 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.remove('in-progress');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+        // Hide play button for disabled rounds
+        stepStatus.style.display = 'none';
         stepStatus.classList.add('next');
         stepStatus.classList.remove('in-progress');
-        stepStatus.style.display = 'flex';
         
         stepProgressFill.style.width = '0%';
+        stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for disabled/next rounds
+        const stepProgressBar = step.querySelector('.step-progress-bar');
+        if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for disabled
         stepProgress.classList.remove('has-progress');
         
         // Hide progress text for disabled rounds
@@ -1736,11 +1855,14 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+        // Hide play button for next/future rounds
+        stepStatus.style.display = 'none';
         stepStatus.classList.add('next');
-        stepStatus.style.display = 'flex';
         
         stepProgressFill.style.width = '0%';
+        stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for disabled/next rounds
+        const stepProgressBar = step.querySelector('.step-progress-bar');
+        if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for disabled
         stepProgress.classList.remove('has-progress');
         
         // Hide progress text for next rounds
@@ -1759,18 +1881,35 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
-        stepStatus.innerHTML = `<span class="material-icons-round loaded">play_arrow</span>`;
+        // Hide play button for rounds with diagnostic progress (not current)
+        stepStatus.style.display = 'none';
         stepStatus.classList.add('next');
-        stepStatus.style.display = 'flex';
         
         // Show diagnostic progress
         const progressPercentage = (roundProgress / studyPathData.questionsPerRound) * 100;
-        stepProgressFill.style.width = `${progressPercentage}%`;
+        const stepProgressBar = step.querySelector('.step-progress-bar');
+        if (progressPercentage === 0) {
+            stepProgressFill.style.width = '8px';
+            stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+            if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
+        } else {
+            stepProgressFill.style.width = `${progressPercentage}%`;
+            stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for actual progress
+            if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)'; // Twilight background for progress
+        }
         stepProgress.classList.add('has-progress');
         
-        // Hide progress text for diagnostic progress rounds (not current)
+        // Show progress text for diagnostic progress rounds
         if (stepProgressText) {
-            stepProgressText.textContent = '';
+            stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
+            
+            // Set text color based on progress
+            if (progressPercentage === 0) {
+                stepProgressText.style.color = 'var(--color-gray-500)';
+            } else {
+                stepProgressText.style.color = 'var(--sys-text-highlight)';
+            }
+            stepProgressText.style.opacity = '1';
         }
         
         // Update spacer color for next rounds
@@ -2510,28 +2649,49 @@ function startDiagnosticTest(type) {
     // Save current state
     saveStudyPathData();
     
-    // Navigate to the appropriate diagnostic test
-    switch (type) {
-        case 'initial':
-            window.location.href = '../html/diagnostic-1.html';
-            break;
-        case 'mid':
-            window.location.href = '../html/diagnostic-2.html';
-            break;
-        case 'final':
-            window.location.href = '../html/diagnostic-3.html';
-            break;
-        default:
-            // For checkpoint diagnostics and other types, use diagnostic-1.html as default
-            // You can create additional diagnostic HTML files as needed
-            if (type.startsWith('checkpoint')) {
-                showToast(`Starting checkpoint diagnostic test...`);
-                window.location.href = '../html/diagnostic-1.html';
-            } else {
-            showToast(`Starting ${type} diagnostic test...`);
-                window.location.href = '../html/diagnostic-1.html';
-            }
+    // Determine which diagnostic number this corresponds to and which rounds it tests
+    let diagnosticNumber = 1;
+    let diagnosticURL = '../html/diagnostic-1.html';
+    
+    if (type === 'initial') {
+        diagnosticNumber = 1;
+        diagnosticURL = '../html/diagnostic-1.html';
+    } else if (type === 'mid') {
+        diagnosticNumber = 1; // Map mid to diagnostic 1 for now
+        diagnosticURL = '../html/diagnostic-1.html';
+    } else if (type === 'final') {
+        diagnosticNumber = 1; // Map final to diagnostic 1 for now
+        diagnosticURL = '../html/diagnostic-1.html';
+    } else if (type.startsWith('checkpoint')) {
+        // Extract checkpoint number
+        const checkpointNum = parseInt(type.replace('checkpoint', ''));
+        diagnosticNumber = checkpointNum;
+        diagnosticURL = '../html/diagnostic-1.html'; // Use diagnostic-1 for all for now
     }
+    
+    // Get which rounds this diagnostic should test
+    const roundsTested = getDiagnosticTestedRounds(diagnosticNumber);
+    const conceptsToTest = roundsTested.map(roundNum => {
+        return studyPathData.concepts[roundNum - 1] || `Round ${roundNum}`;
+    });
+    
+    console.log(`Starting diagnostic ${diagnosticNumber} to test rounds ${roundsTested.join(', ')}: ${conceptsToTest.join(', ')}`);
+    
+    // Store diagnostic configuration for the test page
+    localStorage.setItem('diagnosticConfig', JSON.stringify({
+        diagnosticNumber: diagnosticNumber,
+        roundsTested: roundsTested,
+        conceptsToTest: conceptsToTest,
+        questionsPerRound: studyPathData.questionsPerRound || 7,
+        testDescription: `Testing rounds ${roundsTested.join(' & ')}: ${conceptsToTest.join(', ')}`
+    }));
+    
+    console.log(`🔍 DIAGNOSTIC CONFIG: Diagnostic ${diagnosticNumber} will test exactly ${roundsTested.length} rounds: ${roundsTested.join(', ')}`);
+    console.log(`🔍 DIAGNOSTIC CONFIG: These correspond to concepts: ${conceptsToTest.join(', ')}`);
+    
+    // Navigate to the appropriate diagnostic test
+    showToast(`Starting diagnostic test for rounds ${roundsTested.join(' & ')}`, 3000);
+    window.location.href = diagnosticURL;
 }
 
 // Start a round
@@ -2865,9 +3025,6 @@ function checkDiagnosticCompletion() {
     const accuracy = urlParams.get('accuracy');
     
     if (diagnostic && accuracy) {
-        // Show confetti animation
-        showConfetti();
-        
         // Update progress based on diagnostic results
         updateProgressFromDiagnostic(parseInt(diagnostic), parseInt(accuracy));
         
@@ -2905,6 +3062,31 @@ function showConfetti() {
     }, 400);
 }
 
+// Get which rounds a diagnostic test covers (the 2 rounds above it)
+function getDiagnosticTestedRounds(diagnosticNumber) {
+    // Diagnostic tests are placed every 2 rounds, testing the previous 2 rounds
+    // Quiz 1 (diagnosticNumber 1): Tests rounds 1 & 2
+    // Quiz 2 (diagnosticNumber 2): Tests rounds 3 & 4  
+    // Quiz 3 (diagnosticNumber 3): Tests rounds 5 & 6
+    // etc.
+    
+    const firstRound = (diagnosticNumber - 1) * 2 + 1;
+    const secondRound = firstRound + 1;
+    
+    // Ensure we don't exceed the total number of concept rounds
+    const totalConcepts = studyPathData.concepts.length || 7;
+    const roundsTested = [];
+    
+    if (firstRound <= totalConcepts) {
+        roundsTested.push(firstRound);
+    }
+    if (secondRound <= totalConcepts) {
+        roundsTested.push(secondRound);
+    }
+    
+    return roundsTested;
+}
+
 // Update progress based on diagnostic test results
 function updateProgressFromDiagnostic(diagnosticNumber, accuracy) {
     console.log(`Processing diagnostic ${diagnosticNumber} completion with ${accuracy}% accuracy`);
@@ -2913,72 +3095,78 @@ function updateProgressFromDiagnostic(diagnosticNumber, accuracy) {
     const previousCompletedRounds = studyPathData.completedRounds;
     const previousCurrentRound = studyPathData.currentRound;
     
-    // Calculate how many cards should be marked as learned based on accuracy
-    let cardsToMark = 0;
-    let cardRange = [];
+    // Calculate which 2 rounds this diagnostic tested based on diagnostic placement
+    const roundsTested = getDiagnosticTestedRounds(diagnosticNumber);
+    console.log(`Diagnostic ${diagnosticNumber} tested rounds:`, roundsTested);
     
-    switch (diagnosticNumber) {
-        case 1:
-            cardsToMark = Math.round((accuracy / 100) * 21); // Cards 1-21
-            cardRange = [1, 21];
-            break;
-        case 2:
-            cardsToMark = Math.round((accuracy / 100) * 14); // Cards 22-35
-            cardRange = [22, 35];
-            break;
-        case 3:
-            cardsToMark = Math.round((accuracy / 100) * 15); // Cards 36-50
-            cardRange = [36, 50];
-            break;
+    // Calculate how many questions should be marked as correct per round based on accuracy
+    const questionsPerRound = studyPathData.questionsPerRound || 7;
+    const totalQuestionsInDiagnostic = roundsTested.length * questionsPerRound;
+    const totalCorrectQuestions = Math.round((accuracy / 100) * totalQuestionsInDiagnostic);
+    
+    console.log(`Diagnostic had ${totalCorrectQuestions} correct out of ${totalQuestionsInDiagnostic} total questions`);
+    
+    // If 0% accuracy, don't add any progress to the tested rounds
+    if (accuracy === 0 || totalCorrectQuestions === 0) {
+        console.log(`🔍 DIAGNOSTIC: 0% accuracy - no progress will be added to tested rounds ${roundsTested.join(', ')}`);
+        // Still mark diagnostic as completed but don't add progress
+        markDiagnosticCompleted(diagnosticNumber);
+        
+        // Save the updated state and exit early
+        saveStudyPathData();
+        updateUI();
+        showToast(`Diagnostic ${diagnosticNumber} completed! No progress added to rounds ${roundsTested.join(' & ')} due to 0% accuracy.`, 5000);
+        return;
     }
     
     // Update diagnostic test completion status and icon
     markDiagnosticCompleted(diagnosticNumber);
     
-    // Update round progress based on specific cards learned
-    updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRange);
+    // Distribute correct answers evenly across the tested rounds
+    const questionsPerRoundFromDiagnostic = Math.floor(totalCorrectQuestions / roundsTested.length);
+    const remainderQuestions = totalCorrectQuestions % roundsTested.length;
     
-    // Calculate how many rounds should be completed based on diagnostic results
+    // Update round progress based on diagnostic results
+    updateRoundProgressFromDiagnostic(diagnosticNumber, roundsTested, questionsPerRoundFromDiagnostic, remainderQuestions);
+    
+    // Determine if any of the tested rounds should now be considered complete based on progress
     const conceptRounds = studyPathData.concepts.length || 7;
-    const totalRoundsCompleted = Math.floor(cardsToMark / studyPathData.questionsPerRound);
+    let maxCompletedRound = studyPathData.completedRounds;
     
-    console.log(`Diagnostic analysis: ${cardsToMark} cards learned = ${totalRoundsCompleted} rounds completed`);
+    // Check if any tested rounds are now complete (have full progress)
+    for (const roundNumber of roundsTested) {
+        const roundProgress = studyPathData.roundProgress?.[roundNumber] || 0;
+        if (roundProgress >= questionsPerRound) {
+            maxCompletedRound = Math.max(maxCompletedRound, roundNumber);
+        }
+    }
+    
+    console.log(`Diagnostic analysis: max completed round advanced from ${studyPathData.completedRounds} to ${maxCompletedRound}`);
     console.log(`Current state before diagnostic: completedRounds=${studyPathData.completedRounds}, currentRound=${studyPathData.currentRound}`);
     
-    // Preserve existing completion states and only advance if diagnostic shows more progress
-    if (totalRoundsCompleted > studyPathData.completedRounds) {
-        const newCompletedRounds = Math.min(totalRoundsCompleted, conceptRounds);
+    // Update completion status if diagnostic results show advancement
+    if (maxCompletedRound > studyPathData.completedRounds) {
+        studyPathData.completedRounds = maxCompletedRound;
         
-        // Find the next available round after the diagnostic
-        // Look for rounds that come after the diagnostic in the sequence
-        let nextRoundAfterDiagnostic = newCompletedRounds + 1;
-        
-        // If we're at a diagnostic between rounds, ensure we advance to the next logical round
-        if (diagnosticNumber === 1 && newCompletedRounds >= 2) {
-            // After first diagnostic, should go to round 3 or the next incomplete round
-            nextRoundAfterDiagnostic = Math.max(3, newCompletedRounds + 1);
-        }
-        
-        const newCurrentRound = Math.min(nextRoundAfterDiagnostic, conceptRounds + 1);
-        
-        console.log(`Diagnostic advancing: ${studyPathData.completedRounds} → ${newCompletedRounds} completed rounds, current round ${studyPathData.currentRound} → ${newCurrentRound}`);
-        
-        studyPathData.completedRounds = newCompletedRounds;
-        studyPathData.currentRound = newCurrentRound;
-        studyPathData.currentRoundProgress = 0;
-        
-        // Update localStorage to persist the new state
-        localStorage.setItem('currentRoundNumber', studyPathData.currentRound);
-        localStorage.removeItem('currentRoundProgress');
-    } else {
-        console.log(`Diagnostic didn't advance completion: ${totalRoundsCompleted} rounds from diagnostic <= ${studyPathData.completedRounds} existing completed rounds`);
-        
-        // Even if we don't advance completion, we should still move to the next round after the diagnostic
-        // Find the round that should be active after this diagnostic test
-        const nextRound = Math.max(studyPathData.currentRound, studyPathData.completedRounds + 1);
-        if (nextRound !== studyPathData.currentRound && nextRound <= conceptRounds) {
-            console.log(`Moving to next round after diagnostic: ${studyPathData.currentRound} → ${nextRound}`);
+        // Move to the next round after the completed rounds
+        const nextRound = Math.min(maxCompletedRound + 1, conceptRounds + 1);
+        if (nextRound > studyPathData.currentRound) {
+            console.log(`Diagnostic advancing current round: ${studyPathData.currentRound} → ${nextRound}`);
             studyPathData.currentRound = nextRound;
+            studyPathData.currentRoundProgress = 0;
+            
+            // Update localStorage to persist the new state
+            localStorage.setItem('currentRoundNumber', studyPathData.currentRound);
+            localStorage.removeItem('currentRoundProgress');
+        }
+    } else {
+        console.log(`Diagnostic didn't advance completion: tested rounds ${roundsTested.join(', ')} didn't reach full completion`);
+        
+        // Move to the next round after the diagnostic if needed
+        const nextRoundAfterDiagnostic = Math.max(...roundsTested) + 1;
+        if (nextRoundAfterDiagnostic > studyPathData.currentRound && nextRoundAfterDiagnostic <= conceptRounds) {
+            console.log(`Moving to next round after diagnostic: ${studyPathData.currentRound} → ${nextRoundAfterDiagnostic}`);
+            studyPathData.currentRound = nextRoundAfterDiagnostic;
             studyPathData.currentRoundProgress = 0;
             localStorage.setItem('currentRoundNumber', studyPathData.currentRound);
             localStorage.removeItem('currentRoundProgress');
@@ -2990,26 +3178,22 @@ function updateProgressFromDiagnostic(diagnosticNumber, accuracy) {
     updateUI();
     
     // Show success message
-    showToast(`Diagnostic Test ${diagnosticNumber} completed! Accuracy: ${accuracy}%`, 5000);
+    showToast(`Diagnostic ${diagnosticNumber} completed! Added progress to rounds ${roundsTested.join(' & ')} based on ${accuracy}% accuracy.`, 5000);
 }
 
 // Update round progress based on diagnostic test results
-function updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRange) {
-    console.log('Updating round progress from diagnostic:', { diagnosticNumber, cardsToMark, cardRange });
-    
-    // Calculate which specific cards were learned based on accuracy
-    const learnedCards = [];
-    for (let i = 0; i < cardsToMark; i++) {
-        learnedCards.push(cardRange[0] + i);
-    }
-    
-    console.log('Learned cards:', learnedCards);
-    
-    // Map learned cards into rounds (dynamic based on concepts)
-    const totalConcepts = studyPathData.concepts.length || 7;
-    const roundProgress = {};
+function updateRoundProgressFromDiagnostic(diagnosticNumber, roundsTested, questionsPerRoundFromDiagnostic, remainderQuestions) {
+    console.log('Updating round progress from diagnostic:', { 
+        diagnosticNumber, 
+        roundsTested, 
+        questionsPerRoundFromDiagnostic, 
+        remainderQuestions 
+    });
     
     // Initialize with existing round progress to preserve previous data
+    const roundProgress = {};
+    const totalConcepts = studyPathData.concepts.length || 7;
+    
     if (studyPathData.roundProgress) {
         Object.assign(roundProgress, studyPathData.roundProgress);
     } else {
@@ -3019,19 +3203,30 @@ function updateRoundProgressFromDiagnostic(diagnosticNumber, cardsToMark, cardRa
         }
     }
     
-    learnedCards.forEach(cardNumber => {
-        // Dynamic mapping based on questionsPerRound
-        const roundNumber = Math.ceil(cardNumber / studyPathData.questionsPerRound);
+    // Distribute the diagnostic progress across the tested rounds
+    roundsTested.forEach((roundNumber, index) => {
         if (roundNumber >= 1 && roundNumber <= totalConcepts) {
             // Initialize round progress if it doesn't exist
             if (!roundProgress[roundNumber]) {
                 roundProgress[roundNumber] = 0;
             }
             
-            // Increment progress for this round (each learned card adds 1 to progress)
-            roundProgress[roundNumber] = Math.min(roundProgress[roundNumber] + 1, studyPathData.questionsPerRound);
+            // Add base questions per round from diagnostic
+            let questionsToAdd = questionsPerRoundFromDiagnostic;
             
-            console.log(`Card ${cardNumber} -> Round ${roundNumber} progress: ${roundProgress[roundNumber]}/${studyPathData.questionsPerRound}`);
+            // Distribute remainder questions to first few rounds
+            if (index < remainderQuestions) {
+                questionsToAdd += 1;
+            }
+            
+            // Add to existing progress (don't exceed questionsPerRound)
+            const previousProgress = roundProgress[roundNumber];
+            roundProgress[roundNumber] = Math.min(
+                previousProgress + questionsToAdd, 
+                studyPathData.questionsPerRound
+            );
+            
+            console.log(`Diagnostic ${diagnosticNumber}: Round ${roundNumber} progress: ${previousProgress} + ${questionsToAdd} = ${roundProgress[roundNumber]}/${studyPathData.questionsPerRound}`);
         }
     });
     
@@ -3404,4 +3599,127 @@ window.StudyPath = {
 // NOTE: The full implementation remains in js/study-path.js. For a complete
 // migration, move its contents here. For now, we preserve behavior by
 // including it at build time (tooling) and keep this file as the canonical name.
+
+// Floating Feedback Input Scroll Detection
+let floatingFeedbackVisible = false;
+let lastScrollY = 0;
+let scrollDirection = 'up';
+
+function initFloatingFeedback() {
+    const floatingFeedback = document.getElementById('floatingFeedback');
+    if (!floatingFeedback) return;
+
+    let scrollTimeout;
+
+    function handleScroll() {
+        const currentScrollY = window.scrollY;
+        
+        // Determine scroll direction
+        if (currentScrollY > lastScrollY) {
+            scrollDirection = 'down';
+        } else if (currentScrollY < lastScrollY) {
+            scrollDirection = 'up';
+        }
+        lastScrollY = currentScrollY;
+
+        // Clear previous timeout
+        clearTimeout(scrollTimeout);
+
+        // Add small delay to avoid rapid toggling
+        scrollTimeout = setTimeout(() => {
+            const shouldShow = currentScrollY > 100 && scrollDirection === 'down';
+            const shouldHide = currentScrollY <= 50 || scrollDirection === 'up';
+
+            if (shouldShow && !floatingFeedbackVisible) {
+                showFloatingFeedback();
+            } else if (shouldHide && floatingFeedbackVisible) {
+                hideFloatingFeedback();
+            }
+        }, 100);
+    }
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Handle input interactions
+    const floatingInput = floatingFeedback.querySelector('.floating-input');
+    if (floatingInput) {
+        floatingInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                handleFloatingInputSubmit(floatingInput);
+            } else if (e.key === 'Escape') {
+                floatingInput.blur();
+            }
+        });
+
+        floatingInput.addEventListener('focus', function() {
+            // Keep visible while focused
+            clearTimeout(hideTimeout);
+        });
+
+        floatingInput.addEventListener('blur', function() {
+            // Small delay to allow for submission
+            setTimeout(() => {
+                if (floatingInput.value.trim()) {
+                    handleFloatingInputSubmit(floatingInput);
+                }
+            }, 100);
+        });
+    }
+}
+
+let hideTimeout;
+
+function showFloatingFeedback() {
+    const floatingFeedback = document.getElementById('floatingFeedback');
+    if (!floatingFeedback) return;
+
+    clearTimeout(hideTimeout);
+    floatingFeedbackVisible = true;
+    
+    // Remove any existing animation classes
+    floatingFeedback.classList.remove('exiting');
+    
+    // Add visible class and entering animation
+    floatingFeedback.classList.add('visible', 'entering');
+    
+    // Remove entering class after animation
+    setTimeout(() => {
+        floatingFeedback.classList.remove('entering');
+    }, 400);
+}
+
+function hideFloatingFeedback() {
+    const floatingFeedback = document.getElementById('floatingFeedback');
+    if (!floatingFeedback) return;
+
+    floatingFeedbackVisible = false;
+    
+    // Add exiting animation
+    floatingFeedback.classList.add('exiting');
+    floatingFeedback.classList.remove('entering');
+    
+    // Remove visible class after animation
+    hideTimeout = setTimeout(() => {
+        floatingFeedback.classList.remove('visible', 'exiting');
+    }, 400);
+}
+
+function handleFloatingInputSubmit(input) {
+    const value = input.value.trim();
+    if (value) {
+        console.log('Floating feedback submitted:', value);
+        
+        // Show success message
+        showToast('Thanks for your feedback! We\'ll use this to improve your experience.', 4000);
+        
+        // Clear input
+        input.value = '';
+        
+        // Hide feedback after submission
+        setTimeout(() => {
+            hideFloatingFeedback();
+        }, 1000);
+    }
+}
 

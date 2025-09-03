@@ -293,7 +293,7 @@ body {
 }
 
 .progress-ring-fill {
-    stroke: url(#progressGradient);
+    stroke: var(--color-mint-400);
     fill: none;
     stroke-linecap: round; /* Creates pill shape at start/end */
     stroke-width: 12;
@@ -458,27 +458,27 @@ body {
 
 /* Remove hover effects since only progress bar is clickable for accordion */
 
-/* Subtle star animation on current step - always active */
-.path-step.current .step-circle {
-    animation: starPulse 2s ease-in-out infinite;
+/* Pulse animation on current step play icon - always active */
+.path-step.current .step-status .material-icons-round {
+    animation: playIconPulse 2s ease-in-out infinite;
 }
 
 /* Pause animation when accordion is expanded */
-.path-step.current.expanded .step-circle {
+.path-step.current.expanded .step-status .material-icons-round {
     animation-play-state: paused;
 }
 
-/* Pulse animation for current diagnostic steps */
-.path-step.current.diagnostic .step-circle {
-    animation: starPulse 2s ease-in-out infinite;
+/* Pulse animation for current diagnostic step play icon */
+.path-step.current.diagnostic .step-status .material-icons-round {
+    animation: playIconPulse 2s ease-in-out infinite;
 }
 
 /* Pause diagnostic animation when expanded */
-.path-step.current.diagnostic.expanded .step-circle {
+.path-step.current.diagnostic.expanded .step-status .material-icons-round {
     animation-play-state: paused;
 }
 
-@keyframes starPulse {
+@keyframes playIconPulse {
     0% {
         transform: scale(1);
     }
@@ -967,23 +967,24 @@ body {
     max-width: 88px;
     width: 100%;
     height: 8px;
-    background: var(--color-twilight-200);
+    /* Background color is set dynamically via JavaScript based on progress */
     border-radius: 4px;
     overflow: hidden;
+    transition: background 0.3s ease;
 }
 
 .step-progress-fill {
     height: 100%;
-    background: var(--color-twilight-500);
+    /* Background color is set dynamically via JavaScript based on progress */
     border-radius: 4px;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
 }
 
 .step-progress-text {
     display: none; /* Hide progress text by default */
 }
 
-/* Show progress text for current round */
+/* Always show progress text for current round, even at 0% */
 .path-step.current .step-progress-text {
     display: block;
     font-size: 14px;
@@ -1353,5 +1354,149 @@ body {
     min-width: fit-content; /* Prevent shrinking smaller than content */
 }
 
+/* Floating Feedback Input */
+.floating-feedback {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: calc(100% - 40px);
+    max-width: 480px;
+    z-index: 1000;
+    padding: 0 20px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none; /* Allow clicks to pass through when hidden */
+    
+    /* Background gradient from surface base (bottom) to transparent (top) */
+    background: linear-gradient(to top, var(--sys-surface-base) 0%, transparent 100%);
+    padding-top: 32px;
+    padding-bottom: 24px;
+}
+
+.floating-feedback.visible {
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto; /* Enable clicks when visible */
+}
+
+.floating-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    /* Remove background - let pseudo-elements handle it */
+    border-radius: 999px;
+    box-shadow: var(--shadow-large);
+    backdrop-filter: blur(8px);
+    /* Ensure border is visible by creating proper layering */
+    isolation: isolate;
+}
+
+/* 2px radial gradient border using pseudo-elements */
+.floating-input-container::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: radial-gradient(circle, var(--color-twilight-600), var(--color-rosewater));
+    border-radius: 999px;
+    z-index: -2;
+}
+
+.floating-input-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--sys-surface-base);
+    border-radius: 999px;
+    z-index: -1;
+}
+
+.sparkle-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    z-index: 1;
+    position: relative;
+}
+
+.sparkle-icon img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.floating-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-three);
+    font-weight: 600;
+    color: var(--sys-text-primary);
+    line-height: 1.4;
+    z-index: 1;
+    position: relative;
+}
+
+.floating-input::placeholder {
+    color: var(--sys-text-secondary);
+    font-weight: 600;
+}
+
+.floating-input:focus::placeholder {
+    opacity: 0.7;
+}
+
+/* Animation states */
+.floating-feedback.entering {
+    animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.floating-feedback.exiting {
+    animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-50%) translateY(100%);
+        opacity: 0;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 375px) {
+    .floating-feedback {
+        width: calc(100% - 24px);
+        padding: 0 12px;
+    }
+    
+    .floating-input-container {
+        padding: 14px 16px;
+        gap: 10px;
+    }
+}
 
 

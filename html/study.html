@@ -39,10 +39,10 @@
                 
                 <!-- Multiple Choice -->
                 <div class="answer-options" id="multipleChoice">
-                    <button class="option-btn" data-answer="">Option 1</button>
-                    <button class="option-btn" data-answer="">Option 2</button>
-                    <button class="option-btn" data-answer="">Option 3</button>
-                    <button class="option-btn" data-answer="">Option 4</button>
+                    <button class="option-btn" data-answer=""></button>
+                    <button class="option-btn" data-answer=""></button>
+                    <button class="option-btn" data-answer=""></button>
+                    <button class="option-btn" data-answer=""></button>
                 </div>
 
                 <!-- Free Text Input -->
@@ -160,6 +160,14 @@
                         </div>
                     </div>
 
+                    <!-- Badge Visibility Toggle -->
+                    <div class="debug-section">
+                        <h4 class="debug-label">Badge Visibility</h4>
+                        <div class="debug-options">
+                            <button class="debug-option" id="toggleBadgesBtn" data-type="badge-toggle">Show API/CORRECT badges</button>
+                        </div>
+                    </div>
+
                     <!-- Manual Question Type Override -->
                     <div class="debug-section">
                         <h4 class="debug-label">Override current question type</h4>
@@ -180,11 +188,22 @@
                 <div class="bottom-sheet-header">
                     <div class="explanation-header">
                         <div class="ai-icon">
-                            <span class="material-icons-round">smart_toy</span>
+                            <img src="../images/Quizlet Logos.png" alt="Quizlet" width="40" height="40">
                         </div>
-                        <h3 class="subheading-2 text-primary">Learn More</h3>
+                        <h3 class="header-3 text-primary">Lets go deeper on this one</h3>
+                        <h4 class="subheading-4 text-secondary">Try asking</h4>
+                        <div class="explanation-options-carousel">
+                            <div class="explanation-option">
+                                <img src="../images/sparkle.png" alt="Sparkle" class="option-icon" width="16" height="16">
+                                <span>Explain this to me in a different way</span>
+                            </div>
+                            <div class="explanation-option">
+                                <img src="../images/sparkle.png" alt="Sparkle" class="option-icon" width="16" height="16">
+                                <span>Break this down for me to help me understand</span>
+                            </div>
+                        </div>
                     </div>
-                    <button class="close-bottom-sheet" id="closeExplanationSheet">
+                    <button class="close-bottom-sheet header-close-btn" id="closeExplanationSheet">
                         <span class="material-icons-round">close</span>
                     </button>
                 </div>
@@ -203,8 +222,8 @@
                 </div>
                 <div class="explanation-bottom-bar">
                     <div class="question-input-container">
-                        <span class="material-icons-round question-icon">auto_awesome</span>
-                        <input type="text" class="question-input" placeholder="Ask a question" id="questionInput">
+                        <img src="../images/sparkle.png" alt="Sparkle" class="question-icon sparkle-icon" width="20" height="20">
+                        <input type="text" class="question-input" placeholder="Go deeper" id="questionInput">
                     </div>
                 </div>
             </div>

@@ -339,18 +339,26 @@
         
         // Extract concepts from the metadata.availableConcepts structure
         const availableConcepts = response?.metadata?.availableConcepts || [];
+        console.log(`Concepts API returned ${availableConcepts.length} concepts for goal: ${goal}`);
         
-        // Process and add unique concepts
+        // Debug: Log first concept structure to understand API response
+        if (availableConcepts.length > 0) {
+          console.log('First concept structure:', availableConcepts[0]);
+        }
+        
+        // Process and add unique concepts using major_topic
         availableConcepts.forEach(concept => {
-          const conceptId = concept.id || concept.name;
+          const conceptName = concept.major_topic || concept.name || 'Unnamed Concept';
+          const conceptId = concept.id || conceptName;
           if (!conceptsSet.has(conceptId)) {
             conceptsSet.add(conceptId);
             allConcepts.push({
               id: concept.id || `api-${Math.random().toString(36).substr(2, 9)}`,
-              name: concept.name || 'Unnamed Concept',
+              name: conceptName,
               description: concept.description || '',
               source: 'api',
-              goal: goal // Track which goal this concept is from
+              goal: goal, // Track which goal this concept is from
+              major_topic: concept.major_topic // Keep original major_topic field
             });
           }
         });
@@ -429,6 +437,82 @@
     }
   }
 
+  function disableAllButtons() {
+    // Disable all buttons in the flow content, but keep header buttons enabled
+    const flowContent = document.getElementById('flowContent');
+    if (!flowContent) return;
+    
+    const flowButtons = flowContent.querySelectorAll('button');
+    flowButtons.forEach(button => {
+      if (!button.hasAttribute('data-original-disabled')) {
+        button.setAttribute('data-original-disabled', button.disabled);
+      }
+      button.disabled = true;
+    });
+  }
+
+  function enableCurrentStepButtons() {
+    // Remove buttons from completed steps and re-enable current step buttons
+    const flowContent = document.getElementById('flowContent');
+    if (!flowContent) return;
+    
+    // Remove all buttons except the back button from the flow content
+    const allButtons = flowContent.querySelectorAll('button:not(#flowBackBtn)');
+    allButtons.forEach(button => {
+      // Check if this button belongs to a completed step
+      if (isButtonFromCompletedStep(button)) {
+        button.remove();
+      } else {
+        // Re-enable current step buttons, respecting their original disabled state
+        const originalDisabled = button.getAttribute('data-original-disabled');
+        if (originalDisabled === 'true') {
+          button.disabled = true;
+        } else {
+          button.disabled = false;
+        }
+        button.removeAttribute('data-original-disabled');
+      }
+    });
+  }
+
+  function isButtonFromCompletedStep(button) {
+    // Check if button belongs to a completed step by examining its context
+    const buttonId = button.id;
+    const currentStep = stepIndex;
+    
+    // Step 1 buttons
+    if ((buttonId === 'coursesContinue') && currentStep > 1) {
+      return true;
+    }
+    
+    // Step 2 buttons  
+    if ((buttonId === 'goalsContinue') && currentStep > 2) {
+      return true;
+    }
+    
+    // Step 3 buttons
+    if ((buttonId === 'conceptsContinue') && currentStep > 3) {
+      return true;
+    }
+    
+    // Step 4 buttons
+    if ((buttonId === 'knowledgeContinue' || buttonId === 'diagnosticBtn') && currentStep > 4) {
+      return true;
+    }
+    
+    // Step 5 buttons
+    if ((buttonId === 'startBtn' || buttonId === 'skipBtn') && currentStep > 5) {
+      return true;
+    }
+    
+    // Add course screen buttons
+    if ((buttonId === 'addCourseBtn' || buttonId === 'addCourseClose') && stepIndex !== 'addCourse') {
+      return true;
+    }
+    
+    return false;
+  }
+
   function updateProgress() {
     const computedPct = (stepIndex-1)/TOTAL_STEPS * 100;
     const remaining = Math.max(0, TOTAL_STEPS - (stepIndex-1));
@@ -462,17 +546,40 @@
   }
 
   async function render() {
+    // Disable all buttons during render to prevent double-clicks
+    disableAllButtons();
+    
     updateProgress();
     updateBackButtonIcon();
+    
     switch(stepIndex){
-      case 1: return renderCourse();
-      case 'addCourse': return renderAddCourse();
-      case 2: return await renderGoals();
-      case 3: return await renderConcepts();
-      case 4: return renderKnowledge();
-      case 5: return renderDate();
-      case 6: return renderLoading();
+      case 1: 
+        renderCourse();
+        break;
+      case 'addCourse': 
+        renderAddCourse();
+        // Add course screen doesn't need button re-enabling since it manages its own buttons
+        return;
+      case 2: 
+        await renderGoals();
+        break;
+      case 3: 
+        await renderConcepts();
+        break;
+      case 4: 
+        renderKnowledge();
+        break;
+      case 5: 
+        renderDate();
+        break;
+      case 6: 
+        renderLoading();
+        // Loading screen doesn't need button re-enabling
+        return;
     }
+    
+    // Re-enable buttons after render completes (except for special screens)
+    setTimeout(enableCurrentStepButtons, 100);
   }
 
   function next(){ stepIndex = Math.min(6, stepIndex+1); render(); }
@@ -2999,7 +3106,11 @@
     flowContent.innerHTML = ''+
       `<div class="loading-screen">
          <div class="loading-content">
-           <div class="loading-spinner"></div>
+           <div class="loading-spinner">
+             <svg class="material-spinner" width="148" height="148" viewBox="0 0 148 148">
+               <circle class="spinner-path" cx="74" cy="74" r="66" fill="none" stroke="var(--color-twilight-500)" stroke-width="16" stroke-linecap="round"></circle>
+             </svg>
+           </div>
            <div class="loading-text">${loadingText}</div>
          </div>
        </div>`;
@@ -3107,6 +3218,7 @@
     try {
       const concepts = await fetchConceptsByCourse(courseId, schoolId, goals);
       console.log('Concepts API test result:', concepts);
+      console.log('Major topics found:', concepts.map(c => c.major_topic).filter(Boolean));
       return concepts;
     } catch (error) {
       console.error('Concepts API test failed:', error);
@@ -3343,6 +3455,30 @@
     render();
     } else {
       console.log('Navigate to step 2 first, then call this function');
+    }
+  };
+
+  // Debug concept API response structure
+  window.debugConceptAPI = async function(schoolName, courseName, goal) {
+    console.log('🧬 Debugging concept API response structure...');
+    try {
+      const response = await window.QuizletApi.getConceptsByGoal(schoolName, courseName, goal);
+      console.log('🧬 Raw API response:', response);
+      
+      const availableConcepts = response?.metadata?.availableConcepts || [];
+      console.log('🧬 Available concepts array:', availableConcepts);
+      
+      if (availableConcepts.length > 0) {
+        console.log('🧬 First concept object:', availableConcepts[0]);
+        console.log('🧬 First concept fields:', Object.keys(availableConcepts[0]));
+        console.log('🧬 Major topic field:', availableConcepts[0].major_topic);
+        console.log('🧬 Name field:', availableConcepts[0].name);
+      }
+      
+      return { response, availableConcepts };
+    } catch (error) {
+      console.error('🧬 Error debugging concept API:', error);
+      return null;
     }
   };
 

@@ -108,6 +108,7 @@
     <script src="../js/api.js"></script>
     <script src="../js/components/header.js"></script>
     <script src="../js/adaptive-learning.js"></script>
+    <script src="../js/progress-debug.js"></script>
     <script src="../js/study-plan.js"></script>
     <!-- Onboarding Bottom Sheet -->
     <div class="onboarding-sheet" id="onboardingSheet" style="display:none;">
@@ -120,6 +121,16 @@
                 <button class="primary-btn" id="onboardingClose">Sounds good, let’s go</button>
                 <button class="text-btn" id="onboardingCustomize">Customize</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating Feedback Input -->
+    <div class="floating-feedback" id="floatingFeedback">
+        <div class="floating-input-container">
+            <div class="sparkle-icon">
+                <img src="../images/sparkle.png" alt="Sparkle" width="24" height="24" />
+            </div>
+            <input type="text" class="floating-input" placeholder="Make a change" />
         </div>
     </div>
 </body>

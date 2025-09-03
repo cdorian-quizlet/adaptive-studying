@@ -124,6 +124,25 @@ let questionContainer, questionText, questionPrompt, multipleChoice, textInput, 
 let currentQuestionEl, totalQuestionsEl, progressFill, closeBtn;
 let introScreen, studyContent, startTestBtn, resultsScreen, resultsStats, continueBtn;
 
+// API Badge functions for debugging
+function createApiBadge() {
+    const badge = document.createElement('span');
+    badge.className = 'api-badge';
+    badge.textContent = 'API';
+    badge.style.cssText = `
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 11px;
+        line-height: 1;
+        color: #4255FF;
+        background: #EDEFFF;
+        vertical-align: middle;
+    `;
+    return badge;
+}
+
 // QA badge helpers for static content
 function createStaticBadge() {
     const badge = document.createElement('span');
@@ -141,6 +160,230 @@ function createStaticBadge() {
         vertical-align: middle;
     `;
     return badge;
+}
+
+function setSourceBadge(element) {
+    if (!element) return;
+    
+    console.log('🔍 DIAGNOSTIC-2 BADGE DEBUG: Setting badge for element, currentQuestionIndex:', currentQuestionIndex);
+    console.log('🔍 DIAGNOSTIC-2 BADGE DEBUG: Current question:', testQuestions[currentQuestionIndex]);
+    console.log('🔍 DIAGNOSTIC-2 BADGE DEBUG: window.USING_API_CONTENT:', window.USING_API_CONTENT);
+    
+    element.querySelectorAll('.api-badge, .static-badge').forEach(b => b.remove());
+    
+    const currentQuestion = testQuestions[currentQuestionIndex];
+    const isApiQuestion = currentQuestion && (currentQuestion._raw || currentQuestion.source === 'api' || window.USING_API_CONTENT);
+    
+    console.log('🔍 DIAGNOSTIC-2 BADGE DEBUG: Is API question?', isApiQuestion);
+    
+    if (isApiQuestion) {
+        console.log('🔍 DIAGNOSTIC-2 BADGE DEBUG: Adding API badge');
+        element.appendChild(createApiBadge());
+    } else {
+        console.log('🔍 DIAGNOSTIC-2 BADGE DEBUG: Adding STATIC badge');
+        element.appendChild(createStaticBadge());
+    }
+}
+
+// Create correct answer pill for debugging
+function createCorrectAnswerPill() {
+    const pill = document.createElement('span');
+    pill.className = 'correct-answer-pill';
+    pill.textContent = 'CORRECT';
+    pill.style.cssText = `
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 11px;
+        line-height: 1;
+        color: #059669;
+        background: #ECFDF5;
+        border: 1px solid #10B981;
+        vertical-align: middle;
+        font-weight: 600;
+    `;
+    return pill;
+}
+
+// Add correct answer pill to option if it's the correct answer
+function addCorrectAnswerPill(element, optionText) {
+    if (!element || !currentQuestion) return;
+    
+    // Remove existing correct answer pills
+    element.querySelectorAll('.correct-answer-pill').forEach(p => p.remove());
+    
+    // Add correct answer pill if this option is correct
+    if (optionText === currentQuestion.correctAnswer) {
+        element.appendChild(createCorrectAnswerPill());
+    }
+}
+
+// Function to fetch questions from API for diagnostic concepts
+async function fetchQuestionsFromApiForDiagnostic(conceptsToTest) {
+    try {
+        // Allow API calls in all environments for diagnostic testing
+        console.log('🔍 DIAGNOSTIC API DEBUG: Attempting API call in', window.location.hostname, 'environment');
+
+        // Get onboarding data from localStorage
+        const schoolName = localStorage.getItem('onboarding_school');
+        const courseName = localStorage.getItem('onboarding_course');
+        const goalsData = localStorage.getItem('onboarding_goals');
+        
+        // Parse arrays from localStorage
+        const goals = goalsData ? JSON.parse(goalsData) : [];
+        
+        // Validate we have the required data
+        if (!schoolName || !courseName || goals.length === 0 || conceptsToTest.length === 0) {
+            console.log('Missing onboarding data for diagnostic question loading:', {
+                school: schoolName || 'MISSING',
+                course: courseName || 'MISSING',
+                goals: goals.length || 0,
+                concepts: conceptsToTest.length || 0
+            });
+            return [];
+        }
+        
+        // Check if API is available
+        if (!window.QuizletApi || !window.QuizletApi.getQuestionsByConcept) {
+            console.log('🔍 DIAGNOSTIC API DEBUG: QuizletApi not available or missing getQuestionsByConcept method');
+            console.log('🔍 DIAGNOSTIC API DEBUG: window.QuizletApi:', window.QuizletApi);
+            console.log('🔍 DIAGNOSTIC API DEBUG: Available API methods:', window.QuizletApi ? Object.keys(window.QuizletApi) : 'N/A');
+            return [];
+        }
+        
+        console.log('🔍 DIAGNOSTIC API DEBUG: QuizletApi available, proceeding with API calls');
+        
+        console.log('Loading diagnostic questions for:', {
+            school: schoolName,
+            course: courseName,
+            goals: goals,
+            concepts: conceptsToTest
+        });
+        
+        // Fetch questions for each concept from all selected goals
+        const allQuestions = [];
+        const questionSet = new Set(); // To avoid duplicates
+        
+        for (const concept of conceptsToTest) {
+            for (const goal of goals) {
+                console.log('Fetching diagnostic questions for goal:', goal, 'concept:', concept);
+                
+                try {
+                    // Use the hierarchical API to get questions for this specific concept and goal
+                    const response = await window.QuizletApi.getQuestionsByConcept(schoolName, courseName, goal, concept);
+                    
+                    // Extract questions from the response
+                    const questionsFromAPI = response?.content?.questions || [];
+                    console.log('Diagnostic API returned:', questionsFromAPI.length, 'questions for goal:', goal, 'concept:', concept);
+                    
+                    // Process and add unique questions
+                    questionsFromAPI.forEach((apiQuestion, index) => {
+                        const questionId = apiQuestion.id || `${goal}-${concept}-${index}`;
+                        if (!questionSet.has(questionId)) {
+                            questionSet.add(questionId);
+                            
+                            // Map API question format to internal format
+                            const mappedQuestion = mapApiQuestionToInternal(apiQuestion, allQuestions.length + 1);
+                            allQuestions.push(mappedQuestion);
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Error fetching diagnostic questions for goal:', goal, 'concept:', concept, error);
+                    // Continue with other goals/concepts even if one fails
+                }
+            }
+        }
+        
+        if (allQuestions.length > 0) {
+            // Mark that we're using API-backed content
+            window.USING_API_CONTENT = true;
+            console.log(`Loaded ${allQuestions.length} diagnostic questions from API for concepts:`, conceptsToTest);
+            return allQuestions;
+        } else {
+            console.log('No diagnostic questions found from API for concepts:', conceptsToTest);
+            return [];
+        }
+        
+    } catch (err) {
+        console.error('Error loading diagnostic questions from API:', err);
+        return [];
+    }
+}
+
+// Map API question format to internal question format for diagnostics
+function mapApiQuestionToInternal(apiQuestion, id) {
+    const questionType = apiQuestion.type || 'multiple_choice';
+    
+    // Handle different API question formats
+    let question = apiQuestion.question || apiQuestion.term || '';
+    let correctAnswer = apiQuestion.correctAnswer || apiQuestion.definition || '';
+    let options = [];
+    
+    if (questionType === 'multiple_choice' || questionType === 'mcq') {
+        // Extract and filter options from API response
+        let rawOptions = [];
+        if (Array.isArray(apiQuestion.options) && apiQuestion.options.length > 0) {
+            rawOptions = apiQuestion.options;
+        } else if (Array.isArray(apiQuestion.choices) && apiQuestion.choices.length > 0) {
+            rawOptions = apiQuestion.choices;
+        }
+        
+        // Filter out empty, null, undefined, or whitespace-only options
+        options = rawOptions.filter(option => 
+            option != null && 
+            typeof option === 'string' && 
+            option.trim().length > 0 &&
+            !option.toLowerCase().includes('not available') &&
+            !option.toLowerCase().includes('no answer') &&
+            !option.toLowerCase().includes('placeholder')
+        );
+        
+        console.log('🔍 DIAGNOSTIC API FILTERING:', {
+            questionId: id,
+            rawOptions: rawOptions,
+            filteredOptions: options,
+            filteredCount: options.length
+        });
+        
+        // If we don't have enough valid options after filtering, generate fallback
+        if (options.length < 2) {
+            console.log('🔍 DIAGNOSTIC API DEBUG: Insufficient valid options, using fallback. Raw options:', rawOptions);
+            options = [correctAnswer, 'Option B', 'Option C', 'Option D'];
+        }
+        
+        // Ensure correct answer is in options and is valid
+        if (correctAnswer && correctAnswer.trim().length > 0 && !options.includes(correctAnswer)) {
+            options[0] = correctAnswer;
+        }
+        
+        // Final validation - ensure all options are still valid
+        options = options.filter(option => 
+            option && 
+            typeof option === 'string' && 
+            option.trim().length > 0
+        );
+        
+        console.log('🔍 DIAGNOSTIC FINAL OPTIONS:', {
+            questionId: id,
+            finalOptions: options,
+            correctAnswer: correctAnswer
+        });
+    } else {
+        // For non-MCQ questions, set up as written response
+        options = [];
+    }
+    
+    return {
+        id: id,
+        question: question,
+        correctAnswer: correctAnswer,
+        options: options,
+        type: questionType === 'mcq' ? 'multiple_choice' : questionType,
+        source: 'api',
+        _raw: apiQuestion // Store original API data
+    };
 }
 
 function setStaticBadge(element) {
@@ -172,9 +415,7 @@ function initializeHeader() {
         title: 'Quiz 2',
         loadTitleFromStorage: false,
         onBackClick: function() {
-            if (confirm('Are you sure you want to exit the diagnostic test? Your progress will be lost.')) {
-                window.location.href = '../html/study-plan.html';
-            }
+            window.location.href = '../html/study-plan.html';
         },
         onSettingsClick: function() {
             if (appHeader) {
@@ -204,10 +445,61 @@ function checkIntroIconLoad() {
     testImg.src = '../images/brand-practice-tests.png';
 }
 
+// Update intro content based on diagnostic configuration
+function updateIntroContent() {
+    try {
+        const diagnosticConfigStr = localStorage.getItem('diagnosticConfig');
+        if (!diagnosticConfigStr) {
+            console.log('🔍 INTRO: No diagnostic config found, keeping default content');
+            return;
+        }
+        
+        const diagnosticConfig = JSON.parse(diagnosticConfigStr);
+        const { conceptsToTest, roundsTested, diagnosticNumber, testDescription } = diagnosticConfig;
+        
+        console.log('🔍 INTRO: Updating intro content with config:', diagnosticConfig);
+        
+        // Update intro subtitle with actual concepts being tested
+        const introSubtitle = document.getElementById('introSubtitle');
+        if (introSubtitle && conceptsToTest && conceptsToTest.length > 0) {
+            const conceptsText = conceptsToTest.join(', ');
+            introSubtitle.textContent = conceptsText;
+            console.log('🔍 INTRO: Updated subtitle to:', conceptsText);
+        }
+        
+        // Update quiz title in button to show correct quiz number
+        const startTestBtn = document.getElementById('startTestBtn');
+        if (startTestBtn && diagnosticNumber) {
+            startTestBtn.textContent = `Start quiz ${diagnosticNumber}`;
+            console.log('🔍 INTRO: Updated button to:', `Start quiz ${diagnosticNumber}`);
+        }
+        
+        // Update page title if possible
+        if (diagnosticNumber) {
+            document.title = `Quiz ${diagnosticNumber} - Diagnostic Test`;
+        }
+        
+        // Update question count based on rounds being tested
+        const questionCountElement = document.querySelector('.detail-title');
+        if (questionCountElement && roundsTested && roundsTested.length > 0) {
+            const totalQuestions = roundsTested.length * (diagnosticConfig.questionsPerRound || 7);
+            questionCountElement.textContent = `${Math.min(totalQuestions, 10)} Questions`;
+            console.log('🔍 INTRO: Updated question count to:', Math.min(totalQuestions, 10));
+        }
+        
+    } catch (error) {
+        console.error('🔍 INTRO: Error updating intro content:', error);
+        // Keep default content if there's an error
+    }
+}
+
 // Initialize the diagnostic test
 async function initDiagnosticTest() {
     // Initialize header component
     initializeHeader();
+    
+    // Update intro content based on diagnostic configuration
+    updateIntroContent();
     
     // Initialize DOM elements
     questionContainer = document.getElementById('questionContainer');
@@ -232,9 +524,38 @@ async function initDiagnosticTest() {
     // Check if intro icon loads
     checkIntroIconLoad();
     
-    // Select 10 random questions from cards 22-35
-    const shuffled = diagnosticQuestions.sort(() => 0.5 - Math.random());
-    testQuestions = shuffled.slice(0, 10);
+    // Try to load questions from API based on diagnostic configuration first
+    try {
+        const diagnosticConfigStr = localStorage.getItem('diagnosticConfig');
+        if (diagnosticConfigStr) {
+            const diagnosticConfig = JSON.parse(diagnosticConfigStr);
+            const { conceptsToTest } = diagnosticConfig;
+            
+            // Try to fetch questions from API first
+            const apiQuestions = await fetchQuestionsFromApiForDiagnostic(conceptsToTest);
+            
+            if (apiQuestions.length > 0) {
+                // Use API questions - limit to 10 for diagnostic
+                testQuestions = apiQuestions.slice(0, 10);
+                console.log(`Using ${testQuestions.length} questions from API for diagnostic 2`);
+            } else {
+                // Fallback to static questions
+                const shuffled = diagnosticQuestions.sort(() => 0.5 - Math.random());
+                testQuestions = shuffled.slice(0, 10);
+                console.log('Using static questions for diagnostic 2');
+            }
+        } else {
+            // No diagnostic config - use static questions
+            const shuffled = diagnosticQuestions.sort(() => 0.5 - Math.random());
+            testQuestions = shuffled.slice(0, 10);
+            console.log('No diagnostic config - using static questions for diagnostic 2');
+        }
+    } catch (error) {
+        console.error('Error loading diagnostic questions:', error);
+        // Fallback to static questions
+        const shuffled = diagnosticQuestions.sort(() => 0.5 - Math.random());
+        testQuestions = shuffled.slice(0, 10);
+    }
     
     // Mix question types - make some written questions
     testQuestions = testQuestions.map((q, index) => {
@@ -256,11 +577,53 @@ async function initDiagnosticTest() {
     handleIconLoading();
 }
 
+// Apply dynamic text sizing based on character count (reused from study.js)
+function applyDynamicTextSizing(element, text) {
+    if (!element || !text) return;
+    
+    const charCount = text.length;
+    
+    console.log('🔤 Applying dynamic text sizing:', {
+        text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        charCount: charCount,
+        targetClass: getDynamicTextClass(charCount)
+    });
+    
+    // Remove existing text size classes
+    element.classList.remove('text-subheading-1', 'text-subheading-2', 'text-subheading-3', 'text-subheading-5');
+    
+    // Apply appropriate class based on character count
+    element.classList.add(getDynamicTextClass(charCount));
+}
+
+// Helper function to determine text class based on character count (reused from study.js)
+function getDynamicTextClass(charCount) {
+    if (charCount <= 60) {
+        return 'text-subheading-1';
+    } else if (charCount <= 120) {
+        return 'text-subheading-2';
+    } else if (charCount <= 224) {
+        return 'text-subheading-3';
+    } else if (charCount <= 448) {
+        return 'text-subheading-5';
+    } else {
+        // For very long text, use the smallest size
+        return 'text-subheading-5';
+    }
+}
+
 // Show the current question
 function showQuestion() {
     currentQuestion = testQuestions[currentQuestionIndex];
+    
+    // Reset question text classes and set content
+    questionText.className = 'question-text'; // Reset classes
     questionText.textContent = currentQuestion.question;
-    setStaticBadge(questionText);
+    
+    // Apply dynamic text styling based on character count (reused from study.js)
+    applyDynamicTextSizing(questionText, currentQuestion.question);
+    
+    setSourceBadge(questionText);
     
     // Hide all answer types
     multipleChoice.style.display = 'none';
@@ -291,21 +654,57 @@ function showMultipleChoice() {
     questionPrompt.textContent = 'Choose the correct answer';
     const optionBtns = multipleChoice.querySelectorAll('.option-btn');
     
+    console.log('🔍 DIAGNOSTIC MCQ OPTIONS DEBUG:', {
+        questionId: currentQuestion?.id,
+        hasOptions: !!currentQuestion?.options,
+        options: currentQuestion?.options,
+        optionsLength: currentQuestion?.options?.length
+    });
+    
+    // Check if options exist and are valid
+    if (!currentQuestion?.options || !Array.isArray(currentQuestion.options) || currentQuestion.options.length === 0) {
+        console.error('❌ DIAGNOSTIC MCQ OPTIONS ERROR: No valid options found for question', currentQuestion?.id);
+        console.error('Question data:', currentQuestion);
+        return;
+    }
+    
     optionBtns.forEach((btn, index) => {
-        btn.textContent = currentQuestion.options[index];
-        btn.dataset.answer = currentQuestion.options[index];
+        const optionText = currentQuestion.options[index];
+        
+        // Skip empty or invalid options
+        if (!optionText || typeof optionText !== 'string' || optionText.trim() === '') {
+            console.warn('⚠️ DIAGNOSTIC: Skipping empty option at index', index, 'for question', currentQuestion.id);
+            btn.style.display = 'none';
+            return;
+        }
+        
+        btn.style.display = 'flex';
+        btn.textContent = optionText;
+        btn.dataset.answer = optionText;
         btn.className = 'option-btn';
         btn.disabled = false;
         btn.style.cursor = 'pointer';
-        setStaticBadge(btn);
+        
+        // Add source badge (API/STATIC)
+        setSourceBadge(btn);
+        
+        // Add correct answer pill for debugging
+        addCorrectAnswerPill(btn, optionText);
     });
 }
 
 // Show text input
 function showTextInput() {
     textInput.style.display = 'flex';
-    questionPrompt.style.display = 'none';
+    questionPrompt.style.display = 'block';
+    questionPrompt.textContent = 'Type your answer';
     textAnswer.value = '';
+    textAnswer.classList.remove('incorrect', 'correct');
+    textInput.classList.remove('incorrect', 'correct');
+    textAnswer.disabled = false;
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('show'); // Hidden until text is entered
+    submitBtn.style.cursor = 'pointer';
     textAnswer.focus();
 }
 
@@ -551,6 +950,15 @@ function setupEventListeners() {
             } else {
                 showTextInputError();
             }
+        }
+    });
+    
+    // Text input change - show/hide submit button based on content (reused from study.js)
+    textAnswer.addEventListener('input', (e) => {
+        if (e.target.value.trim().length > 0) {
+            submitBtn.classList.add('show');
+        } else {
+            submitBtn.classList.remove('show');
         }
     });
     

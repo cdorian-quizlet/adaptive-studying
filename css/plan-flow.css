@@ -56,7 +56,21 @@ body:has(.knowledge-slider:active) {
 }
 .progress-wrap { flex:1; display:flex; flex-direction:column; gap:10px; position:relative; }
 .progress-track { width:100%; height:16px; background:var(--color-twilight-200); border-radius:999px; overflow:visible; position:relative; }
-.progress-fill { height:100%; width:0%; background:var(--sys-interactive-bg-primary-default); transition: width .25s ease; border-radius:999px; }
+.progress-fill { height:100%; width:0%; background:var(--sys-interactive-bg-primary-default); transition: width .25s ease; border-radius:999px; min-width: 12px; }
+
+/* Force minimum 12px width for step progress - overrides any JavaScript inline styles */
+.progress-fill {
+    min-width: 12px !important;
+}
+
+/* Additional specific rules for 0% state */
+.progress-fill[style*="width: 0%"],
+.progress-fill[style*="width:0%"],
+.progress-fill[style="width: 0%;"],
+.progress-fill[style="width:0%;"] {
+    width: 12px !important;
+    min-width: 12px !important;
+}
 .progress-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; position:absolute; left:calc(50% - 20px); top:50%; transform: translateY(-50%); box-shadow:var(--shadow-medium); z-index: 2; transition: left .25s ease; }
 .flow-content { padding: 36px 20px 140px; display:flex; flex-direction:column; gap:16px; transition: opacity 0.3s ease, transform 0.3s ease; }
 
@@ -472,14 +486,16 @@ body:has(.knowledge-slider:active) {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.primary-btn:hover {
-  opacity: 1;
-}
-
+/* Prevent interaction during step transitions */
 .primary-btn:disabled { 
   background: var(--color-twilight-300); 
   cursor: not-allowed; 
-  opacity: 1; 
+  opacity: 0.6; 
+  pointer-events: none;
+}
+
+.primary-btn:hover {
+  opacity: 1;
 }
 
 .primary-btn.hidden {
@@ -519,6 +535,14 @@ body:has(.knowledge-slider:active) {
 .text-btn:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--shared-input-border-focus);
+}
+
+.text-btn:disabled {
+  background: var(--color-gray-200);
+  color: var(--sys-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /* Expandable concepts */
@@ -992,26 +1016,45 @@ body:has(.loading-screen) {
   min-height: 100vh;
 }
 
-/* Loading spinner with gradient and pill-shaped end caps */
+/* Material Design loading spinner - SVG based */
 .loading-spinner {
-  width: 80px;
-  height: 80px;
-  position: relative;
-  animation: spin 1.5s linear infinite;
+  width: 148px;
+  height: 148px;
+  display: inline-block;
 }
 
-.loading-spinner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  background: conic-gradient(from 270deg, var(--color-twilight-500) 0deg, rgba(79, 70, 229, 0.6) 120deg, rgba(79, 70, 229, 0.3) 200deg, transparent 240deg, transparent 360deg);
-  mask: radial-gradient(closest-side, transparent 70%, black 71%, black 100%);
-  -webkit-mask: radial-gradient(closest-side, transparent 70%, black 71%, black 100%);
-  animation: spin 1.5s linear infinite;
+.material-spinner {
+  animation: materialSpinnerRotate 2s linear infinite;
+}
+
+.spinner-path {
+  animation: materialSpinnerDash 1.4s ease-in-out infinite;
+}
+
+/* Material Design spinner rotation */
+@keyframes materialSpinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Material Design arc dash animation */
+@keyframes materialSpinnerDash {
+  0% {
+    stroke-dasharray: 1, 415;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 307, 415;
+    stroke-dashoffset: -104;
+  }
+  100% {
+    stroke-dasharray: 1, 415;
+    stroke-dashoffset: -414;
+  }
 }
 
 
@@ -1027,10 +1070,7 @@ body:has(.loading-screen) {
   max-width: 100%;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+
 
 @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
 @keyframes load { from{ width:0%; } to{ width:100%; } }

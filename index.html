@@ -19,7 +19,7 @@
         <div class="search-section">
             <div class="search-bar">
                 <img src="images/search.png" alt="Search" class="search-icon">
-                <input type="text" placeholder="Search" class="search-input subheading-3">
+                <input type="text" id="homeSearch" name="homeSearch" placeholder="Search" class="search-input subheading-3">
             </div>
             <div class="profile-avatar">
                 <img src="images/penguin.png" alt="Profile Avatar" class="avatar-image">
@@ -59,11 +59,18 @@
                 </div>
                 <div class="progress-container">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: 12%"></div>
+                        <div class="progress-fill" style="width: 0%"></div>
                     </div>
-                    <p class="progress-text subheading-4 text-secondary">12% complete</p>
+                    <p class="progress-text subheading-4 text-secondary">0% complete</p>
                 </div>
-                <button class="continue-button subheading-3 shadow-small shadow-medium-hover">Continue</button>
+                <button class="continue-button subheading-3 shadow-small shadow-medium-hover">
+                    <span class="button-text">Continue</span>
+                    <div class="button-spinner">
+                        <svg class="material-spinner-small" width="24" height="24" viewBox="0 0 24 24">
+                            <circle class="spinner-path-small" cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"></circle>
+                        </svg>
+                    </div>
+                </button>
             </div>
         </section>
 
@@ -123,6 +130,7 @@
 
     <script src="js/api.js"></script>
     <script src="js/adaptive-learning.js"></script>
+    <script src="js/progress-debug.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html> 

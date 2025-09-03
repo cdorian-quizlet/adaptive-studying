@@ -259,7 +259,7 @@ body {
     line-height: var(--typography-lineHeight-subheading-three);
     letter-spacing: var(--typography-letterSpacing-none);
     color: var(--sys-text-secondary);
-    margin: 0 0 12px 0;
+    margin: 48px 0 12px 0;
     text-align: left;
     transition: all 0.2s ease;
 }
@@ -371,16 +371,7 @@ body {
     border-radius: 12px;
 }
 
-.option-btn.shake {
-    animation: optionShake 0.5s ease-in-out;
-}
 
-/* Shake animation for incorrect multiple choice answers */
-@keyframes optionShake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-    20%, 40%, 60%, 80% { transform: translateX(4px); }
-}
 
 .option-btn.incorrect::before {
     content: "close";
@@ -417,26 +408,31 @@ body {
     gap: 12px;
     margin-top: 20px;
     position: relative;
-    z-index: 150; /* Higher than submit button (z-index: 100) */
+    z-index: 50; /* Lower than buttons so they stay clickable */
 }
 
 .written-feedback.show {
-    display: flex; /* Show when feedback should be visible */
+    display: flex !important; /* Show when feedback should be visible */
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-top: 16px !important;
 }
 
 /* User answer feedback removed - reusing input field instead */
 
 .correct-answer-feedback {
-    background: transparent;
-    border: 2px dashed var(--color-mint-600);
+    background: var(--color-mint-50);
+    border: 2px solid var(--color-mint-600);
     border-radius: 12px;
     padding: 16px;
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-body-three);
-    font-weight: var(--typography-fontWeight-body-three);
+    font-weight: 600;
     color: var(--sys-text-primary);
     position: relative;
     display: block;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .correct-answer-feedback::before {
@@ -869,6 +865,20 @@ body {
     padding: 1px 4px;
 }
 
+/* Hide badges by default - toggle via debug menu */
+.api-badge,
+.static-badge,
+.correct-badge {
+    display: none !important;
+}
+
+/* Show badges when debug mode is enabled */
+body.show-debug-badges .api-badge,
+body.show-debug-badges .static-badge,
+body.show-debug-badges .correct-badge {
+    display: inline-block !important;
+}
+
 .matching-item:focus,
 .matching-item:active {
     outline: none;
@@ -922,16 +932,7 @@ body {
     visibility: hidden;
 }
 
-.matching-item.shake {
-    animation: shake 0.3s ease-in-out;
-}
 
-/* Faster shake animation for incorrect matches */
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-1.5px); }
-    20%, 40%, 60%, 80% { transform: translateX(1.5px); }
-}
 
 .matching-item.incorrect {
     border-color: var(--color-sherbert-400);
@@ -994,6 +995,19 @@ body {
         font-size: 15px;
         min-height: 80px;
     }
+
+    /* Button container spans full width to match other elements */
+    .button-container.multiple-choice-buttons {
+        max-width: 480px;
+        width: calc(100% - 40px);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .button-container.multiple-choice-buttons .continue-btn {
+        flex: 1;
+        max-width: none;
+    }
 }
 
 @media (min-width: 1024px) {
@@ -1003,6 +1017,17 @@ body {
     
     .continue-btn, .submit-btn {
         max-width: 520px;
+    }
+
+    /* Button container spans full width at larger desktop sizes */
+    .button-container.multiple-choice-buttons {
+        max-width: 520px;
+        width: calc(100% - 40px);
+    }
+
+    .button-container.multiple-choice-buttons .continue-btn {
+        flex: 1;
+        max-width: none;
     }
 }
 
@@ -1027,6 +1052,86 @@ body {
     to {
         opacity: 1;
     }
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Shimmer loading state for multiple choice options */
+.option-btn.shimmer {
+    background: transparent;
+    border: 2px solid var(--color-gray-300);
+    cursor: default;
+    pointer-events: none;
+    min-height: 56px; /* Ensure consistent height during loading */
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.option-btn.shimmer .shimmer-line {
+    width: 85%; /* Don't fill entire width - leave some margin */
+    height: 16px; /* Height of text line */
+    background: var(--color-gray-200);
+    border-radius: var(--radius-xLarge, 24px);
+    position: relative;
+    overflow: hidden;
+}
+
+.option-btn.shimmer .shimmer-line::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Shimmer loading state for question text */
+.question-text.shimmer {
+    color: transparent;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.question-text.shimmer .shimmer-line {
+    height: 24px; /* Height of text line */
+    background: var(--color-gray-200);
+    border-radius: var(--radius-xLarge, 24px);
+    position: relative;
+    overflow: hidden;
+}
+
+.question-text.shimmer .shimmer-line:first-child {
+    width: 100%; /* Full width first line */
+}
+
+.question-text.shimmer .shimmer-line:nth-child(2) {
+    width: 75%; /* Shorter second line */
+}
+
+.question-text.shimmer .shimmer-line::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 20%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 45%, var(--shared-shimmer-bg-gradient-center, rgba(88, 99, 128, 0.12)) 55%, var(--shared-shimmer-bg-gradient-edge, rgba(88, 99, 128, 0.00)) 80%);
+    animation: shimmer 2s ease-in-out infinite;
 }
 
 /* Debug Bottom Sheet Styles - Using home page pattern */
@@ -1165,9 +1270,10 @@ body {
 
 /* Explanation Button and Bottom Sheet Styles */
 .explanation-button {
-    background: var(--color-twilight-100);
-    border: 2px solid var(--color-twilight-200);
+    border: 2px solid transparent;
     border-radius: var(--radius-full);
+    background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
+                linear-gradient(90deg, var(--color-twilight-300), var(--color-lilac-300)) border-box;
     padding: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1180,7 +1286,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-medium);
 }
 
 .explanation-button img {
@@ -1248,15 +1353,15 @@ body {
     width: 56px;
     height: 56px;
     flex-shrink: 0;
-    background: var(--color-twilight-100);
-    border: 2px solid var(--color-twilight-200);
-    box-shadow: var(--shadow-medium);
+    border: 2px solid transparent;
+    background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
+                linear-gradient(90deg, var(--color-twilight-300), var(--color-lilac-300)) border-box;
 }
 
 .button-container .explanation-button:hover,
 .explanation-button:hover {
-    background: var(--color-twilight-200);
-    border-color: var(--color-twilight-300);
+    background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
+                linear-gradient(90deg, var(--color-twilight-400), var(--color-lilac-400)) border-box;
     transform: scale(1.05);
 }
 
@@ -1276,43 +1381,148 @@ body {
 }
 
 .explanation-sheet .bottom-sheet-header {
-    padding: 24px 24px 20px 24px;
-    border-bottom: 1px solid var(--color-gray-200);
+    padding: 24px 8px 0px 8px;
     flex-shrink: 0;
     background: var(--sys-surface-base);
-    text-align: center;
+    text-align: left;
+    border-bottom: none;
 }
 
 .explanation-header {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0 16px 32px 16px;
 }
 
 .ai-icon {
     width: 40px;
     height: 40px;
-    background: url('../images/sparkle.png') center no-repeat;
-    background-size: contain;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
 }
 
-.ai-icon .material-icons-round {
-    display: none; /* Hide the icon since we're using the sparkle image */
+.ai-icon img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
 }
+
+/* Explanation text section */
+
 
 /* Update header title styling */
 .explanation-sheet .bottom-sheet-header h3 {
     color: var(--sys-text-primary);
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-two);
-    font-weight: var(--typography-fontWeight-subheading-two);
-    line-height: var(--typography-lineHeight-subheading-two);
-    margin: 0;
-    text-align: center;
+    font-size: var(--typography-size-header-three);
+    font-weight: var(--typography-fontWeight-header-three);
+    line-height: var(--typography-lineHeight-header-three);
+    margin: 40px 0 0 0;
+    text-align: left;
+    align-self: flex-start;
+}
+
+/* Try asking subheading styling */
+.explanation-sheet .bottom-sheet-header h4 {
+    color: var(--sys-text-secondary);
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-four);
+    font-weight: var(--typography-fontWeight-subheading-four);
+    line-height: var(--typography-lineHeight-subheading-four);
+    margin: 32px 0 0 0;
+    text-align: left;
+    align-self: flex-start;
+}
+
+/* Explanation options carousel */
+.explanation-options-carousel {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    padding: 16px 16px 24px 16px;
+    margin: 16px -16px 0 -16px;
+}
+
+.explanation-options-carousel::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.explanation-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    background: var(--color-gray-100);
+    border-radius: var(--radius-large);
+    border: none;
+    box-shadow: var(--shadow-xlarge);
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 200px;
+    height: 120px;
+    transition: all 0.2s ease;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-body-four);
+    font-weight: var(--typography-fontWeight-body-four);
+    color: var(--sys-text-primary);
+}
+
+.explanation-option:hover {
+    background: var(--color-gray-200);
+}
+
+.explanation-option:active {
+    transform: scale(0.98);
+}
+
+.explanation-option .option-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.explanation-option span {
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+/* Close button styling to match header */
+.explanation-sheet .close-bottom-sheet.header-close-btn {
+    position: fixed;
+    top: 24px;
+    right: 16px;
+    display: flex;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 200px;
+    background: var(--color-gray-200);
+    border: none;
+    color: var(--sys-text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    z-index: 1001;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.explanation-sheet .close-bottom-sheet.header-close-btn:hover {
+    background: var(--color-gray-300);
+}
+
+.explanation-sheet .close-bottom-sheet.header-close-btn:active {
+    background: var(--color-gray-400);
 }
 
 /* Bottom sheet body styles */
@@ -1391,23 +1601,31 @@ body {
     z-index: 1;
 }
 
+.question-icon.sparkle-icon {
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 .question-input {
     width: 100%;
     padding: 16px 16px 16px 48px;
-    border: 2px solid var(--color-gray-300);
+    border: 2px solid transparent;
     border-radius: var(--radius-full);
+    background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
+                linear-gradient(90deg, var(--color-twilight-300), var(--color-lilac-300)) border-box;
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-body-three);
     font-weight: var(--typography-fontWeight-body-three);
     color: var(--sys-text-primary);
-    background: var(--sys-surface-base);
     outline: none;
     transition: all 0.2s ease;
 }
 
 .question-input:focus {
-    border-color: var(--color-twilight-300);
-    background: var(--sys-surface-base);
+    background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
+                linear-gradient(90deg, var(--color-twilight-400), var(--color-lilac-400)) border-box;
 }
 
 .question-input::placeholder {

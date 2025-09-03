@@ -419,12 +419,16 @@ function loadStudyProgress() {
         console.log('🔍 DEBUG: No study data found, setting progress to 0');
         const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
+        const progressBar = document.querySelector('.progress-bar');
         
         if (progressFill) {
             progressFill.style.width = '0%';
         }
         if (progressText) {
             progressText.textContent = '0% complete';
+        }
+        if (progressBar) {
+            progressBar.classList.add('zero-state');
         }
         return;
     }
@@ -444,25 +448,38 @@ function loadStudyProgress() {
         todayData: dailyData[today]
     });
     
-    // Calculate overall study plan progress instead of daily progress
-    const overallProgressPercentage = calculateOverallPlanProgress();
+    // Calculate overall study plan progress using simplified system
+    let overallProgressPercentage = calculateOverallPlanProgress();
     
     console.log('🔍 DEBUG: Final progress calculation:', {
         todayQuestions,
         overallProgressPercentage
     });
     
+    // Add error handling and validation
+    if (isNaN(overallProgressPercentage) || overallProgressPercentage < 0) {
+        console.warn('⚠️ Invalid progress percentage, defaulting to 0:', overallProgressPercentage);
+        overallProgressPercentage = 0;
+    }
+    
+    // Cap at 100%
+    overallProgressPercentage = Math.min(overallProgressPercentage, 100);
+    
     // SAFEGUARD: If we detect suspicious 70% progress, force it to 0
     if (overallProgressPercentage === 70) {
         console.log('🚨 SAFEGUARD: Detected 70% progress, likely from stale data. Forcing to 0.');
         const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
+        const progressBar = document.querySelector('.progress-bar');
         
         if (progressFill) {
             progressFill.style.width = '0%';
         }
         if (progressText) {
             progressText.textContent = '0% complete';
+        }
+        if (progressBar) {
+            progressBar.classList.add('zero-state');
         }
         
         // Clear the problematic data
@@ -479,18 +496,18 @@ function loadStudyProgress() {
     
     // Update progress bar
     const progressFill = document.querySelector('.progress-fill');
-    const progressContainer = document.querySelector('.progress-container');
+    const progressBar = document.querySelector('.progress-bar');
     
     if (progressFill) {
         progressFill.style.width = `${overallProgressPercentage}%`;
     }
     
     // Add/remove zero-state class for styling
-    if (progressContainer) {
+    if (progressBar) {
         if (overallProgressPercentage === 0) {
-            progressContainer.classList.add('zero-state');
+            progressBar.classList.add('zero-state');
         } else {
-            progressContainer.classList.remove('zero-state');
+            progressBar.classList.remove('zero-state');
         }
     }
     
@@ -499,6 +516,14 @@ function loadStudyProgress() {
     if (progressText) {
         progressText.textContent = `${overallProgressPercentage}% complete`;
     }
+    
+    console.log('✅ Progress updated successfully:', {
+        percentage: overallProgressPercentage,
+        fillWidth: progressFill?.style.width,
+        textContent: progressText?.textContent,
+        hasProgressFill: !!progressFill,
+        hasProgressText: !!progressText
+    });
 }
 
 // Daily progress helper functions for home page
@@ -624,17 +649,10 @@ function updateTodaysProgressFromStudyData() {
     return dailyData;
 }
 
-// Calculate overall study plan progress using adaptive learning
+// Calculate overall study plan progress using simplified grading system
 function calculateOverallPlanProgress() {
     try {
-        // Try to get adaptive learning progress first
-        const adaptiveProgress = getAdaptiveLearningProgress();
-        if (adaptiveProgress !== null) {
-            console.log('🔍 DEBUG: Using adaptive learning progress:', adaptiveProgress);
-            return adaptiveProgress;
-        }
-        
-        // Get study path data for fallback calculation
+        // Get study path data for calculation
         const studyPathData = localStorage.getItem('studyPathData');
         if (!studyPathData) {
             console.log('🔍 DEBUG: No study path data found, progress is 0%');
@@ -659,7 +677,7 @@ function calculateOverallPlanProgress() {
         // Calculate percentage
         const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
         
-        console.log('🔍 DEBUG: Traditional progress calculation:', {
+        console.log('🔍 DEBUG: Simplified progress calculation:', {
             totalRounds,
             questionsPerRound,
             totalQuestions,
@@ -931,6 +949,7 @@ function resetStudyProgress() {
         // Reset the progress bar and text on the page immediately
         const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
+        const progressBar = document.querySelector('.progress-bar');
         
         if (progressFill) {
             progressFill.style.width = '0%';
@@ -938,6 +957,10 @@ function resetStudyProgress() {
         
         if (progressText) {
             progressText.textContent = '0% complete';
+        }
+        
+        if (progressBar) {
+            progressBar.classList.add('zero-state');
         }
         
         // Also clear any session storage flags
@@ -1021,6 +1044,7 @@ function clearTestProgressData() {
             // Reset UI to 0
             const progressFill = document.querySelector('.progress-fill');
             const progressText = document.querySelector('.progress-text');
+            const progressBar = document.querySelector('.progress-bar');
             
             if (progressFill) {
                 progressFill.style.width = '0%';
@@ -1028,6 +1052,10 @@ function clearTestProgressData() {
             
             if (progressText) {
                 progressText.textContent = '0% complete';
+            }
+            
+            if (progressBar) {
+                progressBar.classList.add('zero-state');
             }
             
             showToast('Test progress data cleared');
@@ -1152,12 +1180,16 @@ function emergency70PercentFix() {
         // 3. Force UI to 0%
     const progressFill = document.querySelector('.progress-fill');
         const progressText = document.querySelector('.progress-text');
+        const progressBar = document.querySelector('.progress-bar');
         
     if (progressFill) {
             progressFill.style.width = '0%';
         }
         if (progressText) {
             progressText.textContent = '0% complete';
+        }
+        if (progressBar) {
+            progressBar.classList.add('zero-state');
         }
         fixesApplied.push('Reset UI to 0%');
         
@@ -1198,12 +1230,16 @@ function nuclearResetLocalStorage() {
             // Reset UI immediately
             const progressFill = document.querySelector('.progress-fill');
     const progressText = document.querySelector('.progress-text');
+            const progressBar = document.querySelector('.progress-bar');
             
             if (progressFill) {
                 progressFill.style.width = '0%';
             }
     if (progressText) {
                 progressText.textContent = '0% complete';
+            }
+            if (progressBar) {
+                progressBar.classList.add('zero-state');
             }
             
             showToast('🚨 ALL localStorage cleared - page will reload');
@@ -1226,8 +1262,7 @@ function nuclearResetLocalStorage() {
 function navigateToStudyScreen() {
     // Add loading state
     jumpBackCard.style.pointerEvents = 'none';
-    continueButton.textContent = 'Loading...';
-    continueButton.style.opacity = '0.7';
+    continueButton.classList.add('loading');
     
     // Simulate navigation delay
     setTimeout(() => {
@@ -1280,8 +1315,12 @@ function resetStudyProgress() {
     
     // Reset progress bar
     const progressFill = document.querySelector('.progress-fill');
+    const progressBar = document.querySelector('.progress-bar');
     if (progressFill) {
         progressFill.style.width = '0%';
+    }
+    if (progressBar) {
+        progressBar.classList.add('zero-state');
     }
     
     // Reset progress text
@@ -1679,8 +1718,16 @@ window.StudyApp = {
     showBottomSheet,
     updateProgress: function(newProgress) {
         const progressFill = document.querySelector('.progress-fill');
+        const progressBar = document.querySelector('.progress-bar');
         if (progressFill) {
             progressFill.style.width = `${newProgress}%`;
+        }
+        if (progressBar) {
+            if (newProgress === 0) {
+                progressBar.classList.add('zero-state');
+            } else {
+                progressBar.classList.remove('zero-state');
+            }
         }
     }
 }; 
