@@ -625,15 +625,15 @@
             
             console.log('🔍 DEBUG: Loading saved course - Original:', originalCourseName, 'Display:', displayCourseName);
             
-            return `
-              <div class="course-row" data-course="${originalCourseName}" data-course-display="${displayCourseName}">
-                <div class="course-check" aria-hidden="true"></div>
-                <div class="course-text">
-                  <div class="course-title">${escapeHtml(displayCourseName)}</div>
-                  <div class="course-subtitle">${escapeHtml(c.description || 'Course description')}</div>
-                </div>
+                      return `
+            <div class="course-row" data-course="${originalCourseName}" data-course-display="${displayCourseName}">
+              <div class="course-check" aria-hidden="true"></div>
+              <div class="course-text">
+                <div class="course-title">${escapeHtml(displayCourseName)}</div>
+                <div class="course-subtitle">${escapeHtml(toTitleCase(c.school || 'School name'))}</div>
               </div>
-            `;
+            </div>
+          `;
           }).join('');
         } else {
           // Show message to add course if no recent courses
@@ -1868,16 +1868,12 @@
     // Show loading state first
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+      `<div class="subtle">Exams and goals</div>`+
       `<div class="course-list-card" id="goalList">`+
-      `  <div class="course-row">`+
-      `    <div class="course-check" aria-hidden="true"></div>`+
-      `    <div class="course-text"><div class="course-title">Loading goals...</div></div>`+
-      `  </div>`+
-      `</div>`+
-      `<div class="course-list-card" id="addGoalCard">`+
-      `  <div class="course-row" id="addGoalRow">`+
-      `    <div class="course-check add" aria-hidden="true"></div>`+
-      `    <div class="course-text"><div class="course-title">Add new goal</div></div>`+
+      `  <div class="course-row" style="justify-content: center;">`+
+      `    <svg class="loading-spinner-small" width="24" height="24" viewBox="0 0 24 24">`+
+      `      <circle class="spinner-path-small" cx="12" cy="12" r="10" fill="none" stroke="var(--color-gray-500)" stroke-width="2" stroke-linecap="round"></circle>`+
+      `    </svg>`+
       `  </div>`+
       `</div>`+
       `<div class="cta-row hidden"><button class="primary-btn" id="goalsContinue" disabled>Continue</button></div>`;
@@ -1904,6 +1900,7 @@
         
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+          `<div class="subtle">Exams and goals</div>`+
           `<div class="course-list-card" id="goalList"></div>`+
           `<div class="course-list-card" id="addGoalCard">`+
           `  <div class="course-row" id="addGoalRow">`+
@@ -1916,6 +1913,7 @@
         // Show regular goal list with API data
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+          `<div class="subtle">Exams and goals</div>`+
           `<div class="course-list-card" id="goalList"></div>`+
           `<div class="course-list-card" id="addGoalCard">`+
           `  <div class="course-row" id="addGoalRow">`+
@@ -2019,6 +2017,7 @@
       // Don't use static fallbacks - just show error state and allow manual addition
       flowContent.innerHTML = ''+
         `<h1 class="flow-title">What should be included from ${escapeHtml(courseCode)}?</h1>`+
+        `<div class="subtle">Exams and goals</div>`+
         `<div class="course-list-card" id="goalList">`+
         `  <div class="course-row" style="cursor: default; opacity: 0.6;">`+
         `    <div class="course-check" aria-hidden="true"></div>`+
@@ -2098,16 +2097,12 @@
     // Show loading state first
     flowContent.innerHTML = ''+
       `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
+      `<div class="subtle">Concepts</div>`+
       `<div class="course-list-card" id="conceptList">`+
-      `  <div class="course-row">`+
-      `    <div class="course-check" aria-hidden="true"></div>`+
-      `    <div class="course-text"><div class="course-title">Loading concepts...</div></div>`+
-      `  </div>`+
-      `</div>`+
-      `<div class="course-list-card" id="addConceptCard">`+
-      `  <div class="course-row" id="addConceptRow">`+
-      `    <div class="course-check add" aria-hidden="true"></div>`+
-      `    <div class="course-text"><div class="course-title">Add new concept</div></div>`+
+      `  <div class="course-row" style="justify-content: center;">`+
+      `    <svg class="loading-spinner-small" width="24" height="24" viewBox="0 0 24 24">`+
+      `      <circle class="spinner-path-small" cx="12" cy="12" r="10" fill="none" stroke="var(--color-gray-500)" stroke-width="2" stroke-linecap="round"></circle>`+
+      `    </svg>`+
       `  </div>`+
       `</div>`+
       `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
@@ -2121,234 +2116,48 @@
       const conceptObjects = apiConcepts;
       const concepts = apiConcepts.map(concept => concept.name);
       
-      // If no concepts returned from API, show search and allow manual addition
+      // If no concepts returned from API, show manual addition interface
       if (concepts.length === 0) {
       flowContent.innerHTML = ''+
         `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
-        `<div class="input-field" id="conceptSearchField">`+
-        `  <input id="conceptSearch" class="text-input" placeholder="Search for concepts..." aria-label="Search for concepts" autocomplete="off" />`+
-        `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
-        `    <img src="../images/plus-circled.png" alt="Add" />`+
-        `  </button>`+
+        `<div class="course-list-card" id="addConceptCard" style="margin-top: 16px;">`+
+        `  <div class="course-row" id="addConceptRow">`+
+        `    <div class="course-check add" aria-hidden="true"></div>`+
+        `    <div class="course-text"><div class="course-title">Add new concept</div></div>`+
+        `  </div>`+
         `</div>`+
-          `<div id="conceptSearchResults" class="location-section" style="display: none; margin-top: 16px;"></div>`+
-          `<div class="course-list-card" id="selectedConceptsList" style="display: none; margin-top: 32px;"></div>`+
         `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
         
-        // Add search functionality for concepts
-      const conceptSearch = document.getElementById('conceptSearch');
-        const conceptSearchResults = document.getElementById('conceptSearchResults');
-      const addConceptBtn = document.getElementById('addConceptBtn');
-        const selectedConceptsList = document.getElementById('selectedConceptsList');
-        
-        // Keep track of all available concepts and selected concepts separately
-        const availableConcepts = [];
-        
-        // Function to render available concepts with checkboxes (like goals screen)
-        function renderSelectedConcepts() {
-          if (availableConcepts.length === 0) {
-            selectedConceptsList.style.display = 'none';
-            return;
-          }
-          
-          selectedConceptsList.style.display = 'block';
-          
-          // Add "All" row if there are 2+ concepts
-          const allSelected = state.concepts.length === availableConcepts.length && availableConcepts.length > 0;
-          const allRow = availableConcepts.length >= 2 ? `
-            <div class="course-row ${allSelected ? 'selected' : ''}" data-select-all="1">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title">All</div></div>
-            </div>
-          ` : '';
-          
-          // Add individual concept rows
-          const conceptRows = availableConcepts.map((concept) => {
-            const selected = state.concepts.includes(concept);
-            return `
-              <div class="course-row ${selected ? 'selected' : ''}" data-concept="${concept}">
-                <div class="course-check" aria-hidden="true"></div>
-                <div class="course-text">
-                  <div class="course-title">${escapeHtml(concept)}</div>
-                </div>
-              </div>
-            `;
-        }).join('');
-        
-          selectedConceptsList.innerHTML = allRow + conceptRows;
-        }
-        
-        // Function to update continue button state
+        // Set up manual concept addition for empty state
         function updateContinueButton() {
           const conceptsCta = document.getElementById('conceptsContinue').parentElement;
-        const disabled = state.concepts.length === 0;
-        document.getElementById('conceptsContinue').disabled = disabled;
+          const disabled = state.concepts.length === 0;
+          document.getElementById('conceptsContinue').disabled = disabled;
           conceptsCta.classList.toggle('hidden', disabled);
         }
         
-        // Function to add a concept
-        function addConcept(conceptName) {
-          const trimmed = conceptName.trim();
-          if (trimmed && !availableConcepts.includes(trimmed)) {
-            // Add to available concepts
-            availableConcepts.push(trimmed);
-            
-            // Also select it
-            if (!state.concepts.includes(trimmed)) {
+        // Set up add concept row click handler
+        document.getElementById('addConceptRow').addEventListener('click', () => {
+          const name = prompt('Concept name');
+          if (name) { 
+            const trimmed = name.trim();
+            if (trimmed && !state.concepts.includes(trimmed)) { 
               state.concepts.push(trimmed);
+              updateContinueButton();
             }
-            
-            // Update UI
-            renderSelectedConcepts();
-            updateContinueButton();
-            
-            // Clear search and hide results
-            conceptSearch.value = '';
-            conceptSearchResults.style.display = 'none';
-          addConceptBtn.style.display = 'none';
-            
-            // Provide feedback (optional)
-            console.log('Added concept:', trimmed);
-          }
-        }
-        
-        // Add single click handler for concept selection (outside render function to avoid duplicates)
-        selectedConceptsList.addEventListener('click', (e) => {
-          const all = e.target.closest('[data-select-all]');
-          if (all) {
-            // Toggle all: if everything is selected, clear; otherwise select all
-            if (state.concepts.length === availableConcepts.length) {
-              state.concepts = [];
-        } else {
-              state.concepts = availableConcepts.slice();
-            }
-            renderSelectedConcepts();
-            updateContinueButton();
-            return;
-          }
-          
-          const item = e.target.closest('.course-row');
-          if (!item) return;
-          const conceptToToggle = item.getAttribute('data-concept');
-          if (conceptToToggle) {
-            const index = state.concepts.indexOf(conceptToToggle);
-            if (index >= 0) {
-              // Deselect
-              state.concepts.splice(index, 1);
-            } else {
-              // Select
-              state.concepts.push(conceptToToggle);
-            }
-            renderSelectedConcepts();
-            updateContinueButton();
           }
         });
         
-        // Initialize selected concepts display
-        renderSelectedConcepts();
+        // Initialize continue button state
         updateContinueButton();
-        
-        // Debounced search function
-        const searchConcepts = debounce(async (query) => {
-          if (!query.trim()) {
-            conceptSearchResults.style.display = 'none';
-            addConceptBtn.style.display = 'none';
-            return;
-          }
-          
-          try {
-            // Show loading state
-            conceptSearchResults.innerHTML = `
-              <div class="search-loading-container">
-                ${Array(3).fill(0).map(() => `
-                  <div class="search-loading-item">
-                    <div class="loading-name"></div>
-                    <div class="loading-description"></div>
-                  </div>
-                `).join('')}
-              </div>
-            `;
-            conceptSearchResults.style.display = 'block';
-            addConceptBtn.style.display = 'none';
-            
-            // Search for concepts using a general concepts API or fallback
-            // For now, we'll show a "no results" state since we don't have a general concepts search API
-            setTimeout(() => {
-              // Simulate some example results for demonstration
-              // In real app, this would be based on actual API response
-              const mockResults = []; // Could add mock results here if needed
-              const hasResults = mockResults.length > 0;
-              
-              if (hasResults) {
-                // Show results that can be selected
-                conceptSearchResults.innerHTML = `
-                  <div class="location-schools">
-                    ${mockResults.map(result => `
-                      <div class="location-school-item concept-result-item" data-concept="${result.name}">
-                        <div class="location-school-name">${result.name}</div>
-                        <div class="location-school-address">${result.description || 'Concept'}</div>
-                      </div>
-                    `).join('')}
-                  </div>
-                `;
-                addConceptBtn.style.display = 'none';
-                
-                // Add click handlers for concept results
-                conceptSearchResults.querySelectorAll('.concept-result-item').forEach(item => {
-                  item.addEventListener('click', () => {
-                    const conceptName = item.getAttribute('data-concept');
-                    addConcept(conceptName);
-                  });
-                });
-              } else {
-                // No results - hide results and show add button
-                conceptSearchResults.style.display = 'none';
-                addConceptBtn.style.display = 'flex';
-              }
-            }, 500);
-            
-          } catch (error) {
-            console.error('Error searching concepts:', error);
-            conceptSearchResults.style.display = 'none';
-            addConceptBtn.style.display = 'flex';
-          }
-        }, 300);
-        
-        // Add search event listener
-        conceptSearch.addEventListener('input', (e) => {
-          searchConcepts(e.target.value);
-        });
-        
-        // Add concept button click handler
-        addConceptBtn.addEventListener('click', () => {
-          const query = conceptSearch.value.trim();
-          if (query) {
-            addConcept(query);
-        }
-      });
-      
-      // Allow adding concept by pressing Enter
-      conceptSearch.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            const query = conceptSearch.value.trim();
-            if (query && addConceptBtn.style.display !== 'none') {
-              addConcept(query);
-            }
-          }
-        });
 
         document.getElementById('conceptsContinue').addEventListener('click', next);
         
       } else {
-        // Show concept list with search input at the top and API data below
+        // Show concept list with API data
         flowContent.innerHTML = ''+
           `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
-          `<div class="input-field" id="conceptSearchField">`+
-          `  <input id="conceptSearch" class="text-input" placeholder="Search concepts..." aria-label="Search concepts" autocomplete="off" />`+
-          `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
-          `    <img src="../images/plus-circled.png" alt="Add" />`+
-          `  </button>`+
-          `</div>`+
+          `<div class="subtle">Concepts</div>`+
           `<div class="course-list-card" id="conceptList"></div>`+
           `<div class="course-list-card" id="addConceptCard">`+
           `  <div class="course-row" id="addConceptRow">`+
@@ -2367,6 +2176,7 @@
           <div class="course-text"><div class="course-title" id="concept-title-${conceptId}">${escapeHtml(text)}</div></div>
         </div>`;
       }
+      
       function renderList(){
         const allSelected = state.concepts.length === concepts.length && concepts.length>0;
         const allRow = concepts.length >= 2 ? `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
@@ -2401,94 +2211,24 @@
         document.getElementById('conceptsContinue').disabled = disabled;
         cta.classList.toggle('hidden', disabled);
       }
-      // Set up filtering function that will be used by search and click handlers
-      let filteredConcepts = [...concepts];
-      let filteredConceptObjects = [...conceptObjects];
-      let filterAndRenderConcepts;
-      
-      // Define the filtering function
-      filterAndRenderConcepts = function() {
-        const conceptSearch = document.getElementById('conceptSearch');
-        const query = conceptSearch ? conceptSearch.value.trim().toLowerCase() : '';
-        
-        if (!query) {
-          // No search query - show all concepts
-          filteredConcepts = [...concepts];
-          filteredConceptObjects = [...conceptObjects];
-        } else {
-          // Filter concepts based on search query
-          filteredConcepts = [];
-          filteredConceptObjects = [];
-          concepts.forEach((concept, index) => {
-            if (concept.toLowerCase().includes(query)) {
-              filteredConcepts.push(concept);
-              filteredConceptObjects.push(conceptObjects[index]);
-            }
-          });
-        }
-        
-        // Re-render with filtered results
-        const allSelected = state.concepts.length === filteredConcepts.length && filteredConcepts.length > 0;
-        const allRow = filteredConcepts.length >= 2 ? `<div class="course-row ${allSelected?'selected':''}" data-select-all="1">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title">All</div></div>
-        </div>` : '';
-        
-        const items = filteredConcepts.map((c, index) => {
-          const concept = filteredConceptObjects[index];
-          return rowHtml(c, `data-concept="${c}"`, concept.id);
-        }).join('');
-        
-        list.innerHTML = allRow + items;
-        
-        // Add badges after DOM is updated
-        filteredConceptObjects.forEach((concept, index) => {
-          const titleElement = document.getElementById(`concept-title-${concept.id}`);
-          if (titleElement && concept.source !== 'api') {
-            titleElement.querySelectorAll('.static-badge, .api-badge').forEach(b => b.remove());
-            if (concept.source === 'static-error') {
-              const badge = createStaticBadge();
-              badge.textContent = 'STATIC';
-              titleElement.appendChild(badge);
-            } else if (concept.source === 'static') {
-              titleElement.appendChild(createStaticBadge());
-            }
-          }
-        });
-        
-        // Update continue button
-        const cta = document.getElementById('conceptsContinue').parentElement;
-        const disabled = state.concepts.length === 0;
-        document.getElementById('conceptsContinue').disabled = disabled;
-        cta.classList.toggle('hidden', disabled);
-      };
+
 
       list.addEventListener('click', (e)=>{
         const all = e.target.closest('[data-select-all]');
         if(all){
           if (Array.isArray(state.concepts) && state.concepts.length === concepts.length) {
             state.concepts = [];
-          } else {
-            state.concepts = concepts.slice();
-          }
-          // Re-render using the appropriate function
-          if (document.getElementById('conceptSearch')) {
-            filterAndRenderConcepts();
-          } else {
-            renderList();
-          }
-          return;
+                  } else {
+          state.concepts = concepts.slice();
         }
-        const item = e.target.closest('.course-row');
-        if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
-        const i = state.concepts.indexOf(c);
-        if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
-        // Re-render using the appropriate function
-        if (document.getElementById('conceptSearch')) {
-          filterAndRenderConcepts();
-        } else {
-          renderList();
-        }
+        renderList();
+        return;
+      }
+      const item = e.target.closest('.course-row');
+      if(!item) return; const c = item.getAttribute('data-concept'); if(!c) return;
+      const i = state.concepts.indexOf(c);
+      if(i>=0) state.concepts.splice(i,1); else state.concepts.push(c);
+      renderList();
       });
       
       document.getElementById('addConceptRow').addEventListener('click', ()=>{
@@ -2507,88 +2247,33 @@
             });
           }
         }
-        // Re-render using the appropriate function
-        if (document.getElementById('conceptSearch')) {
-          filterAndRenderConcepts();
-        } else {
-          renderList();
-        }
+        renderList();
       });
 
       document.getElementById('conceptsContinue').addEventListener('click', next);
       
-      // Add search functionality if search input exists
-      const conceptSearch = document.getElementById('conceptSearch');
-      if (conceptSearch) {
-        // Add search event listener
-        conceptSearch.addEventListener('input', filterAndRenderConcepts);
-        
-        // Initial render with all concepts
-        filterAndRenderConcepts();
-      } else {
-        // No search input, use the original renderList function
-        renderList();
+      // Select all concepts by default
+      if (concepts.length > 0) {
+        state.concepts = concepts.slice();
       }
+      
+      // Initial render
+      renderList();
       
     } catch (error) {
       console.error('Error loading concepts:', error);
-      // Show error state with simplified search-only UI
+      // Show error state with manual addition only
       flowContent.innerHTML = ''+
         `<h1 class="flow-title">What's going to be on ${escapeHtml(goalsText)}?</h1>`+
-        `<div class="input-field" id="conceptSearchField">`+
-        `  <input id="conceptSearch" class="text-input" placeholder="Search for concepts..." aria-label="Search for concepts" autocomplete="off" />`+
-        `  <button id="addConceptBtn" class="input-add-btn" style="display: none;" aria-label="Add concept">`+
-        `    <img src="../images/plus-circled.png" alt="Add" />`+
-        `  </button>`+
+        `<div class="course-list-card" id="addConceptCard" style="margin-top: 16px;">`+
+        `  <div class="course-row" id="addConceptRow">`+
+        `    <div class="course-check add" aria-hidden="true"></div>`+
+        `    <div class="course-text"><div class="course-title">Add concept</div></div>`+
+        `  </div>`+
         `</div>`+
-        `<div id="conceptSearchResults" class="location-section" style="display: none; margin-top: 16px;"></div>`+
-        `<div class="course-list-card" id="selectedConceptsList" style="display: none; margin-top: 32px;"></div>`+
         `<div class="cta-row hidden"><button class="primary-btn" id="conceptsContinue" disabled>Continue</button></div>`;
       
-      // Add same search functionality for error state
-      const conceptSearch = document.getElementById('conceptSearch');
-      const conceptSearchResults = document.getElementById('conceptSearchResults');
-      const addConceptBtn = document.getElementById('addConceptBtn');
-      const selectedConceptsList = document.getElementById('selectedConceptsList');
-      
-      // Keep track of all available concepts and selected concepts separately
-      const availableConcepts = [];
-      
-      // Function to render available concepts with checkboxes (like goals screen)
-      function renderSelectedConcepts() {
-        if (availableConcepts.length === 0) {
-          selectedConceptsList.style.display = 'none';
-          return;
-        }
-        
-        selectedConceptsList.style.display = 'block';
-        
-        // Add "All" row if there are 2+ concepts
-        const allSelected = state.concepts.length === availableConcepts.length && availableConcepts.length > 0;
-        const allRow = availableConcepts.length >= 2 ? `
-          <div class="course-row ${allSelected ? 'selected' : ''}" data-select-all="1">
-          <div class="course-check" aria-hidden="true"></div>
-          <div class="course-text"><div class="course-title">All</div></div>
-          </div>
-        ` : '';
-        
-        // Add individual concept rows
-        const conceptRows = availableConcepts.map((concept) => {
-          const selected = state.concepts.includes(concept);
-          return `
-            <div class="course-row ${selected ? 'selected' : ''}" data-concept="${concept}">
-              <div class="course-check" aria-hidden="true"></div>
-              <div class="course-text">
-                <div class="course-title">${escapeHtml(concept)}</div>
-              </div>
-            </div>
-          `;
-        }).join('');
-        
-        selectedConceptsList.innerHTML = allRow + conceptRows;
-      }
-      
-      // Function to update continue button state
+      // Set up manual concept addition for error state  
       function updateContinueButton() {
         const conceptsCta = document.getElementById('conceptsContinue').parentElement;
         const disabled = state.concepts.length === 0;
@@ -2596,94 +2281,20 @@
         conceptsCta.classList.toggle('hidden', disabled);
       }
       
-      // Function to add a concept
-      function addConcept(conceptName) {
-        const trimmed = conceptName.trim();
-        if (trimmed && !availableConcepts.includes(trimmed)) {
-          // Add to available concepts
-          availableConcepts.push(trimmed);
-          
-          // Also select it
-          if (!state.concepts.includes(trimmed)) {
+      // Set up add concept row click handler
+      document.getElementById('addConceptRow').addEventListener('click', () => {
+        const name = prompt('Concept name');
+        if (name) { 
+          const trimmed = name.trim();
+          if (trimmed && !state.concepts.includes(trimmed)) { 
             state.concepts.push(trimmed);
+            updateContinueButton();
           }
-          
-          // Update UI
-          renderSelectedConcepts();
-          updateContinueButton();
-          
-          // Clear search and hide results
-          conceptSearch.value = '';
-          conceptSearchResults.style.display = 'none';
-          addConceptBtn.style.display = 'none';
-        }
-        }
-      
-      // Add single click handler for concept selection (outside render function to avoid duplicates)
-      selectedConceptsList.addEventListener('click', (e) => {
-        const all = e.target.closest('[data-select-all]');
-        if (all) {
-          // Toggle all: if everything is selected, clear; otherwise select all
-          if (state.concepts.length === availableConcepts.length) {
-            state.concepts = [];
-          } else {
-            state.concepts = availableConcepts.slice();
-          }
-          renderSelectedConcepts();
-          updateContinueButton();
-          return;
-        }
-        
-        const item = e.target.closest('.course-row');
-        if (!item) return;
-        const conceptToToggle = item.getAttribute('data-concept');
-        if (conceptToToggle) {
-          const index = state.concepts.indexOf(conceptToToggle);
-          if (index >= 0) {
-            // Deselect
-            state.concepts.splice(index, 1);
-          } else {
-            // Select
-            state.concepts.push(conceptToToggle);
-          }
-          renderSelectedConcepts();
-          updateContinueButton();
         }
       });
       
-      // Initialize selected concepts display
-      renderSelectedConcepts();
+      // Initialize continue button state
       updateContinueButton();
-      
-      // Show add button immediately since search will fail anyway
-      conceptSearch.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        if (query) {
-          conceptSearchResults.style.display = 'none';
-          addConceptBtn.style.display = 'flex';
-        } else {
-          conceptSearchResults.style.display = 'none';
-          addConceptBtn.style.display = 'none';
-        }
-      });
-      
-      // Add concept button click handler
-      addConceptBtn.addEventListener('click', () => {
-        const query = conceptSearch.value.trim();
-        if (query) {
-          addConcept(query);
-        }
-      });
-      
-      // Allow adding concept by pressing Enter
-      conceptSearch.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          const query = conceptSearch.value.trim();
-          if (query && addConceptBtn.style.display !== 'none') {
-            addConcept(query);
-          }
-        }
-      });
 
       document.getElementById('conceptsContinue').addEventListener('click', next);
     }

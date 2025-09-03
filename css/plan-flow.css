@@ -478,12 +478,11 @@ body:has(.knowledge-slider:active) {
   line-height: var(--typography-lineHeight-subheading-three); 
   font-weight: 600; 
   cursor: pointer; 
-  opacity: 0.95; 
   display: flex; 
   align-items: center; 
   justify-content: center; 
   min-height: 64px;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 /* Prevent interaction during step transitions */
@@ -495,7 +494,7 @@ body:has(.knowledge-slider:active) {
 }
 
 .primary-btn:hover {
-  opacity: 1;
+  /* No additional styling needed - full color always visible */
 }
 
 .primary-btn.hidden {
@@ -1055,6 +1054,15 @@ body:has(.loading-screen) {
     stroke-dasharray: 1, 415;
     stroke-dashoffset: -414;
   }
+}
+
+/* Small spinner for loading states */
+.loading-spinner-small {
+  animation: materialSpinnerRotate 2s linear infinite;
+}
+
+.spinner-path-small {
+  animation: materialSpinnerDash 1.4s ease-in-out infinite;
 }
 
 

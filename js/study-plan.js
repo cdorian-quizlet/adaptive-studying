@@ -2357,12 +2357,19 @@ function transformButtonToInput(button) {
         if (e.key === 'Enter') {
             handleInputSubmit(input);
         } else if (e.key === 'Escape') {
+            // Re-enable floating feedback when escaping
+            window.floatingFeedbackDisabled = false;
             restoreButton(accordionAction);
         }
     });
     
     input.addEventListener('blur', function(e) {
         e.stopPropagation(); // Prevent event bubbling to accordion
+        // Re-enable floating feedback when input loses focus
+        setTimeout(() => {
+            window.floatingFeedbackDisabled = false;
+        }, 150);
+        
         // Small delay to allow for potential enter key press
         setTimeout(() => {
             if (input.value.trim()) {
@@ -2375,6 +2382,9 @@ function transformButtonToInput(button) {
     
     input.addEventListener('focus', function(e) {
         e.stopPropagation(); // Prevent event bubbling to accordion
+        // Disable floating feedback when accordion input is focused
+        window.floatingFeedbackDisabled = true;
+        hideFloatingFeedback();
     });
     
     input.addEventListener('click', function(e) {
@@ -2397,6 +2407,15 @@ function handleInputSubmit(input) {
     
     const accordionAction = input.parentElement;
     restoreButton(accordionAction);
+    
+    // Re-enable floating feedback after accordion input interaction
+    // Small delay to allow button restoration to complete
+    setTimeout(() => {
+        if (typeof window.floatingFeedbackVisible !== 'undefined' && !window.floatingFeedbackVisible) {
+            // Only re-enable if floating feedback was not explicitly hidden by scroll
+            window.floatingFeedbackDisabled = false;
+        }
+    }, 500);
 }
 
 // Restore the "Make a change" button
@@ -2435,6 +2454,14 @@ function restoreButton(accordionAction) {
             newButton.style.transition = '';
             newButton.style.width = '';
             newButton.style.minWidth = '';
+            
+            // Re-enable floating feedback after accordion input is restored
+            setTimeout(() => {
+                if (typeof window.floatingFeedbackVisible !== 'undefined' && !window.floatingFeedbackVisible) {
+                    // Only re-enable if floating feedback was not explicitly hidden by scroll
+                    window.floatingFeedbackDisabled = false;
+                }
+            }, 300);
         }, 220);
     } else {
         // No input found, just show button immediately
@@ -2443,6 +2470,13 @@ function restoreButton(accordionAction) {
         newButton.style.transition = '';
         newButton.style.width = '';
         newButton.style.minWidth = '';
+        
+        // Re-enable floating feedback
+        setTimeout(() => {
+            if (typeof window.floatingFeedbackVisible !== 'undefined' && !window.floatingFeedbackVisible) {
+                window.floatingFeedbackDisabled = false;
+            }
+        }, 100);
     }
 }
 
@@ -3634,6 +3668,9 @@ function initFloatingFeedback() {
     const floatingFeedback = document.getElementById('floatingFeedback');
     if (!floatingFeedback) return;
 
+    // Initialize floating feedback state
+    window.floatingFeedbackDisabled = false;
+
     let scrollTimeout;
 
     function handleScroll() {
@@ -3698,6 +3735,11 @@ let hideTimeout;
 function showFloatingFeedback() {
     const floatingFeedback = document.getElementById('floatingFeedback');
     if (!floatingFeedback) return;
+
+    // Don't show floating feedback if disabled (accordion input is active)
+    if (window.floatingFeedbackDisabled) {
+        return;
+    }
 
     clearTimeout(hideTimeout);
     floatingFeedbackVisible = true;
