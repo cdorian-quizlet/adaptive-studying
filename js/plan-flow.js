@@ -2584,26 +2584,6 @@
       dateInput.value = hiddenInput.value;
       dateInput.className = 'mobile-date-input';
       
-      // Copy all styles from the button
-      const buttonStyles = window.getComputedStyle(datePickerBtn);
-      
-      // Apply styles to make it look like the button
-      dateInput.style.height = '76px';
-      dateInput.style.padding = '14px 24px';
-      dateInput.style.display = 'flex';
-      dateInput.style.alignItems = 'center';
-      dateInput.style.cursor = 'pointer';
-      dateInput.style.background = 'var(--sys-surface-base)';
-      dateInput.style.border = '1px solid var(--sys-border-primary)';
-      dateInput.style.borderRadius = '20px';
-      dateInput.style.boxShadow = 'var(--shadow-card)';
-      dateInput.style.width = '100%';
-      dateInput.style.fontSize = '16px';
-      dateInput.style.fontFamily = 'var(--typography-fontFamily)';
-      dateInput.style.fontWeight = '600';
-      dateInput.style.color = 'var(--sys-text-primary)';
-      dateInput.style.transition = 'all 0.2s ease';
-      
       // Style for when date is selected
       if (dateInput.value) {
         dateInput.style.boxShadow = 'var(--shadow-interactive)';
@@ -2648,16 +2628,7 @@
         }
       });
       
-      // Handle focus/blur for styling
-      dateInput.addEventListener('focus', () => {
-        dateInput.style.border = '2px solid var(--color-twilight-500)';
-        dateInput.style.padding = '13px 23px'; // Adjust for thicker border
-      });
-      
-      dateInput.addEventListener('blur', () => {
-        dateInput.style.border = '1px solid var(--sys-border-primary)';
-        dateInput.style.padding = '14px 24px';
-      });
+      // Focus/blur styling is now handled by CSS
     }
     
     // Handle date selection

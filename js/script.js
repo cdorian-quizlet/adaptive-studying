@@ -224,8 +224,7 @@ function setupEventListeners() {
         }
     });
 
-    // Touch gestures
-    setupTouchGestures();
+
 }
 
 // Determine whether to show first-time help state or standard state
@@ -1620,35 +1619,7 @@ function showToastWithTwoActions(message, primaryText, onPrimary, secondaryText,
     }, duration);
 }
 
-// Touch Gesture Support
-function setupTouchGestures() {
-    let touchStartY = 0;
-    let touchEndY = 0;
 
-    document.addEventListener('touchstart', function(e) {
-        touchStartY = e.changedTouches[0].screenY;
-    });
-
-    document.addEventListener('touchend', function(e) {
-        touchEndY = e.changedTouches[0].screenY;
-        handleSwipe();
-    });
-
-    function handleSwipe() {
-        const swipeThreshold = 50;
-        const diff = touchStartY - touchEndY;
-        
-        if (Math.abs(diff) > swipeThreshold) {
-            if (diff > 0) {
-                // Swipe up - could trigger refresh or new content
-                showToast('Swipe up detected');
-            } else {
-                // Swipe down - could trigger back navigation
-                showToast('Swipe down detected');
-            }
-        }
-    }
-}
 
 // Performance Optimization
 function debounce(func, wait) {

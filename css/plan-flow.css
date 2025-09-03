@@ -960,6 +960,47 @@ body:has(.knowledge-slider:active) {
   color: var(--sys-text-primary);
 }
 
+/* Mobile date input styling to match button */
+.mobile-date-input {
+  height: 76px !important;
+  padding: 14px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  background: var(--sys-surface-base) !important;
+  border: 1px solid var(--sys-border-primary) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--shadow-card) !important;
+  width: 100% !important;
+  font-size: 16px !important;
+  font-family: var(--typography-fontFamily) !important;
+  font-weight: 600 !important;
+  color: var(--sys-text-primary) !important;
+  transition: all 0.2s ease !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+}
+
+.mobile-date-input:hover {
+  background: var(--color-gray-200) !important;
+}
+
+.mobile-date-input:focus {
+  border: 2px solid var(--color-twilight-500) !important;
+  padding: 13px 23px !important; /* Adjust padding for thicker border */
+}
+
+.mobile-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
 /* Loading */
 .loading-screen {
   min-height: 100vh;
