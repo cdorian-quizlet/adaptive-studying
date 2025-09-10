@@ -1413,9 +1413,9 @@ function cleanupPreviousCurrentStepProgress() {
         
         // Only clean up steps that are no longer current
         if (!isCurrent) {
-            const stepProgress = step.querySelector('.step-progress');
-            const stepProgressFill = step.querySelector('.step-progress-fill');
-            const stepProgressText = step.querySelector('.step-progress-text');
+        const stepProgress = step.querySelector('.step-progress');
+        const stepProgressFill = step.querySelector('.step-progress-fill');
+        const stepProgressText = step.querySelector('.step-progress-text');
             
             if (stepProgress && stepProgressFill && stepProgressText) {
                 // Check if this step is currently showing the 0% state (which should only be on current steps)
@@ -1430,7 +1430,7 @@ function cleanupPreviousCurrentStepProgress() {
                     stepProgress.style.cssText = 'display: none !important;';
                     
                     const stepProgressBar = step.querySelector('.step-progress-bar');
-                    if (stepProgressBar) {
+        if (stepProgressBar) {
                         stepProgressBar.style.cssText = 'display: none !important;';
                     }
                     
@@ -1438,7 +1438,7 @@ function cleanupPreviousCurrentStepProgress() {
                     stepProgressText.style.cssText = 'display: none !important; opacity: 0 !important;';
                     
                     console.log(`🧹 Completely removed 0% state and all progress elements from non-current step ${roundNumber}`);
-                } else {
+        } else {
                     console.log(`✅ Step ${roundNumber} is not showing 0% state - leaving it alone`);
                 }
             }
@@ -1455,7 +1455,7 @@ function updateProgressTextWithoutFlicker(stepProgressText, progressPercentage, 
     stepProgressText.style.transition = 'none';
     
     // Update the text content
-    stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
+        stepProgressText.textContent = `${Math.round(progressPercentage)}% complete`;
     stepProgressText.style.color = progressPercentage === 0 ? 'var(--color-gray-500)' : 'var(--sys-text-highlight)';
     stepProgressText.style.opacity = '1';
     
@@ -1463,11 +1463,11 @@ function updateProgressTextWithoutFlicker(stepProgressText, progressPercentage, 
     stepProgressText.offsetHeight;
     
     // Re-enable transitions after a brief delay to allow for smooth future animations
-    setTimeout(() => {
+        setTimeout(() => {
         if (stepProgressText && stepProgressText.parentNode) {
             stepProgressText.style.transition = originalTransition;
         }
-    }, 50);
+        }, 50);
     
     console.log(`✅ Set progress text for ${debugLabel}: "${stepProgressText.textContent}" (flicker-free)`);
 }
@@ -1933,7 +1933,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
                 updateProgressTextWithoutFlicker(stepProgressText, progressPercentage, `current round ${roundNumber}`);
                 // Start fade out animation after brief display (this will re-enable transitions)
                 setTimeout(() => {
-                    startProgressTextFade(stepProgressText);
+                startProgressTextFade(stepProgressText);
                 }, 100);
             }
         }
@@ -1973,7 +1973,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
     } else if (isNext && hasRoundProgress) {
         // Next rounds that have some progress (either future rounds with progress or skipped rounds)
         step.classList.add('next');
-        stepCircle.classList.add('next');  
+        stepCircle.classList.add('next');
         stepCircle.querySelector('.step-icon').textContent = 'star_outline';
         
         // Don't show play button for next rounds - explicitly hide it
@@ -2000,14 +2000,14 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
             console.log(`✅ Showing progress bar for next round ${roundNumber} with ${progressPercentage}% progress`);
         } else {
             // No actual progress - completely hide progress bar (don't show 0% state for non-current steps)
-            stepProgressFill.style.width = '0%';
+        stepProgressFill.style.width = '0%';
             stepProgressFill.style.background = 'var(--color-gray-500)';
             if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)';
             stepProgress.classList.remove('has-progress'); // This hides the entire progress container
             
             // Hide progress text completely for 0% non-current steps
-            if (stepProgressText) {
-                stepProgressText.textContent = '';
+        if (stepProgressText) {
+            stepProgressText.textContent = '';
                 stepProgressText.style.opacity = '0';
             }
             console.log(`🚫 Completely hiding progress bar for next round ${roundNumber} with 0% progress (no 0% state for non-current steps)`);
@@ -2041,14 +2041,14 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
             stepProgressFill.style.width = `${progressPercentage}%`;
             stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)';
             if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)';
-            stepProgress.classList.add('has-progress');
-            
+        stepProgress.classList.add('has-progress');
+        
             // Show progress text for previously current rounds with actual progress
-            if (stepProgressText) {
+        if (stepProgressText) {
                 updateProgressTextWithoutFlicker(stepProgressText, progressPercentage, `previously current round ${roundNumber} (fallback)`);
             }
             console.log(`✅ Showing progress bar for previously current round ${roundNumber} with ${progressPercentage}% progress`);
-        } else {
+            } else {
             // No actual progress - completely hide progress bar (don't show 0% state for non-current steps)
             stepProgressFill.style.width = '0%';
             stepProgressFill.style.background = 'var(--color-gray-500)';
@@ -2090,14 +2090,14 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
             stepProgressFill.style.width = `${progressPercentage}%`;
             stepProgressFill.style.background = 'var(--sys-interactive-bg-primary-default)'; // Twilight for actual progress
             if (stepProgressBar) stepProgressBar.style.background = 'var(--color-twilight-200)'; // Twilight background for progress
-            stepProgress.classList.add('has-progress');
-            
+        stepProgress.classList.add('has-progress');
+        
             // Set progress text when showing progress bar
-            if (stepProgressText) {
+        if (stepProgressText) {
                 updateProgressTextWithoutFlicker(stepProgressText, progressPercentage, `general fallback round ${roundNumber}`);
             }
             console.log(`✅ Showing progress bar for general fallback round ${roundNumber} with ${progressPercentage}% progress`);
-        } else {
+            } else {
             // No actual progress - completely hide progress bar (don't show 0% state for non-current steps)
             stepProgressFill.style.width = '0%';
             stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for no progress

@@ -889,17 +889,23 @@ body {
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.1) 50%,
+        transparent 15%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 85%,
         transparent 100%
     );
     transform: skewX(-20deg);
-    animation: shimmer 2.5s infinite;
+    animation: continueButtonShimmer 5s infinite 1.5s;
     pointer-events: none;
+    z-index: 1;
 }
 
-@keyframes shimmer {
+@keyframes continueButtonShimmer {
     0% {
         left: -100%;
+    }
+    40% {
+        left: 100%;
     }
     100% {
         left: 100%;
@@ -944,6 +950,8 @@ body {
 
 .continue-button .button-text {
     display: block;
+    position: relative;
+    z-index: 2;
 }
 
 .continue-button .button-spinner {

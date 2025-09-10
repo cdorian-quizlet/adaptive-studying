@@ -879,6 +879,44 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.step-status.in-progress::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -125%;
+    width: 150%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 100%
+    );
+    transform: skewX(-15deg);
+    animation: playButtonShimmer 5s infinite 1.5s;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.step-status.in-progress .material-icons-round {
+    position: relative;
+    z-index: 2;
+}
+
+@keyframes playButtonShimmer {
+    0% {
+        left: -125%;
+    }
+    30% {
+        left: 125%;
+    }
+    100% {
+        left: 125%;
+    }
 }
 
 .status-icon {
