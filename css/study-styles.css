@@ -320,6 +320,8 @@ body {
     color: var(--sys-text-primary);
 }
 
+/* CSS force-reset class removed - no longer needed since we recreate DOM elements */
+
 .option-btn.correct {
     border: 2px dashed var(--color-mint-600) !important;
     background: transparent !important;
@@ -411,11 +413,31 @@ body {
     z-index: 50; /* Lower than buttons so they stay clickable */
 }
 
-.written-feedback.show {
+.written-feedback.show,
+#writtenFeedback.show,
+.text-input-container .written-feedback.show,
+#textInput #writtenFeedback.show {
     display: flex !important; /* Show when feedback should be visible */
     visibility: visible !important;
     opacity: 1 !important;
-    margin-top: 16px !important;
+    margin-top: 20px !important;
+    /* Ensure it appears above other elements */
+    position: relative !important;
+    z-index: 100 !important;
+    /* Force layout properties */
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    /* Override any parent hiding */
+    transform: none !important;
+    clip: none !important;
+    clip-path: none !important;
+    /* Force flex layout */
+    flex-direction: column !important;
+    gap: 12px !important;
+    /* Additional override properties */
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 /* User answer feedback removed - reusing input field instead */
@@ -430,8 +452,10 @@ body {
     font-weight: 600;
     color: var(--sys-text-primary);
     position: relative;
-    display: block;
-    margin-top: 8px;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-top: -4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -449,10 +473,11 @@ body {
 }
 
 .correct-answer-label {
-    font-size: var(--typography-size-body-four);
-    color: var(--sys-text-secondary);
+    font-size: var(--typography-size-subheading-three);
+    color: var(--color-mint-600);
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-top: 12px;
+    margin-bottom: 4px;
 }
 
 .text-input {
@@ -699,45 +724,55 @@ body {
     margin-bottom: 12px;
 }
 
-/* Dynamic text sizing for flashcard content */
-.flashcard-term.text-subheading-1,
-.flashcard-definition.text-subheading-1 {
+/* Flashcard-specific dynamic text sizing with max/min constraints */
+.flashcard-term.flashcard-text-xl,
+.flashcard-definition.flashcard-text-xl {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-one);
+    font-size: clamp(32px, 4.5vw, 48px); /* Min: 32px, Max: 48px */
     font-style: normal;
     font-weight: var(--typography-fontWeight-subheading-one);
-    line-height: var(--typography-lineHeight-subheading-one);
-    letter-spacing: var(--typography-letterSpacing-subheading-one);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
 }
 
-.flashcard-term.text-subheading-2,
-.flashcard-definition.text-subheading-2 {
+.flashcard-term.flashcard-text-lg,
+.flashcard-definition.flashcard-text-lg {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-two);
+    font-size: clamp(28px, 4vw, 36px); /* Min: 28px, Max: 36px */
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-one);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+
+.flashcard-term.flashcard-text-md,
+.flashcard-definition.flashcard-text-md {
+    font-family: var(--typography-fontFamily);
+    font-size: clamp(24px, 3.5vw, 32px); /* Min: 24px, Max: 32px */
     font-style: normal;
     font-weight: var(--typography-fontWeight-subheading-two);
-    line-height: var(--typography-lineHeight-subheading-two);
-    letter-spacing: var(--typography-letterSpacing-subheading-two);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
 }
 
-.flashcard-term.text-subheading-3,
-.flashcard-definition.text-subheading-3 {
+.flashcard-term.flashcard-text-sm,
+.flashcard-definition.flashcard-text-sm {
     font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-three);
+    font-size: clamp(20px, 3vw, 28px); /* Min: 20px, Max: 28px */
+    font-style: normal;
+    font-weight: var(--typography-fontWeight-subheading-two);
+    line-height: 1.4;
+    letter-spacing: 0;
+}
+
+.flashcard-term.flashcard-text-xs,
+.flashcard-definition.flashcard-text-xs {
+    font-family: var(--typography-fontFamily);
+    font-size: clamp(18px, 2.5vw, 24px); /* Min: 18px, Max: 24px */
     font-style: normal;
     font-weight: var(--typography-fontWeight-subheading-three);
-    line-height: var(--typography-lineHeight-subheading-three);
-    letter-spacing: var(--typography-letterSpacing-subheading-three);
-}
-
-.flashcard-term.text-subheading-5,
-.flashcard-definition.text-subheading-5 {
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-five);
-    font-style: normal;
-    font-weight: var(--typography-fontWeight-subheading-five);
-    line-height: var(--typography-lineHeight-subheading-five);
-    letter-spacing: var(--typography-letterSpacing-subheading-five);
+    line-height: 1.45;
+    letter-spacing: 0;
 }
 
 .flashcard-buttons {
@@ -852,8 +887,19 @@ body {
     hyphens: auto;
     /* Remove any default focus/active states */
     outline: none;
-    /* Minimum height to maintain consistency */
-    min-height: 76px;
+    /* Remove all browser selection styling */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    /* Remove focus ring and selection colors */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Prevent text selection highlighting */
+    -webkit-user-drag: none;
+    min-height: 90px; /* Increased for up to 5 lines */
 }
 
 /* Stack badges below text in matching items */
@@ -881,7 +927,16 @@ body.show-debug-badges .correct-badge {
 
 .matching-item:focus,
 .matching-item:active {
-    outline: none;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    /* Remove any browser-specific selection colors */
+    background-color: var(--color-gray-100) !important;
+    border-color: var(--color-gray-500) !important;
+    box-shadow: none !important;
 }
 
 .matching-item:hover {
@@ -934,18 +989,49 @@ body.show-debug-badges .correct-badge {
 
 
 
-.matching-item.incorrect {
-    border-color: var(--color-sherbert-400);
-    background: var(--color-sherbert-100);
-    color: var(--color-sherbert-700);
+.matching-item.incorrect,
+.matching-grid .matching-item.incorrect {
+    border-color: var(--color-sherbert-400) !important;
+    background: var(--color-sherbert-100) !important;
+    color: var(--color-sherbert-700) !important;
+    /* Ensure animation shows */
+    transition: all 0.15s ease-out !important;
 }
 
-.matching-item.correct-match {
-    border-color: var(--color-mint-600);
-    background: var(--color-mint-200);
-    color: var(--color-mint-800);
-    transform: scale(1.05);
-    transition: all 0.2s ease-out;
+/* Reset selected items after incorrect feedback */
+.matching-item.selected:not(.incorrect):not(.matched):not(.correct-match) {
+    border-color: var(--color-gray-500);
+    background: var(--color-gray-100);
+    color: var(--sys-text-primary);
+}
+
+/* Completely reset items that were previously selected but are now unmarked */
+.matching-item:not(.selected):not(.matched):not(.incorrect):not(.correct-match) {
+    border-color: var(--color-gray-300) !important;
+    background: var(--sys-surface-base) !important;
+    color: var(--sys-text-primary) !important;
+}
+
+/* Force reset after incorrect feedback is removed - but don't override active animation states */
+.matching-item:not(.selected):not(.matched):not(.correct-match):not(.incorrect) {
+    border-color: var(--color-gray-300) !important;
+    background: var(--sys-surface-base) !important;
+    color: var(--sys-text-primary) !important;
+}
+
+/* Override any lingering selected appearance - but preserve animation states */
+.matching-item:not(.selected):not(.incorrect):not(.correct-match):not(.matched) {
+    border-color: var(--color-gray-300) !important;
+    background: var(--sys-surface-base) !important;
+}
+
+.matching-item.correct-match,
+.matching-grid .matching-item.correct-match {
+    border-color: var(--color-mint-600) !important;
+    background: var(--color-mint-200) !important;
+    color: var(--color-mint-800) !important;
+    transform: scale(1.05) !important;
+    transition: all 0.2s ease-out !important;
 }
 
 /* Match indicator number - hidden since items fade out */
@@ -963,7 +1049,7 @@ body.show-debug-badges .correct-badge {
     .matching-item {
         font-size: 12px;
         padding: 6px 8px;
-        min-height: 70px;
+        min-height: 90px;
     }
     
     .matching-grid {
@@ -993,7 +1079,7 @@ body.show-debug-badges .correct-badge {
     /* Larger font for larger screens */
     .matching-item {
         font-size: 15px;
-        min-height: 80px;
+        min-height: 100px;
     }
 
     /* Button container spans full width to match other elements */
@@ -1143,6 +1229,12 @@ body.show-debug-badges .correct-badge {
     margin-bottom: 0;
 }
 
+/* Styling for top-level question types section */
+.bottom-sheet-actions > .debug-section {
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--sys-outline-variant);
+}
+
 .debug-label {
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-subheading-four);
@@ -1182,10 +1274,15 @@ body.show-debug-badges .correct-badge {
     color: var(--color-twilight-600);
 }
 
-/* Focus states for accessibility */
+/* Focus and active states for accessibility */
 .debug-option:focus {
     outline: 2px solid var(--color-twilight-500);
     outline-offset: 2px;
+}
+
+.debug-option:active {
+    background: var(--color-gray-100);
+    transform: none;
 }
 
 /* Debug info display */
@@ -1268,12 +1365,107 @@ body.show-debug-badges .correct-badge {
     font-weight: 500;
 }
 
+/* Debug Accordion Styles */
+.debug-accordion {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.debug-accordion-toggle {
+    width: 100%;
+    padding: 16px 0;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-four);
+    font-weight: 600;
+    color: var(--sys-text-primary);
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+}
+
+.debug-accordion-toggle:hover {
+    background: transparent;
+}
+
+.debug-accordion-toggle .accordion-chevron {
+    transition: transform 0.3s ease;
+    color: var(--sys-text-secondary);
+}
+
+.debug-accordion.expanded .accordion-chevron {
+    transform: rotate(180deg);
+}
+
+.debug-accordion {
+    background: transparent;
+    border-radius: 8px;
+}
+
+.debug-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+}
+
+.debug-accordion.expanded .debug-accordion-content {
+    max-height: 800px; /* Increased to fit all debug sections including question types */
+    padding-top: 16px;
+}
+
+/* Multi-select debug options */
+.debug-options.multi-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.debug-option.multi-select-option {
+    min-width: auto;
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 14px;
+    border: 2px solid var(--color-gray-300);
+    background: var(--sys-surface-base);
+    color: var(--sys-text-primary);
+    transition: all 0.2s ease;
+}
+
+.debug-option.multi-select-option.selected {
+    background: var(--color-twilight-500);
+    color: var(--sys-surface-base);
+}
+
+.debug-option.multi-select-option:hover {
+    background: var(--color-gray-100);
+}
+
+.debug-option.multi-select-option.selected:hover {
+    background: var(--color-twilight-600);
+}
+
+.debug-option.multi-select-option:active {
+    background: var(--sys-surface-base);
+    transform: none;
+}
+
+.debug-option.multi-select-option.selected:active {
+    background: var(--color-twilight-500);
+    transform: none;
+}
+
 /* Explanation Button and Bottom Sheet Styles */
 .explanation-button {
     border: 2px solid transparent;
     border-radius: var(--radius-full);
     background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
-                linear-gradient(90deg, var(--color-twilight-300), var(--color-lilac-300)) border-box;
+                linear-gradient(90deg, var(--color-twilight-600), var(--color-rosewater)) border-box;
     padding: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1286,6 +1478,7 @@ body.show-debug-badges .correct-badge {
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: subtlePulse 2s ease-in-out infinite;
 }
 
 .explanation-button img {
@@ -1355,18 +1548,19 @@ body.show-debug-badges .correct-badge {
     flex-shrink: 0;
     border: 2px solid transparent;
     background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
-                linear-gradient(90deg, var(--color-twilight-300), var(--color-lilac-300)) border-box;
+                linear-gradient(90deg, var(--color-twilight-600), var(--color-rosewater)) border-box;
 }
 
 .button-container .explanation-button:hover,
 .explanation-button:hover {
     background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
-                linear-gradient(90deg, var(--color-twilight-400), var(--color-lilac-400)) border-box;
-    transform: scale(1.05);
+                linear-gradient(90deg, var(--color-twilight-600), var(--color-rosewater)) border-box;
+    transform: scale(1.08);
+    animation-play-state: paused;
 }
 
 .explanation-button:focus {
-    outline: 2px solid var(--color-twilight-500);
+    outline: 2px solid var(--color-twilight-600);
     outline-offset: 2px;
 }
 
@@ -1381,7 +1575,7 @@ body.show-debug-badges .correct-badge {
 }
 
 .explanation-sheet .bottom-sheet-header {
-    padding: 24px 8px 0px 8px;
+    padding: 0 8px;
     flex-shrink: 0;
     background: var(--sys-surface-base);
     text-align: left;
@@ -1393,7 +1587,7 @@ body.show-debug-badges .correct-badge {
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
-    padding: 0 16px 32px 16px;
+    padding: 0 16px; /* Removed top and bottom padding */
 }
 
 .ai-icon {
@@ -1402,6 +1596,7 @@ body.show-debug-badges .correct-badge {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    margin-bottom: 40px; /* 40px spacing between Q.png and heading */
 }
 
 .ai-icon img {
@@ -1420,7 +1615,7 @@ body.show-debug-badges .correct-badge {
     font-size: var(--typography-size-header-three);
     font-weight: var(--typography-fontWeight-header-three);
     line-height: var(--typography-lineHeight-header-three);
-    margin: 40px 0 0 0;
+    margin: 0 0 32px 0; /* 32px spacing between "Let's go deeper" and "Try asking" */
     text-align: left;
     align-self: flex-start;
 }
@@ -1432,7 +1627,7 @@ body.show-debug-badges .correct-badge {
     font-size: var(--typography-size-subheading-four);
     font-weight: var(--typography-fontWeight-subheading-four);
     line-height: var(--typography-lineHeight-subheading-four);
-    margin: 32px 0 0 0;
+    margin: 0 0 16px 0; /* 16px spacing between "Try asking" and carousel */
     text-align: left;
     align-self: flex-start;
 }
@@ -1444,8 +1639,8 @@ body.show-debug-badges .correct-badge {
     overflow-x: auto;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
-    padding: 16px 16px 24px 16px;
-    margin: 16px -16px 0 -16px;
+    padding: 16px;
+    margin: 0 -16px; /* Remove top/bottom margins, let spacing be handled by parent elements */
 }
 
 .explanation-options-carousel::-webkit-scrollbar {
@@ -1460,7 +1655,7 @@ body.show-debug-badges .correct-badge {
     gap: 8px;
     padding: 16px;
     background: var(--color-gray-100);
-    border-radius: var(--radius-large);
+    border-radius: 16px; /* 16px corner radius as requested */
     border: none;
     box-shadow: var(--shadow-xlarge);
     cursor: pointer;
@@ -1483,8 +1678,8 @@ body.show-debug-badges .correct-badge {
 }
 
 .explanation-option .option-icon {
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
 }
 
@@ -1526,12 +1721,6 @@ body.show-debug-badges .correct-badge {
 }
 
 /* Bottom sheet body styles */
-.explanation-sheet .bottom-sheet-body {
-    padding: 0 24px 24px 24px;
-    flex: 0 1 auto;
-    overflow-y: auto;
-    background: var(--sys-surface-base);
-}
 
 .explanation-content {
     display: flex;
@@ -1614,7 +1803,7 @@ body.show-debug-badges .correct-badge {
     border: 2px solid transparent;
     border-radius: var(--radius-full);
     background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
-                linear-gradient(90deg, var(--color-twilight-300), var(--color-lilac-300)) border-box;
+                linear-gradient(90deg, var(--color-twilight-600), var(--color-rosewater)) border-box;
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-body-three);
     font-weight: var(--typography-fontWeight-body-three);
@@ -1625,11 +1814,77 @@ body.show-debug-badges .correct-badge {
 
 .question-input:focus {
     background: linear-gradient(var(--sys-surface-base), var(--sys-surface-base)) padding-box,
-                linear-gradient(90deg, var(--color-twilight-400), var(--color-lilac-400)) border-box;
+                linear-gradient(90deg, var(--color-twilight-600), var(--color-rosewater)) border-box;
 }
 
 .question-input::placeholder {
     color: var(--color-gray-500);
+}
+
+/* Subtle pulse animation for explanation button */
+@keyframes subtlePulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+/* "I don't know" button for written questions - matches diagnostic button from plan-flow.css */
+.dont-know-cta {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 40px;
+    width: calc(min(100%, 480px) - 40px);
+    max-width: 480px;
+    z-index: 5;
+    opacity: 1;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dont-know-cta.hidden {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+    pointer-events: none;
+}
+
+.dont-know-btn {
+    width: 100%;
+    background: var(--color-twilight-100);
+    color: var(--color-twilight-600);
+    border: none;
+    border-radius: 999px;
+    padding: 14px 20px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    line-height: var(--typography-lineHeight-subheading-three);
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dont-know-btn:hover {
+    background: var(--color-twilight-200);
+}
+
+.dont-know-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--shared-input-border-focus);
+}
+
+.dont-know-btn:disabled {
+    background: var(--color-twilight-300);
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 /* Done button removed - no longer needed */

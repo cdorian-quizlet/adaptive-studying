@@ -394,32 +394,26 @@
     'Not at all, start from scratch': 'Not confident',
     'Somewhat, speed me along': 'Somewhat confident',
     'Very, I just want extra practice': 'Very confident',
-    "I don't know, help me diagnose": "Not sure",
     // Legacy mappings for backwards compatibility
     'Not at all': 'Not confident',
     'Somewhat': 'Somewhat confident',
     'Very': 'Very confident',
-    "I don't know": "Not sure",
     'start from scratch': 'Start from scratch',
     'speed me along': 'Speed me along',
-    'I just want extra practice': 'Extra practice',
-    'help me diagnose': 'Help me diagnose'
+    'I just want extra practice': 'Extra practice'
   };
 
   const knowledgeToHeadline = {
     'Not at all, start from scratch': "We'll build a strong foundation step by step and cover everything you need to know.",
     'Somewhat, speed me along': "We'll move fast, fine-tune weak areas, and review test-style questions.",
     'Very, I just want extra practice': "We'll skip the basics and give you targeted drills for extra confidence.",
-    "I don't know, help me diagnose": "We'll figure it out together and adapt as we go.",
     // Legacy mappings for backwards compatibility
     'Not at all': "We'll build a strong foundation step by step and cover everything you need to know.",
     'Somewhat': "We'll move fast, fine-tune weak areas, and review test-style questions.",
     'Very': "We'll skip the basics and give you targeted drills for extra confidence.",
-    "I don't know": "We'll figure it out together and adapt as we go.",
     'start from scratch': "We'll teach core concepts and ramp up gently.",
     'speed me along': "We'll accelerate with targeted practice and checkpoints.",
-    'I just want extra practice': "We'll emphasize practice problems and recall.",
-    'help me diagnose': "We'll start with a quick diagnostic to find gaps."
+    'I just want extra practice': "We'll emphasize practice problems and recall."
   };
 
   function updateBackButtonIcon() {
@@ -496,7 +490,7 @@
     }
     
     // Step 4 buttons
-    if ((buttonId === 'knowledgeContinue' || buttonId === 'diagnosticBtn') && currentStep > 4) {
+    if (buttonId === 'knowledgeContinue' && currentStep > 4) {
       return true;
     }
     
@@ -604,20 +598,21 @@
       `  </div>`+
       `  <div id="courseDropdown" class="dropdown"></div>`+
       `</div>`+
-      `<div class="subtle">Your courses</div>`+
-      `<div class="course-list-card" id="courseList"></div>`+
+      `<div class="subtle" id="coursesHeader" style="display: none;">Your courses</div>`+
+      `<div class="course-list-card" id="courseList" style="display: none;"></div>`+
       `<div class="course-cta hidden" id="coursesCta"><button class="primary-btn" id="coursesContinue">Continue</button></div>`;
 
     const search = document.getElementById('courseSearch');
     const dropdown = document.getElementById('courseDropdown');
     const list = document.getElementById('courseList');
+    const coursesHeader = document.getElementById('coursesHeader');
 
     async function populateList(){
       try {
         // Try to get courses from localStorage (recently added courses) first
         const recentCourses = JSON.parse(localStorage.getItem('recent_courses') || '[]');
         
-        // If we have recent courses, use them; otherwise show message to add course
+        // If we have recent courses, show them; otherwise hide the course list
         if (recentCourses.length > 0) {
           list.innerHTML = recentCourses.map(c => {
             const originalCourseName = c.originalName || c.name || c; // Prefer originalName for API calls
@@ -635,17 +630,13 @@
             </div>
           `;
           }).join('');
+          // Show the course list card and header
+          coursesHeader.style.display = 'block';
+          list.style.display = 'block';
         } else {
-          // Show message to add course if no recent courses
-          list.innerHTML = `
-            <div class="course-row" style="cursor: default; opacity: 0.6;">
-              <div class="course-check" aria-hidden="true"></div>
-              <div class="course-text">
-                <div class="course-title">No courses yet</div>
-                <div class="course-subtitle">Tap "Find a course" above to add your first course</div>
-              </div>
-            </div>
-          `;
+          // Hide both the header and course list card when no recent courses
+          coursesHeader.style.display = 'none';
+          list.style.display = 'none';
         }
         
         // Restore prior selection if any
@@ -663,15 +654,9 @@
         }
       } catch (error) {
         console.error('Error populating course list:', error);
-        list.innerHTML = `
-          <div class="course-row" style="cursor: default; opacity: 0.6;">
-            <div class="course-check" aria-hidden="true"></div>
-            <div class="course-text">
-              <div class="course-title">Unable to load courses</div>
-              <div class="course-subtitle">Please try refreshing the page</div>
-            </div>
-          </div>
-        `;
+        // Hide both the header and course list card on error as well
+        coursesHeader.style.display = 'none';
+        list.style.display = 'none';
       }
     }
     populateList();
@@ -2328,13 +2313,11 @@
       `</div>`+
       `<div class="cta-row" id="knowledgeCta">`+
       `  <button class="primary-btn" id="knowledgeContinue">Continue</button>`+
-      `  <button class="diagnostic-btn" id="diagnosticBtn">I don't know, help me diagnose</button>`+
       `</div>`;
 
     const slider = document.getElementById('knowledgeSlider');
     const selectedText = document.getElementById('knowledgeSelectedText');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
-    const diagnosticBtn = document.getElementById('diagnosticBtn');
     
     const knowledgeCta = document.getElementById('knowledgeCta');
     
@@ -2362,8 +2345,6 @@
         state.knowledge = sliderOptions[snappedValue];
         selectedText.textContent = sliderOptions[snappedValue];
         selectedText.classList.add('selected');
-        // Clear diagnostic selection
-        diagnosticBtn.classList.remove('selected');
       }
     }
 
@@ -2417,18 +2398,6 @@
       updateGradientFill(snappedValue); // Update gradient fill to final position
     });
     
-    // Handle diagnostic button
-    diagnosticBtn.addEventListener('click', () => {
-      state.knowledge = "I don't know, help me diagnose";
-      selectedText.textContent = "I don't know, help me diagnose";
-      selectedText.classList.add('selected');
-      diagnosticBtn.classList.add('selected');
-      // Reset slider to middle position
-      slider.value = 1;
-      updateGradientFill(1);
-      // Automatically advance to next step
-      next();
-    });
     
     // Initialize from existing state if any, otherwise keep default
     if (state.knowledge && state.knowledge !== sliderOptions[1]) {
@@ -2438,13 +2407,6 @@
         selectedText.textContent = sliderOptions[sliderIndex];
         updateSliderSelection(sliderIndex);
         updateGradientFill(sliderIndex);
-      } else if (state.knowledge === "I don't know, help me diagnose") {
-        diagnosticBtn.classList.add('selected');
-        selectedText.textContent = state.knowledge;
-        selectedText.classList.add('selected');
-        // Clear slider value when diagnostic is selected
-        slider.value = 1; // Reset to default position
-        updateGradientFill(1);
       }
     }
     
@@ -2478,12 +2440,7 @@
       `  <button class="date-picker-btn" id="datePickerBtn">`+
       `    <div class="date-picker-content">`+
       `      <div class="date-picker-icon">`+
-      `        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">`+
-      `          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>`+
-      `          <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>`+
-      `          <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>`+
-      `          <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>`+
-      `        </svg>`+
+      `        <img src="../images/calendar-default.png" alt="Calendar" class="calendar-icon" width="24" height="24" />`+
       `      </div>`+
       `      <div class="date-picker-text" id="datePickerText">Select date</div>`+
       `    </div>`+
@@ -2501,6 +2458,13 @@
     const dateTitle = document.getElementById('dateTitle');
     const startBtn = document.getElementById('startBtn');
     
+    console.log('Date picker elements found:', { 
+      hiddenInput: !!hiddenInput, 
+      datePickerBtn: !!datePickerBtn, 
+      datePickerText: !!datePickerText,
+      isMobile: /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)
+    });
+    
     // Function to format date for display (without days away text)
     function formatDateDisplay(dateString) {
       const date = new Date(dateString + 'T00:00:00');
@@ -2514,6 +2478,14 @@
       const today = new Date();
       const diffTime = date - today;
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    
+    // Function to update calendar icon based on selected state
+    function updateCalendarIcon(isSelected) {
+      const calendarIcon = document.querySelector('.calendar-icon');
+      if (calendarIcon) {
+        calendarIcon.src = isSelected ? '../images/calendar-selected.png' : '../images/calendar-default.png';
+      }
     }
     
     // Function to update title with days away text
@@ -2551,7 +2523,7 @@
     if (isMobile) {
       console.log('Mobile detected, using direct date input approach');
       replaceBtnWithDateInput();
-      } else {
+    } else {
       // Desktop: Click handler to open native date picker
       datePickerBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2559,54 +2531,128 @@
         
         console.log('Date picker button clicked (desktop)');
         
-        // Try showPicker for desktop browsers
+        // Get button position for precise overlay
+        const buttonRect = datePickerBtn.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        // Position hidden input exactly over the button
+        hiddenInput.style.position = 'fixed';
+        hiddenInput.style.left = buttonRect.left + 'px';
+        hiddenInput.style.top = buttonRect.top + 'px';
+        hiddenInput.style.width = buttonRect.width + 'px';
+        hiddenInput.style.height = buttonRect.height + 'px';
+        hiddenInput.style.opacity = '0.01'; // Nearly invisible but still interactable
+        hiddenInput.style.zIndex = '10000';
+        hiddenInput.style.pointerEvents = 'auto';
+        hiddenInput.style.border = 'none';
+        hiddenInput.style.background = 'transparent';
+        hiddenInput.style.outline = 'none';
+        
+        // Try showPicker first (modern browsers)
         if (typeof hiddenInput.showPicker === 'function') {
           try {
             hiddenInput.showPicker();
             console.log('showPicker() succeeded');
+            // Reset styles immediately after showPicker success
+            resetHiddenInput();
             return;
           } catch (error) {
-            console.log('showPicker() failed:', error);
+            console.log('showPicker() failed, trying click:', error);
           }
         }
         
-        // Desktop fallback
+        // Fallback: focus and click the positioned input
+        console.log('Trying positioned input click');
         hiddenInput.focus();
-        hiddenInput.click();
+        
+        // Use a tiny delay to ensure the input is properly positioned
+        setTimeout(() => {
+          hiddenInput.click();
+          
+          // Reset after a longer delay to allow picker to open
+          setTimeout(resetHiddenInput, 300);
+        }, 10);
+        
+        function resetHiddenInput() {
+          hiddenInput.style.position = 'absolute';
+          hiddenInput.style.left = '-9999px';
+          hiddenInput.style.top = '-9999px';
+          hiddenInput.style.width = '1px';
+          hiddenInput.style.height = '1px';
+          hiddenInput.style.opacity = '0';
+          hiddenInput.style.zIndex = '-1';
+          hiddenInput.style.pointerEvents = 'none';
+        }
       });
     }
     
     // Replace button with styled date input for mobile
     function replaceBtnWithDateInput() {
+      // Create a wrapper div to hold both the input and placeholder text
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'relative';
+      wrapper.style.width = '100%';
+      
       // Create a date input that looks exactly like the button
       const dateInput = document.createElement('input');
       dateInput.type = 'date';
       dateInput.value = hiddenInput.value;
       dateInput.className = 'mobile-date-input';
       
-      // Style for when date is selected
-      if (dateInput.value) {
-        dateInput.style.boxShadow = 'var(--shadow-interactive)';
-        dateInput.style.color = 'var(--sys-text-primary)';
-      } else {
-        dateInput.style.color = 'var(--sys-text-secondary)';
+      // Create a placeholder div for when no date is selected
+      const placeholderDiv = document.createElement('div');
+      placeholderDiv.textContent = 'Select date';
+      placeholderDiv.style.cssText = `
+        position: absolute;
+        left: 24px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--sys-text-secondary);
+        font-family: var(--typography-fontFamily);
+        font-size: 16px;
+        font-weight: 600;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 1;
+      `;
+      
+      // Function to toggle placeholder visibility
+      function updatePlaceholder() {
+        if (dateInput.value) {
+          placeholderDiv.style.opacity = '0';
+          dateInput.style.color = 'var(--sys-text-primary)';
+          dateInput.style.boxShadow = 'var(--shadow-xLarge)';
+        } else {
+          placeholderDiv.style.opacity = '1';
+          dateInput.style.color = 'transparent';
+          dateInput.style.boxShadow = 'var(--shadow-card)';
+        }
       }
       
-      // Replace the button with the input
+      // Initial setup
+      updatePlaceholder();
+      
+      // Add to wrapper
+      wrapper.appendChild(dateInput);
+      wrapper.appendChild(placeholderDiv);
+      
+      // Replace the button with the wrapper
       datePickerBtn.style.display = 'none';
-      datePickerBtn.parentNode.insertBefore(dateInput, datePickerBtn.nextSibling);
+      datePickerBtn.parentNode.insertBefore(wrapper, datePickerBtn.nextSibling);
       
       console.log('Button replaced with mobile date input');
       
       // Handle date changes
       dateInput.addEventListener('change', () => {
+        updatePlaceholder();
         console.log('Mobile date selected:', dateInput.value);
         hiddenInput.value = dateInput.value;
         state.dueDate = dateInput.value;
         
         // Update styling when date is selected
         if (dateInput.value) {
-          dateInput.style.boxShadow = 'var(--shadow-interactive)';
+          dateInput.style.boxShadow = 'var(--shadow-xLarge)';
           dateInput.style.color = 'var(--sys-text-primary)';
         }
         
@@ -2637,6 +2683,18 @@
       if (state.dueDate) {
         datePickerText.textContent = formatDateDisplay(state.dueDate);
         datePickerBtn.classList.add('selected');
+        console.log('Date picker button selected class added:', datePickerBtn.classList.contains('selected'));
+        console.log('Date picker button computed style:', window.getComputedStyle(datePickerBtn).boxShadow);
+        
+        // Add event listeners to debug pressed state
+        datePickerBtn.addEventListener('mousedown', () => {
+          console.log('Date picker pressed - computed shadow:', window.getComputedStyle(datePickerBtn).boxShadow);
+        });
+        datePickerBtn.addEventListener('mouseup', () => {
+          console.log('Date picker released - computed shadow:', window.getComputedStyle(datePickerBtn).boxShadow);
+        });
+        
+        updateCalendarIcon(true);
         updateTitle(state.dueDate);
         
         // Animate in the start button
@@ -2645,6 +2703,7 @@
       } else {
         datePickerText.textContent = 'Select date';
         datePickerBtn.classList.remove('selected');
+        updateCalendarIcon(false);
         updateTitle();
         
         // Hide the start button
@@ -2658,6 +2717,18 @@
       hiddenInput.value = state.dueDate;
       datePickerText.textContent = formatDateDisplay(state.dueDate);
       datePickerBtn.classList.add('selected');
+      console.log('Date picker button selected class added (init):', datePickerBtn.classList.contains('selected'));
+      console.log('Date picker button computed style (init):', window.getComputedStyle(datePickerBtn).boxShadow);
+      
+      // Add event listeners to debug pressed state (init)
+      datePickerBtn.addEventListener('mousedown', () => {
+        console.log('Date picker pressed - computed shadow:', window.getComputedStyle(datePickerBtn).boxShadow);
+      });
+      datePickerBtn.addEventListener('mouseup', () => {
+        console.log('Date picker released - computed shadow:', window.getComputedStyle(datePickerBtn).boxShadow);
+      });
+      
+      updateCalendarIcon(true);
       updateTitle(state.dueDate);
       
       // Show the start button if date already exists
@@ -2860,6 +2931,43 @@
       console.error('Error testing course duplicates:', error);
       return null;
     }
+  };
+
+  // Debug date picker text overlap
+  window.debugDatePickerLayout = function() {
+    const datePickerBtn = document.getElementById('datePickerBtn');
+    const hiddenInput = document.getElementById('dueDate');
+    const datePickerText = document.getElementById('datePickerText');
+    
+    if (!datePickerBtn) {
+      console.log('Date picker not found - navigate to step 5 first');
+      return;
+    }
+    
+    console.log('Date picker layout debugging:');
+    console.log('Button element:', datePickerBtn);
+    console.log('Button computed style:', window.getComputedStyle(datePickerBtn));
+    console.log('Hidden input element:', hiddenInput);
+    console.log('Hidden input computed style:', window.getComputedStyle(hiddenInput));
+    console.log('Date picker text element:', datePickerText);
+    console.log('Date picker text computed style:', window.getComputedStyle(datePickerText));
+    
+    // Check for overlapping elements
+    const buttonRect = datePickerBtn.getBoundingClientRect();
+    const inputRect = hiddenInput.getBoundingClientRect();
+    
+    console.log('Button position:', buttonRect);
+    console.log('Hidden input position:', inputRect);
+    
+    // Check if elements are overlapping
+    const overlap = !(buttonRect.right < inputRect.left || 
+                     buttonRect.left > inputRect.right || 
+                     buttonRect.bottom < inputRect.top || 
+                     buttonRect.top > inputRect.bottom);
+    
+    console.log('Elements overlapping:', overlap);
+    
+    return { datePickerBtn, hiddenInput, datePickerText, buttonRect, inputRect, overlap };
   };
 
   // Debug specific course visibility

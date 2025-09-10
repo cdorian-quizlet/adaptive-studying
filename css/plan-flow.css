@@ -105,9 +105,9 @@ body:has(.knowledge-slider:active) {
   text-align:center;
   max-width: 100%;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  line-clamp: 2;
+  line-clamp: 3;
   overflow: hidden;
   word-break: break-word;
   transition: opacity 0.3s ease;
@@ -875,23 +875,37 @@ body:has(.knowledge-slider:active) {
 .custom-date-picker {
   width: 100%;
   position: relative;
+  isolation: isolate;
 }
 
 .date-input-hidden {
   position: absolute;
   opacity: 0;
-  pointer-events: none;
   width: 1px;
   height: 1px;
-  left: 0;
-  top: 0;
+  left: -9999px;
+  top: -9999px;
   z-index: -1;
-  /* Ensure the input is accessible for mobile date pickers */
+  /* Completely hide to prevent any visual bleed */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   border: none;
   background: transparent;
+  color: transparent;
+  font-size: 1px;
+  line-height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  /* Allow interaction on desktop when temporarily shown */
+  pointer-events: none;
+  text-indent: -9999px;
+  /* Additional browser-specific hiding */
+  -webkit-text-fill-color: transparent;
+  -moz-text-fill-color: transparent;
+  text-shadow: none;
+  letter-spacing: -9999px;
 }
 
 .date-picker-btn {
@@ -901,11 +915,16 @@ body:has(.knowledge-slider:active) {
   align-items: center;
   cursor: pointer;
   background: var(--sys-surface-base);
-  border: 1px solid var(--sys-border-primary);
+  border: none;
   border-radius: 20px;
   box-shadow: var(--shadow-card);
   width: 100%;
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  /* Ensure proper text containment */
+  contain: layout style;
+  isolation: isolate;
 }
 
 .date-picker-btn:hover {
@@ -914,17 +933,38 @@ body:has(.knowledge-slider:active) {
 
 .date-picker-btn:focus {
   outline: none;
-  border: 2px solid var(--color-twilight-500);
-  padding: 13px 23px; /* Adjust padding to compensate for thicker border */
 }
 
 .date-picker-btn.selected {
-  box-shadow: var(--shadow-interactive);
-  background: var(--sys-surface-base);
+  box-shadow: var(--shadow-xLarge) !important;
+  background: var(--sys-surface-base) !important;
+}
+
+/* Temporary debugging rule with visible shadow */
+.date-picker-btn.selected {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.date-picker-btn.selected:focus {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
 }
 
 .date-picker-btn.selected:hover {
   background: var(--color-gray-200);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.date-picker-btn.selected:active {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+  transform: none !important;
+}
+
+/* Super-specific rule to ensure shadow is never removed */
+button.date-picker-btn.selected,
+button.date-picker-btn.selected:hover,
+button.date-picker-btn.selected:focus,
+button.date-picker-btn.selected:active {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
 }
 
 .date-picker-content {
@@ -932,18 +972,23 @@ body:has(.knowledge-slider:active) {
   align-items: center;
   gap: 16px;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  /* Ensure proper flex containment */
+  flex: 1;
 }
 
 .date-picker-icon {
-  color: var(--sys-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.date-picker-btn.selected .date-picker-icon {
-  color: var(--color-twilight-500);
+.calendar-icon {
+  width: 24px;
+  height: 24px;
+  transition: all 0.2s ease;
 }
 
 .date-picker-text {
@@ -954,6 +999,11 @@ body:has(.knowledge-slider:active) {
   color: var(--sys-text-secondary);
   flex: 1;
   text-align: left;
+  /* Prevent text overflow and ensure proper containment */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .date-picker-btn.selected .date-picker-text {
@@ -964,11 +1014,13 @@ body:has(.knowledge-slider:active) {
 .mobile-date-input {
   height: 76px !important;
   padding: 14px 24px !important;
+  padding-right: 56px !important; /* Make room for calendar icon */
   display: flex !important;
   align-items: center !important;
   cursor: pointer !important;
-  background: var(--sys-surface-base) !important;
-  border: 1px solid var(--sys-border-primary) !important;
+  background: var(--sys-surface-base) url('../images/calendar-default.png') no-repeat right 24px center !important;
+  background-size: 24px 24px !important;
+  border: none !important;
   border-radius: 20px !important;
   box-shadow: var(--shadow-card) !important;
   width: 100% !important;
@@ -981,15 +1033,55 @@ body:has(.knowledge-slider:active) {
   -moz-appearance: none !important;
   appearance: none !important;
   outline: none !important;
+  /* Ensure proper text containment on mobile */
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.mobile-date-input:not([value=""]):not(:invalid) {
+  background-image: url('../images/calendar-selected.png') !important;
+}
+
+.mobile-date-input:invalid,
+.mobile-date-input:placeholder-shown {
+  background-image: url('../images/calendar-default.png') !important;
+  color: var(--sys-text-secondary) !important;
 }
 
 .mobile-date-input:hover {
-  background: var(--color-gray-200) !important;
+  background-color: var(--color-gray-200) !important;
+}
+
+.mobile-date-input:hover:not([value=""]):not(:invalid) {
+  background: var(--color-gray-200) url('../images/calendar-selected.png') no-repeat right 24px center !important;
+  background-size: 24px 24px !important;
+  box-shadow: var(--shadow-xLarge) !important;
+}
+
+.mobile-date-input:hover:invalid,
+.mobile-date-input:hover:placeholder-shown {
+  background: var(--color-gray-200) url('../images/calendar-default.png') no-repeat right 24px center !important;
+  background-size: 24px 24px !important;
 }
 
 .mobile-date-input:focus {
-  border: 2px solid var(--color-twilight-500) !important;
-  padding: 13px 23px !important; /* Adjust padding for thicker border */
+  /* No additional focus styling - preserves existing shadows */
+}
+
+.mobile-date-input:focus:not([value=""]):not(:invalid) {
+  box-shadow: var(--shadow-xLarge) !important;
+  background-image: url('../images/calendar-selected.png') !important;
+}
+
+.mobile-date-input:focus:invalid,
+.mobile-date-input:focus:placeholder-shown {
+  background-image: url('../images/calendar-default.png') !important;
+}
+
+.mobile-date-input:active:not([value=""]):not(:invalid) {
+  box-shadow: var(--shadow-xLarge) !important;
+  background-image: url('../images/calendar-selected.png') !important;
 }
 
 .mobile-date-input::-webkit-calendar-picker-indicator {

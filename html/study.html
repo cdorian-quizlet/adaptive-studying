@@ -57,6 +57,11 @@
                     </div>
                 </div>
 
+                <!-- "I don't know" button for written questions -->
+                <div class="dont-know-cta" id="dontKnowCta" style="display: none;">
+                    <button class="dont-know-btn" id="dontKnowBtn">I don't know</button>
+                </div>
+
 
 
                 <!-- Flashcard -->
@@ -89,93 +94,105 @@
             </div>
         </main>
 
-        <!-- Debug Bottom Sheet - Matching home page structure -->
+        <!-- Options Bottom Sheet - Matching home page structure -->
         <div class="bottom-sheet" id="debugBottomSheet">
             <div class="bottom-sheet-content shadow-modal">
                 <div class="bottom-sheet-header">
-                    <h3 class="subheading-2 text-primary">Debug Options</h3>
+                    <h3 class="subheading-2 text-primary">Options</h3>
                     <button class="close-bottom-sheet" id="closeBottomSheet">
                         <span class="material-icons-round">close</span>
                     </button>
                 </div>
                 <div class="bottom-sheet-actions">
-                    <!-- Adaptive Learning Debug Info -->
+                    <!-- Question Types Section (moved outside accordion for better UX) -->
                     <div class="debug-section">
-                        <h4 class="debug-label">Current Question</h4>
-                        <div class="debug-info">
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Knowledge depth:</span>
-                                <span class="debug-info-value" id="currentDepth">-</span>
-                            </div>
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Difficulty:</span>
-                                <span class="debug-info-value" id="currentDifficulty">-</span>
-                            </div>
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Type:</span>
-                                <span class="debug-info-value" id="currentType">-</span>
-                            </div>
+                        <h4 class="debug-label">Question types</h4>
+                        <div class="debug-options multi-select">
+                            <button class="debug-option multi-select-option selected" data-type="question-type" data-value="multiple_choice">Multiple choice</button>
+                            <button class="debug-option multi-select-option selected" data-type="question-type" data-value="flashcard">Flashcard</button>
+                            <button class="debug-option multi-select-option selected" data-type="question-type" data-value="written">Written</button>
+                            <button class="debug-option multi-select-option selected" data-type="question-type" data-value="matching">Matching</button>
                         </div>
                     </div>
 
-                    <div class="debug-section">
-                        <h4 class="debug-label">If Answer is Correct</h4>
-                        <div class="debug-info">
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Knowledge depth:</span>
-                                <span class="debug-info-value" id="correctDepth">-</span>
+                    <!-- Debug Options Accordion -->
+                    <div class="debug-accordion">
+                        <button class="debug-accordion-toggle" id="debugAccordionToggle">
+                            <span>Debug Options</span>
+                            <span class="material-icons-round accordion-chevron">expand_more</span>
+                        </button>
+                        <div class="debug-accordion-content" id="debugAccordionContent">
+                            <!-- Current Question Section -->
+                            <div class="debug-section">
+                                <h4 class="debug-label">Current Question</h4>
+                                <div class="debug-info">
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Knowledge depth:</span>
+                                        <span class="debug-info-value" id="currentDepth">-</span>
+                                    </div>
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Difficulty:</span>
+                                        <span class="debug-info-value" id="currentDifficulty">-</span>
+                                    </div>
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Type:</span>
+                                        <span class="debug-info-value" id="currentType">-</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Difficulty:</span>
-                                <span class="debug-info-value" id="correctDifficulty">-</span>
-                            </div>
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Type:</span>
-                                <span class="debug-info-value" id="correctType">-</span>
-                            </div>
-                        </div>
-                        <div class="debug-note" id="correctNote" style="display: none;">
-                            <span>⚠️ Adjusted due to consecutive prevention</span>
-                        </div>
-                    </div>
 
-                    <div class="debug-section">
-                        <h4 class="debug-label">If Answer is Incorrect</h4>
-                        <div class="debug-info">
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Knowledge depth:</span>
-                                <span class="debug-info-value" id="incorrectDepth">-</span>
+                            <!-- If Answer is Correct Section -->
+                            <div class="debug-section">
+                                <h4 class="debug-label">If Answer is Correct</h4>
+                                <div class="debug-info">
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Knowledge depth:</span>
+                                        <span class="debug-info-value" id="correctDepth">-</span>
+                                    </div>
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Difficulty:</span>
+                                        <span class="debug-info-value" id="correctDifficulty">-</span>
+                                    </div>
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Type:</span>
+                                        <span class="debug-info-value" id="correctType">-</span>
+                                    </div>
+                                </div>
+                                <div class="debug-note" id="correctNote" style="display: none;">
+                                    <span>⚠️ Adjusted due to consecutive prevention</span>
+                                </div>
                             </div>
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Difficulty:</span>
-                                <span class="debug-info-value" id="incorrectDifficulty">-</span>
-                            </div>
-                            <div class="debug-info-row">
-                                <span class="debug-info-label">Type:</span>
-                                <span class="debug-info-value" id="incorrectType">-</span>
-                            </div>
-                        </div>
-                        <div class="debug-note" id="incorrectNote" style="display: none;">
-                            <span>⚠️ Adjusted due to consecutive prevention</span>
-                        </div>
-                    </div>
 
-                    <!-- Badge Visibility Toggle -->
-                    <div class="debug-section">
-                        <h4 class="debug-label">Badge Visibility</h4>
-                        <div class="debug-options">
-                            <button class="debug-option" id="toggleBadgesBtn" data-type="badge-toggle">Show API/CORRECT badges</button>
-                        </div>
-                    </div>
+                            <!-- If Answer is Incorrect Section -->
+                            <div class="debug-section">
+                                <h4 class="debug-label">If Answer is Incorrect</h4>
+                                <div class="debug-info">
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Knowledge depth:</span>
+                                        <span class="debug-info-value" id="incorrectDepth">-</span>
+                                    </div>
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Difficulty:</span>
+                                        <span class="debug-info-value" id="incorrectDifficulty">-</span>
+                                    </div>
+                                    <div class="debug-info-row">
+                                        <span class="debug-info-label">Type:</span>
+                                        <span class="debug-info-value" id="incorrectType">-</span>
+                                    </div>
+                                </div>
+                                <div class="debug-note" id="incorrectNote" style="display: none;">
+                                    <span>⚠️ Adjusted due to consecutive prevention</span>
+                                </div>
+                            </div>
 
-                    <!-- Manual Question Type Override -->
-                    <div class="debug-section">
-                        <h4 class="debug-label">Override current question type</h4>
-                        <div class="debug-options">
-                            <button class="debug-option" data-type="question-type" data-value="multiple_choice">Multiple choice</button>
-                            <button class="debug-option" data-type="question-type" data-value="flashcard">Flashcard</button>
-                            <button class="debug-option" data-type="question-type" data-value="written">Written</button>
-                            <button class="debug-option" data-type="question-type" data-value="matching">Matching</button>
+                            <!-- Badge Visibility Section -->
+                            <div class="debug-section">
+                                <h4 class="debug-label">Badge Visibility</h4>
+                                <div class="debug-options">
+                                    <button class="debug-option" id="toggleBadgesBtn" data-type="badge-toggle">Show API/CORRECT badges</button>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -188,17 +205,17 @@
                 <div class="bottom-sheet-header">
                     <div class="explanation-header">
                         <div class="ai-icon">
-                            <img src="../images/Quizlet Logos.png" alt="Quizlet" width="40" height="40">
+                            <img src="../images/Q.png" alt="Quizlet" width="40" height="40">
                         </div>
                         <h3 class="header-3 text-primary">Lets go deeper on this one</h3>
                         <h4 class="subheading-4 text-secondary">Try asking</h4>
                         <div class="explanation-options-carousel">
                             <div class="explanation-option">
-                                <img src="../images/sparkle.png" alt="Sparkle" class="option-icon" width="16" height="16">
+                                <img src="../images/sparkle-hollow.png" alt="Sparkle" class="option-icon" width="24" height="24">
                                 <span>Explain this to me in a different way</span>
                             </div>
                             <div class="explanation-option">
-                                <img src="../images/sparkle.png" alt="Sparkle" class="option-icon" width="16" height="16">
+                                <img src="../images/sparkle-hollow.png" alt="Sparkle" class="option-icon" width="24" height="24">
                                 <span>Break this down for me to help me understand</span>
                             </div>
                         </div>

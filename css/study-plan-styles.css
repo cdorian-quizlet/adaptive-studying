@@ -93,6 +93,12 @@ body {
 .path-step.current .top-focus-pill {
   display: none;
 }
+
+/* Hide top focus pill whenever progress bar is shown (any step with progress) */
+.step-progress.has-progress ~ .top-focus-pill,
+.path-step:has(.step-progress.has-progress) .top-focus-pill {
+  display: none;
+}
 .onboarding-title { 
   font-family: var(--typography-fontFamily);
   font-size: var(--typography-size-subheading-two);
@@ -367,9 +373,16 @@ body {
 
 /* Current round progress text fade animation */
 .step-progress-text {
-    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    /* Only apply transitions for specific animation classes to prevent flicker during text updates */
     opacity: 1;
     transform: translateY(0);
+}
+
+/* Only enable transitions when animations are intentionally triggered */
+.step-progress-text.fade-out,
+.step-progress-text.entering,
+.step-progress-text.auto-fade {
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
 }
 
 .step-progress-text.fade-out {
@@ -499,15 +512,6 @@ body {
     animation-play-state: paused;
 }
 
-/* Pulse animation for current diagnostic step play icon */
-.path-step.current.diagnostic .step-status .material-icons-round {
-    animation: playIconPulse 2s ease-in-out infinite;
-}
-
-/* Pause diagnostic animation when expanded */
-.path-step.current.diagnostic.expanded .step-status .material-icons-round {
-    animation-play-state: paused;
-}
 
 @keyframes playIconPulse {
     0% {
@@ -600,47 +604,19 @@ body {
     background-position: center;
 }
 
-.step-circle.diagnostic {
-    background: var(--color-sherbert-200) !important;
-    color: white;
-    border-radius: 16px; /* Rounded square like other steps */
-    background-image: url('../images/brand-practice-tests.png') !important;
-    background-size: 40px 40px !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-}
 
-.step-circle.diagnostic.completed {
-    background: var(--color-mint-500);
-    color: white;
-}
-
-/* Ensure diagnostic circles always keep their appearance in all states */
-.step-circle.diagnostic.next,
-.step-circle.diagnostic.in-progress {
-    background: var(--color-sherbert-200) !important;
-    background-image: url('../images/brand-practice-tests.png') !important;
-    background-size: 40px 40px !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
-}
 
 .step-icon {
     display: none; /* Hide icon since we're using background image for rounds */
 }
 
 /* Hide icon for completed rounds - using star-filled.png background */
-.step-circle.completed:not(.diagnostic) .step-icon {
+.step-circle.completed .step-icon {
     display: none;
 }
 
-/* Hide icon for diagnostic tests since we're using background image */
-.step-circle.diagnostic .step-icon {
-    display: none;
-}
-
-/* Hide material icons for all round states (in-progress, future, with diagnostic progress) */
-.step-circle:not(.completed):not(.diagnostic) .step-icon {
+/* Hide material icons for all round states (in-progress, future, with progress) */
+.step-circle:not(.completed) .step-icon {
     display: none;
 }
 
@@ -668,7 +644,7 @@ body {
 
 .step-header {
     display: flex;
-    flex-direction: row; /* Change to row for diagnostic buttons to float right */
+    flex-direction: row;
     justify-content: space-between;
     align-items: flex-start;
     gap: 16px;
@@ -676,47 +652,9 @@ body {
 }
 
 /* For regular rounds, keep column layout */
-.path-step:not(.diagnostic) .step-header {
+.path-step .step-header {
     flex-direction: column;
     gap: 0;
-}
-
-/* For diagnostic tests, ensure proper layout */
-.path-step.diagnostic .step-header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
-    gap: 16px; /* Ensure 16px spacing between text content and button */
-}
-
-.path-step.diagnostic .step-header > div:first-child {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0; /* Allow text to wrap by preventing flex item from growing beyond container */
-    overflow-wrap: break-word; /* Ensure long words can break if needed */
-}
-
-.path-step.diagnostic .step-title {
-    margin-bottom: 0;
-}
-
-.path-step.diagnostic .step-description {
-    margin: 0;
-    font-size: 14px;
-    color: var(--sys-text-secondary);
-    line-height: 1.4;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Allow diagnostic concepts to wrap to multiple lines */
-.step-description.diagnostic-concepts {
-    overflow: visible;
-    white-space: normal;
-    word-wrap: break-word;
     max-width: none; /* Remove width restriction to allow proper wrapping */
     flex: 1; /* Take available space but allow button to stay in view */
 }
@@ -788,9 +726,6 @@ body {
     background: var(--color-gray-400);
 }
 
-.step-vertical-spacer.diagnostic::before {
-    background: var(--color-sherbert-200);
-}
 
 /* Hide vertical spacer after the last step */
 .path-container .step-vertical-spacer:last-child {
@@ -803,7 +738,9 @@ body {
 }
 
 .step-title {
-    font-size: 18px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    line-height: var(--typography-lineHeight-subheading-three);
     font-weight: 600;
     color: var(--sys-text-primary);
     margin: 0;
@@ -871,35 +808,36 @@ body {
 }
 
 .step-status.completed {
-    background: var(--color-gray-200);
-    border: 2px solid var(--color-gray-200);
-    color: var(--interactive-fg-tertiary-default);
-    cursor: pointer; /* Make clickable */
-    pointer-events: auto; /* Enable interactions */
+    display: flex; /* Show the replay button for completed steps */
+    padding: var(--spacing-none, 0);
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-none, 0);
+    border-radius: var(--radius-full, 200px);
+    background: var(--color-surface, #FFF);
+    border: none;
+    color: var(--color-twilight-500);
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-three);
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 56px;
+    width: 56px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .step-status.completed:hover {
-    background: var(--color-gray-300);
-    border-color: var(--color-gray-300);
-    color: var(--interactive-fg-tertiary-default);
-    transform: scale(1.05);
-}
-
-/* Next/future round status buttons - tertiary style */
-.step-status.next {
     background: var(--color-gray-200);
-    border: 2px solid var(--color-gray-200);
-    color: var(--interactive-fg-tertiary-default);
-    cursor: pointer; /* Make clickable */
-    pointer-events: auto; /* Enable interactions */
 }
 
-.step-status.next:hover {
-    background: var(--color-gray-300);
-    border-color: var(--color-gray-300);
-    color: var(--interactive-fg-tertiary-default);
-    transform: scale(1.05);
+/* Removed hover styles since completed status buttons are now hidden */
+
+/* Hide step-status buttons - only current step with progress should show play button */
+.step-status.next {
+    display: none; /* Hide play button for future rounds without progress */
 }
+
+/* Removed hover styles since next status buttons are now hidden */
 
 /* Make all non-current steps clickable and interactive */
 .path-step.completed,
@@ -908,19 +846,20 @@ body {
     pointer-events: auto; /* Enable interactions */
 }
 
+/* Make path-step-main clickable for non-current steps */
+.path-step.completed .path-step-main,
+.path-step.next .path-step-main {
+    cursor: pointer;
+}
+
 /* Hover effects for all non-current steps */
 .path-step.completed:hover,
 .path-step.next:hover {
     transform: translateY(-1px); /* Subtle lift for non-current steps */
 }
 
-/* Additional hover effect for diagnostic steps */
-.path-step.next.diagnostic:hover {
-    transform: translateY(-2px); /* Slightly more lift for diagnostic skip-ahead */
-}
-
-/* Disabled appearance for rounds below current diagnostic - exclude diagnostics */
-.path-step.next .step-circle.next:not(.diagnostic) {
+/* Disabled appearance for rounds below current round */
+.path-step.next .step-circle.next {
     background: var(--color-gray-400);
     color: var(--sys-text-primary);
     border-radius: 16px;
@@ -932,17 +871,6 @@ body {
 
 .step-status.in-progress {
     background: var(--color-twilight-500);
-}
-
-.step-status.diagnostic.skip-ahead {
-    background: transparent;
-    color: var(--color-twilight-500);
-}
-
-.step-status.diagnostic.in-progress {
-    background: var(--color-twilight-500);
-    color: white;
-    border-radius: 50%;
     width: 56px;
     height: 56px;
     padding: 0;
@@ -958,9 +886,11 @@ body {
 }
 
 .step-description {
-    font-size: 14px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-five);
+    line-height: var(--typography-lineHeight-subheading-five);
+    font-weight: 600;
     color: var(--sys-text-secondary);
-    line-height: 1.4;
     margin: 0;
 }
 
@@ -1006,15 +936,22 @@ body {
     display: none; /* Hide progress text by default */
 }
 
-/* Always show progress text for current round, even at 0% */
-.path-step.current .step-progress-text {
+/* Always show progress text when progress bar is shown */
+.step-progress.has-progress .step-progress-text {
     display: block;
-    font-size: 14px;
+    font-family: var(--typography-fontFamily);
+    font-size: var(--typography-size-subheading-five);
+    line-height: var(--typography-lineHeight-subheading-five);
     font-weight: 600;
     color: var(--sys-text-highlight);
     margin-left: 12px;
     white-space: nowrap;
-    transition: opacity 0.3s ease;
+    /* Transition removed - now only applied via specific animation classes to prevent flicker */
+}
+
+/* Always show progress text for current round, even at 0% */
+.path-step.current .step-progress-text {
+    display: block;
 }
 
 /* Make step-progress clickable when it has progress */
@@ -1027,39 +964,12 @@ body {
     opacity: 0.8;
 }
 
-/* Animation for progress text changes */
+/* Animation for progress text changes - only apply transition when updating class is present */
 .step-progress-text.updating {
     opacity: 0.7;
     transition: opacity 0.15s ease;
 }
 
-/* Diagnostic Test Styles */
-.path-step.diagnostic .step-circle {
-    background: var(--color-sherbert-200);
-    border-color: var(--color-sherbert-200);
-    background-image: url('../images/brand-practice-tests.png');
-    background-size: 40px 40px;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.path-step.diagnostic .step-status {
-    background: var(--sys-interactive-bg-secondary-default);
-    color: var(--color-twilight-500);
-    border-radius: 20px;
-    padding: 6px 12px;
-    font-weight: 500;
-}
-
-.path-step.diagnostic .step-status:hover {
-    background: var(--color-gray-300);
-    color: var(--color-twilight-500);
-}
-
-.step-status.diagnostic.in-progress:hover {
-    background: var(--color-twilight-600);
-    transform: scale(1.05);
-}
 
 /* Animations */
 @keyframes fadeInUp {
@@ -1253,10 +1163,6 @@ body {
     z-index: 2;
 }
 
-/* Hide accordion content for diagnostic steps */
-.path-step.diagnostic .step-accordion-content {
-    display: none !important;
-}
 
 /* Make a change button */
 .accordion-action {
@@ -1387,7 +1293,7 @@ body {
     width: calc(100% - 40px);
     max-width: 480px;
     z-index: 1000;
-    padding: 0 20px;
+    padding: 0;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none; /* Allow clicks to pass through when hidden */
     

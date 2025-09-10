@@ -293,6 +293,8 @@
     font-weight: 700;
     line-height: var(--typography-lineHeight-header-three);
     letter-spacing: var(--typography-letterSpacing-none);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .header-4 {
@@ -874,6 +876,34 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
+    overflow: hidden;
+}
+
+.continue-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%
+    );
+    transform: skewX(-20deg);
+    animation: shimmer 2.5s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
 }
 
 .continue-button:hover {
@@ -1314,7 +1344,7 @@ body {
 .bottom-sheet-actions {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 24px;
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;

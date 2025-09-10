@@ -648,48 +648,80 @@ function updateTodaysProgressFromStudyData() {
     return dailyData;
 }
 
-// Calculate overall study plan progress using simplified grading system
+// Calculate overall study plan progress using format-based calculation (matches study plan)
 function calculateOverallPlanProgress() {
     try {
         // Get study path data for calculation
-        const studyPathData = localStorage.getItem('studyPathData');
-        if (!studyPathData) {
-            console.log('🔍 DEBUG: No study path data found, progress is 0%');
+        const studyPathDataString = localStorage.getItem('studyPathData');
+        if (!studyPathDataString) {
+            console.log('🔍 DEBUG: [HOME] No study path data found, progress is 0%');
             return 0;
         }
         
-        const pathData = JSON.parse(studyPathData);
-        const questionsPerRound = pathData.questionsPerRound || 7;
-        const completedRounds = pathData.completedRounds || 0;
-        const currentRoundProgress = pathData.currentRoundProgress || 0;
-        
-        // Get total rounds from concepts (since study plan is based on concepts)
-        const concepts = pathData.concepts || [];
+        const studyPathData = JSON.parse(studyPathDataString);
+        const concepts = studyPathData.concepts || [];
         const totalRounds = concepts.length || 4; // Fallback to 4 if no concepts
         
-        // Calculate total questions in plan
-        const totalQuestions = totalRounds * questionsPerRound;
-        
-        // Calculate completed questions
-        const completedQuestions = (completedRounds * questionsPerRound) + currentRoundProgress;
-        
-        // Calculate percentage
-        const progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
-        
-        console.log('🔍 DEBUG: Simplified progress calculation:', {
+        console.log('🔍 DEBUG: [HOME] Starting format-based progress calculation:', {
             totalRounds,
-            questionsPerRound,
-            totalQuestions,
-            completedRounds,
-            currentRoundProgress,
-            completedQuestions,
-            progressPercentage
+            studyPathData: studyPathData
         });
         
-        return Math.min(progressPercentage, 100); // Cap at 100%
+        // Load round progress data to get actual format counts
+        const roundProgressDataString = localStorage.getItem('roundProgressData');
+        let roundProgressData = {};
+        if (roundProgressDataString) {
+            try {
+                roundProgressData = JSON.parse(roundProgressDataString);
+                console.log('🔍 DEBUG: [HOME] Loaded roundProgressData:', roundProgressData);
+            } catch (e) {
+                console.warn('[HOME] Could not parse roundProgressData');
+            }
+        }
+        
+        let totalCompletedFormats = 0;
+        let totalAvailableFormats = 0;
+        
+        // Calculate progress for each round
+        for (let roundNumber = 1; roundNumber <= totalRounds; roundNumber++) {
+            const roundData = roundProgressData[roundNumber];
+            let roundCompletedFormats = 0;
+            let roundTotalFormats = 28; // Default: 7 questions × 4 formats each
+            
+            if (roundData) {
+                // Use actual data from round progress
+                roundCompletedFormats = roundData.progress || 0;
+                roundTotalFormats = roundData.totalFormats || 28;
+                
+                console.log(`🔍 DEBUG: [HOME] Round ${roundNumber} from saved data:`, {
+                    completed: roundCompletedFormats,
+                    total: roundTotalFormats,
+                    percentage: roundTotalFormats > 0 ? (roundCompletedFormats / roundTotalFormats * 100).toFixed(1) : 0
+                });
+            } else {
+                // No data for this round yet, so 0 completed formats
+                console.log(`🔍 DEBUG: [HOME] Round ${roundNumber} - no data yet`);
+            }
+            
+            totalCompletedFormats += roundCompletedFormats;
+            totalAvailableFormats += roundTotalFormats;
+        }
+        
+        // Calculate overall percentage
+        const overallPercentage = totalAvailableFormats > 0 ? 
+            Math.round((totalCompletedFormats / totalAvailableFormats) * 100) : 0;
+        
+        console.log('🔍 DEBUG: [HOME] Format-based overall progress calculation:', {
+            totalRounds,
+            totalCompletedFormats,
+            totalAvailableFormats,
+            overallPercentage
+        });
+        
+        return Math.min(overallPercentage, 100); // Cap at 100%
         
     } catch (error) {
-        console.error('Error calculating overall plan progress:', error);
+        console.error('[HOME] Error calculating overall plan progress:', error);
         return 0;
     }
 }
