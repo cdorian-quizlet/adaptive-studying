@@ -1089,30 +1089,20 @@ function applyDynamicTextSizing(element, text) {
     console.log('🔤 Applying dynamic text sizing:', {
         text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
         charCount: charCount,
-        targetClass: getDynamicTextClass(charCount)
+        targetClass: 'text-subheading-3'
     });
     
     // Remove existing text size classes
     element.classList.remove('text-subheading-1', 'text-subheading-2', 'text-subheading-3', 'text-subheading-5');
     
-    // Apply appropriate class based on character count
-    element.classList.add(getDynamicTextClass(charCount));
+    // Always apply subheading-3 for all character counts
+    element.classList.add('text-subheading-3');
 }
 
 // Helper function to determine text class based on character count
 function getDynamicTextClass(charCount) {
-    if (charCount <= 60) {
-        return 'text-subheading-1';
-    } else if (charCount <= 120) {
-        return 'text-subheading-2';
-    } else if (charCount <= 224) {
-        return 'text-subheading-3';
-    } else if (charCount <= 448) {
-        return 'text-subheading-5';
-    } else {
-        // For very long text, use the smallest size
-        return 'text-subheading-5';
-    }
+    // Always return subheading-3 for all character counts
+    return 'text-subheading-3';
 }
 
 // Flashcard-specific text sizing that considers available space and character count
@@ -4021,7 +4011,7 @@ function handleDebugOptionClick(option) {
     }
 }
 
-// Initialize badge toggle state from localStorage
+// Initialize badge toggle state (always start hidden each session)
 function initializeBadgeToggle() {
     const toggleBtn = document.getElementById('toggleBadgesBtn');
     if (!toggleBtn) {
@@ -4030,21 +4020,16 @@ function initializeBadgeToggle() {
     }
             console.log('Badge toggle button found:', toggleBtn.textContent.trim());
     
-    // Check localStorage for saved preference (default: hidden)
-    const showBadges = localStorage.getItem('debugBadgesVisible') === 'true';
+    // Always start with badges hidden (don't persist setting between sessions)
     const body = document.body;
     
-    if (showBadges) {
-        body.classList.add('show-debug-badges');
-        toggleBtn.textContent = 'Hide API/CORRECT badges';
-        toggleBtn.classList.add('selected');
-        console.log('🏷️ Initialized badges as visible');
-    } else {
-        body.classList.remove('show-debug-badges');
-        toggleBtn.textContent = 'Show API/CORRECT badges';
-        toggleBtn.classList.remove('selected');
-        console.log('🏷️ Initialized badges as hidden');
-    }
+    // Clear any existing localStorage setting to ensure clean state
+    localStorage.removeItem('debugBadgesVisible');
+    
+    body.classList.remove('show-debug-badges');
+    toggleBtn.textContent = 'Show API/CORRECT badges';
+    toggleBtn.classList.remove('selected');
+    console.log('🏷️ Initialized badges as hidden (default state)');
 }
 
 // Toggle badge visibility (API, STATIC, CORRECT badges)
@@ -4058,7 +4043,6 @@ function toggleBadgeVisibility() {
         body.classList.remove('show-debug-badges');
         toggleBtn.textContent = 'Show API/CORRECT badges';
         toggleBtn.classList.remove('selected');
-        localStorage.setItem('debugBadgesVisible', 'false');
         console.log('🏷️ Badges hidden');
         showToast('Debug badges hidden', 1500);
     } else {
@@ -4066,7 +4050,6 @@ function toggleBadgeVisibility() {
         body.classList.add('show-debug-badges');
         toggleBtn.textContent = 'Hide API/CORRECT badges';
         toggleBtn.classList.add('selected');
-        localStorage.setItem('debugBadgesVisible', 'true');
         console.log('🏷️ Badges visible');
         showToast('Debug badges visible', 1500);
     }
