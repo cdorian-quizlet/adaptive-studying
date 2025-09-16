@@ -4134,10 +4134,21 @@ window.StudyPath = {
 // migration, move its contents here. For now, we preserve behavior by
 // including it at build time (tooling) and keep this file as the canonical name.
 
-// Floating Feedback Input Scroll Detection
+// Enhanced Floating Feedback Input System
 let floatingFeedbackVisible = false;
 let scrollDirection = 'up';
-let lastScrollY = 0; // Declare first, initialize later
+let lastScrollY = 0;
+let userEngagementScore = 0; // Track user engagement for smart triggers
+let lastActionTime = Date.now();
+let currentSuggestions = [];
+
+// Smart trigger conditions
+const TRIGGER_CONDITIONS = {
+    SCROLL_ENGAGEMENT: { scrollY: 100, direction: 'down' },
+    STEP_COMPLETION: { showOnComplete: true, delay: 2000 },
+    IDLE_TIME: { threshold: 30000 }, // 30 seconds of inactivity
+    PROGRESS_MILESTONE: { showOn: [25, 50, 75] } // Show on progress milestones
+};
 
 function initFloatingFeedback() {
     const floatingFeedback = document.getElementById('floatingFeedback');
@@ -4150,6 +4161,7 @@ function initFloatingFeedback() {
     lastScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
 
     let scrollTimeout;
+    let idleTimeout;
 
     function handleScroll() {
         const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
@@ -4157,60 +4169,64 @@ function initFloatingFeedback() {
         // Determine scroll direction
         if (currentScrollY > lastScrollY) {
             scrollDirection = 'down';
+            userEngagementScore += 0.1; // Increase engagement on scroll
         } else if (currentScrollY < lastScrollY) {
             scrollDirection = 'up';
         }
         lastScrollY = currentScrollY;
+        lastActionTime = Date.now();
 
         // Clear previous timeout
         clearTimeout(scrollTimeout);
 
-        // Add small delay to avoid rapid toggling
+        // Enhanced trigger logic
         scrollTimeout = setTimeout(() => {
-            const shouldShow = currentScrollY > 100 && scrollDirection === 'down';
-            const shouldHide = currentScrollY <= 50 || scrollDirection === 'up';
+            const shouldShow = shouldTriggerFeedback('scroll', { scrollY: currentScrollY, direction: scrollDirection });
+            const shouldHide = currentScrollY <= 50 || (scrollDirection === 'up' && currentScrollY < 200);
 
             if (shouldShow && !floatingFeedbackVisible) {
-                showFloatingFeedback();
+                showFloatingFeedback('scroll');
             } else if (shouldHide && floatingFeedbackVisible) {
                 hideFloatingFeedback();
             }
-        }, 100);
+        }, 150); // Slightly longer delay for better UX
     }
 
-    // Add scroll listener
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Handle input interactions
-    const floatingInput = floatingFeedback.querySelector('.floating-input');
-    if (floatingInput) {
-        floatingInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                handleFloatingInputSubmit(floatingInput);
-            } else if (e.key === 'Escape') {
-                floatingInput.blur();
+    // Smart idle detection
+    function resetIdleTimer() {
+        clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(() => {
+            if (!floatingFeedbackVisible && shouldTriggerFeedback('idle')) {
+                showFloatingFeedback('idle');
             }
-        });
-
-        floatingInput.addEventListener('focus', function() {
-            // Keep visible while focused
-            clearTimeout(hideTimeout);
-        });
-
-        floatingInput.addEventListener('blur', function() {
-            // Small delay to allow for submission
-            setTimeout(() => {
-                if (floatingInput.value.trim()) {
-                    handleFloatingInputSubmit(floatingInput);
-                }
-            }, 100);
-        });
+        }, TRIGGER_CONDITIONS.IDLE_TIME.threshold);
     }
+
+    // Add scroll listener with passive for better performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Track user activity for idle detection
+    ['click', 'touchstart', 'keydown', 'mousemove'].forEach(event => {
+        document.addEventListener(event, () => {
+            lastActionTime = Date.now();
+            resetIdleTimer();
+        }, { passive: true });
+    });
+
+    // Initialize idle timer
+    resetIdleTimer();
+
+    // Enhanced input interactions
+    setupFloatingInputHandlers(floatingFeedback);
+
+    // Set up suggestion system
+    generateContextualSuggestions();
 }
 
 let hideTimeout;
 
-function showFloatingFeedback() {
+// Enhanced feedback display with context awareness
+function showFloatingFeedback(trigger = 'manual', context = {}) {
     const floatingFeedback = document.getElementById('floatingFeedback');
     if (!floatingFeedback) return;
 
@@ -4222,16 +4238,28 @@ function showFloatingFeedback() {
     clearTimeout(hideTimeout);
     floatingFeedbackVisible = true;
     
+    // Update placeholder text based on trigger context
+    updatePlaceholderText(trigger, context);
+    
     // Remove any existing animation classes
     floatingFeedback.classList.remove('exiting');
     
     // Add visible class and entering animation
     floatingFeedback.classList.add('visible', 'entering');
     
+    // Enhanced entrance animation based on trigger
+    if (trigger === 'milestone') {
+        floatingFeedback.classList.add('milestone-trigger');
+    } else if (trigger === 'idle') {
+        floatingFeedback.classList.add('gentle-prompt');
+    }
+    
     // Remove entering class after animation
     setTimeout(() => {
-        floatingFeedback.classList.remove('entering');
-    }, 400);
+        floatingFeedback.classList.remove('entering', 'milestone-trigger', 'gentle-prompt');
+    }, 600);
+    
+    console.log(`🎯 Floating feedback shown via ${trigger} trigger`, context);
 }
 
 function hideFloatingFeedback() {
@@ -4250,21 +4278,153 @@ function hideFloatingFeedback() {
     }, 400);
 }
 
+// Enhanced input submission with category detection
 function handleFloatingInputSubmit(input) {
     const value = input.value.trim();
     if (value) {
         console.log('Floating feedback submitted:', value);
         
-        // Show success message
-        showToast('Thanks for your feedback! We\'ll use this to improve your experience.', 4000);
+        // Analyze feedback type for better response
+        const feedbackType = categorizeFeedback(value);
         
-        // Clear input
-        input.value = '';
+        // Show contextual success message
+        const successMessage = getSuccessMessage(feedbackType, value);
+        showToast(successMessage, 4000);
+        
+        // Add submission animation
+        const floatingFeedback = document.getElementById('floatingFeedback');
+        if (floatingFeedback) {
+            floatingFeedback.classList.add('submitting');
+            setTimeout(() => {
+                floatingFeedback.classList.remove('submitting');
+            }, 800);
+        }
+        
+        // Clear input with animation
+        input.style.transform = 'scale(0.95)';
+        input.style.opacity = '0.5';
+        
+        setTimeout(() => {
+            input.value = '';
+            input.style.transform = 'scale(1)';
+            input.style.opacity = '1';
+        }, 300);
         
         // Hide feedback after submission
         setTimeout(() => {
             hideFloatingFeedback();
-        }, 1000);
+            // Reset suggestions for next time
+            generateContextualSuggestions();
+        }, 1500);
+        
+        // Track feedback for analytics
+        trackFeedbackSubmission(feedbackType, value);
     }
+}
+
+// Missing function implementations for floating feedback system
+
+function setupFloatingInputHandlers(floatingFeedback) {
+    const input = floatingFeedback.querySelector('.floating-input');
+    if (!input) return;
+    
+    // Handle input events
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            handleFloatingInputSubmit(input);
+        } else if (e.key === 'Escape') {
+            hideFloatingFeedback();
+        }
+    });
+    
+    input.addEventListener('focus', function() {
+        // Disable other feedback triggers when focused
+        window.floatingFeedbackDisabled = true;
+    });
+    
+    input.addEventListener('blur', function() {
+        // Re-enable feedback triggers when blur
+        setTimeout(() => {
+            window.floatingFeedbackDisabled = false;
+        }, 150);
+    });
+}
+
+function shouldTriggerFeedback(trigger, context = {}) {
+    // Don't show if disabled
+    if (window.floatingFeedbackDisabled) return false;
+    
+    switch (trigger) {
+        case 'scroll':
+            return context.scrollY > TRIGGER_CONDITIONS.SCROLL_ENGAGEMENT.scrollY && 
+                   context.direction === 'down';
+        case 'idle':
+            const timeSinceLastAction = Date.now() - lastActionTime;
+            return timeSinceLastAction >= TRIGGER_CONDITIONS.IDLE_TIME.threshold;
+        case 'milestone':
+            return TRIGGER_CONDITIONS.PROGRESS_MILESTONE.showOn.includes(context.progress);
+        default:
+            return false;
+    }
+}
+
+function generateContextualSuggestions() {
+    // Generate suggestions based on current context
+    currentSuggestions = [
+        'Make a change',
+        'Add a topic',
+        'Adjust difficulty',
+        'Change schedule'
+    ];
+    
+    // Update placeholder if needed
+    updatePlaceholderText('contextual');
+}
+
+function updatePlaceholderText(trigger, context = {}) {
+    const input = document.querySelector('.floating-input');
+    if (!input) return;
+    
+    // Always use the same placeholder text regardless of trigger
+    input.placeholder = 'Make a change';
+}
+
+function categorizeFeedback(value) {
+    const lowerValue = value.toLowerCase();
+    
+    if (lowerValue.includes('difficult') || lowerValue.includes('hard') || lowerValue.includes('easy')) {
+        return 'difficulty';
+    } else if (lowerValue.includes('time') || lowerValue.includes('schedule') || lowerValue.includes('date')) {
+        return 'timing';
+    } else if (lowerValue.includes('topic') || lowerValue.includes('subject') || lowerValue.includes('concept')) {
+        return 'content';
+    } else {
+        return 'general';
+    }
+}
+
+function getSuccessMessage(feedbackType, value) {
+    switch (feedbackType) {
+        case 'difficulty':
+            return 'Thanks! We\'ll adjust the difficulty level.';
+        case 'timing':
+            return 'Got it! We\'ll update your schedule.';
+        case 'content':
+            return 'Thanks for the feedback on the topics!';
+        default:
+            return 'Thanks for your feedback!';
+    }
+}
+
+function trackFeedbackSubmission(feedbackType, value) {
+    // Simple console tracking for now
+    console.log('Feedback tracked:', {
+        type: feedbackType,
+        value: value,
+        timestamp: new Date().toISOString(),
+        userEngagement: userEngagementScore
+    });
+    
+    // Could send to analytics service in the future
 }
 

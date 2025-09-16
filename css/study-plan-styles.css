@@ -438,9 +438,7 @@ body {
     justify-content: center;
 }
 
-.progress-ring {
-    /* Removed rotation to prevent text from being rotated */
-}
+/* Removed .progress-ring rotation rule to prevent text from being rotated */
 
 .progress-ring-bg {
     fill: none;
@@ -1040,12 +1038,28 @@ body {
 }
 
 /* Responsive Design */
+@media (min-width: 480px) {
+    /* At 480px viewport, app-container becomes centered with max-width: 480px */
+    .floating-feedback { 
+        width: 440px !important; /* Match app-container content width: 480px - 40px padding */
+        max-width: 440px !important; 
+    }
+}
+
 @media (min-width: 768px) {
     .app-container { max-width: 520px; }
+    .floating-feedback { 
+        width: 480px !important; /* Match content width: 520px - 40px padding */
+        max-width: 480px !important; 
+    }
 }
 
 @media (min-width: 1024px) {
     .app-container { max-width: 560px; }
+    .floating-feedback { 
+        width: 520px !important; /* Match content width: 560px - 40px padding */
+        max-width: 520px !important; 
+    }
 }
 
 /* Focus states for accessibility */
@@ -1328,17 +1342,15 @@ body {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%) translateY(100%);
-    width: calc(100% - 40px);
-    max-width: 480px;
+    width: calc(100vw - 40px); /* Match content width: viewport minus 20px padding on each side */
+    max-width: 440px; /* Match mobile app-container content width (480px - 40px padding) */
     z-index: 1000;
-    padding: 0;
+    padding: 32px 0 24px 0; /* Let input-container handle horizontal padding */
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none; /* Allow clicks to pass through when hidden */
     
     /* Background gradient from surface base (bottom) to transparent (top) */
     background: linear-gradient(to top, var(--sys-surface-base) 0%, transparent 100%);
-    padding-top: 32px;
-    padding-bottom: 24px;
 }
 
 .floating-feedback.visible {
@@ -1351,13 +1363,15 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 20px;
+    padding: 16px 20px; /* Keep internal padding for good visual spacing */
     /* Remove background - let pseudo-elements handle it */
     border-radius: 999px;
     box-shadow: var(--shadow-large);
     backdrop-filter: blur(8px);
     /* Ensure border is visible by creating proper layering */
     isolation: isolate;
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding is included in width calculation */
 }
 
 /* 2px radial gradient border using pseudo-elements */
@@ -1457,12 +1471,12 @@ body {
 /* Responsive adjustments */
 @media (max-width: 375px) {
     .floating-feedback {
-        width: calc(100% - 24px);
-        padding: 0 12px;
+        width: calc(100vw - 32px); /* Smaller padding on very small screens: 16px on each side */
+        padding: 32px 0 24px 0; /* Let input-container handle horizontal padding */
     }
     
     .floating-input-container {
-        padding: 14px 16px;
+        padding: 14px 12px; /* Reduced padding for smaller screens */
         gap: 10px;
     }
 }
