@@ -876,6 +876,7 @@ body:has(.knowledge-slider:active) {
   width: 100%;
   position: relative;
   isolation: isolate;
+  contain: layout style; /* Prevent any content from affecting parent */
 }
 
 .date-input-hidden {
@@ -885,27 +886,29 @@ body:has(.knowledge-slider:active) {
   height: 1px;
   left: -9999px;
   top: -9999px;
-  z-index: -1;
-  /* Completely hide to prevent any visual bleed */
+  z-index: -999; /* Very low z-index to stay below everything */
+  /* Less aggressive hiding to allow programmatic interaction */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   border: none;
   background: transparent;
-  color: transparent;
-  font-size: 1px;
-  line-height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  /* Allow interaction on desktop when temporarily shown */
+  outline: none;
+  /* Allow interaction when temporarily repositioned */
   pointer-events: none;
+  /* Prevent text from showing while preserving functionality */
+  font-size: 16px; /* Prevent zoom on mobile */
+  color: transparent;
   text-indent: -9999px;
-  /* Additional browser-specific hiding */
+  overflow: hidden;
+  /* Additional text hiding without breaking programmatic access */
   -webkit-text-fill-color: transparent;
   -moz-text-fill-color: transparent;
   text-shadow: none;
-  letter-spacing: -9999px;
+  letter-spacing: -1px;
+  /* Ensure complete visual isolation */
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .date-picker-btn {
@@ -922,9 +925,10 @@ body:has(.knowledge-slider:active) {
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  /* Ensure proper text containment */
+  /* Ensure proper text containment and isolation */
   contain: layout style;
   isolation: isolate;
+  z-index: 1; /* Ensure button content stays above hidden input */
 }
 
 .date-picker-btn:hover {
@@ -970,12 +974,12 @@ button.date-picker-btn.selected:active {
 .date-picker-content {
   display: flex;
   align-items: center;
-  gap: 16px;
   width: 100%;
   min-width: 0;
   overflow: hidden;
   /* Ensure proper flex containment */
   flex: 1;
+  justify-content: flex-start; /* Ensure left alignment */
 }
 
 .date-picker-icon {
@@ -983,12 +987,15 @@ button.date-picker-btn.selected:active {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-right: 16px; /* 16px spacing between icon and text */
 }
 
 .calendar-icon {
   width: 24px;
   height: 24px;
   transition: all 0.2s ease;
+  /* Apply gray600 color filter by default */
+  filter: brightness(0) saturate(100%) invert(46%) sepia(7%) saturate(1166%) hue-rotate(181deg) brightness(94%) contrast(89%);
 }
 
 .date-picker-text {
@@ -996,7 +1003,7 @@ button.date-picker-btn.selected:active {
   font-size: var(--typography-size-subheading-three);
   line-height: var(--typography-lineHeight-subheading-three);
   font-weight: 600;
-  color: var(--sys-text-secondary);
+  color: var(--color-gray-600);
   flex: 1;
   text-align: left;
   /* Prevent text overflow and ensure proper containment */
@@ -1004,21 +1011,30 @@ button.date-picker-btn.selected:active {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  /* Ensure text starts immediately after icon with no extra spacing */
+  margin: 0;
+  padding: 0;
 }
 
 .date-picker-btn.selected .date-picker-text {
-  color: var(--sys-text-primary);
+  color: var(--color-twilight-500);
+}
+
+.date-picker-btn.selected .calendar-icon {
+  /* Apply twilight500 color filter when selected */
+  filter: brightness(0) saturate(100%) invert(32%) sepia(94%) saturate(1745%) hue-rotate(231deg) brightness(101%) contrast(101%);
 }
 
 /* Mobile date input styling to match button */
-.mobile-date-input {
+input.mobile-date-input {
   height: 76px !important;
   padding: 14px 24px !important;
-  padding-right: 56px !important; /* Make room for calendar icon */
+  padding-left: 64px !important; /* 24px padding + 24px icon + 16px spacing = 64px total */
+  padding-right: 24px !important;
   display: flex !important;
   align-items: center !important;
   cursor: pointer !important;
-  background: var(--sys-surface-base) url('../images/calendar-default.png') no-repeat right 24px center !important;
+  background: var(--sys-surface-base) url('../images/calendar-default.png') no-repeat left 24px center !important;
   background-size: 24px 24px !important;
   border: none !important;
   border-radius: 20px !important;
@@ -1027,7 +1043,7 @@ button.date-picker-btn.selected:active {
   font-size: 16px !important;
   font-family: var(--typography-fontFamily) !important;
   font-weight: 600 !important;
-  color: var(--sys-text-primary) !important;
+  color: var(--color-gray-600) !important;
   transition: all 0.2s ease !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -1039,52 +1055,76 @@ button.date-picker-btn.selected:active {
   white-space: nowrap !important;
 }
 
-.mobile-date-input:not([value=""]):not(:invalid) {
-  background-image: url('../images/calendar-selected.png') !important;
+input.mobile-date-input:not([value=""]):not(:invalid) {
+  background: var(--sys-surface-base) url('../images/calendar-selected.png') no-repeat left 24px center !important;
+  background-size: 24px 24px !important;
+  color: var(--color-twilight-500) !important;
 }
 
-.mobile-date-input:invalid,
-.mobile-date-input:placeholder-shown {
-  background-image: url('../images/calendar-default.png') !important;
-  color: var(--sys-text-secondary) !important;
+input.mobile-date-input:invalid,
+input.mobile-date-input:placeholder-shown,
+input.mobile-date-input[value=""] {
+  background: var(--sys-surface-base) url('../images/calendar-default.png') no-repeat left 24px center !important;
+  background-size: 24px 24px !important;
+  color: var(--color-gray-600) !important;
 }
 
-.mobile-date-input:hover {
+/* Ensure native placeholder is visible and properly styled */
+input.mobile-date-input::-webkit-input-placeholder {
+  color: var(--color-gray-600) !important;
+  font-weight: 600 !important;
+}
+
+input.mobile-date-input::-moz-placeholder {
+  color: var(--color-gray-600) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+input.mobile-date-input::placeholder {
+  color: var(--color-gray-600) !important;
+  font-weight: 600 !important;
+}
+
+input.mobile-date-input:hover {
   background-color: var(--color-gray-200) !important;
 }
 
-.mobile-date-input:hover:not([value=""]):not(:invalid) {
-  background: var(--color-gray-200) url('../images/calendar-selected.png') no-repeat right 24px center !important;
+input.mobile-date-input:hover:not([value=""]):not(:invalid) {
+  background: var(--color-gray-200) url('../images/calendar-selected.png') no-repeat left 24px center !important;
   background-size: 24px 24px !important;
   box-shadow: var(--shadow-xLarge) !important;
 }
 
-.mobile-date-input:hover:invalid,
-.mobile-date-input:hover:placeholder-shown {
-  background: var(--color-gray-200) url('../images/calendar-default.png') no-repeat right 24px center !important;
+input.mobile-date-input:hover:invalid,
+input.mobile-date-input:hover:placeholder-shown {
+  background: var(--color-gray-200) url('../images/calendar-default.png') no-repeat left 24px center !important;
   background-size: 24px 24px !important;
 }
 
-.mobile-date-input:focus {
+input.mobile-date-input:focus {
   /* No additional focus styling - preserves existing shadows */
 }
 
-.mobile-date-input:focus:not([value=""]):not(:invalid) {
+input.mobile-date-input:focus:not([value=""]):not(:invalid) {
   box-shadow: var(--shadow-xLarge) !important;
-  background-image: url('../images/calendar-selected.png') !important;
+  background: var(--sys-surface-base) url('../images/calendar-selected.png') no-repeat left 24px center !important;
+  background-size: 24px 24px !important;
 }
 
-.mobile-date-input:focus:invalid,
-.mobile-date-input:focus:placeholder-shown {
-  background-image: url('../images/calendar-default.png') !important;
+input.mobile-date-input:focus:invalid,
+input.mobile-date-input:focus:placeholder-shown {
+  background: var(--sys-surface-base) url('../images/calendar-default.png') no-repeat left 24px center !important;
+  background-size: 24px 24px !important;
 }
 
-.mobile-date-input:active:not([value=""]):not(:invalid) {
+input.mobile-date-input:active:not([value=""]):not(:invalid) {
   box-shadow: var(--shadow-xLarge) !important;
-  background-image: url('../images/calendar-selected.png') !important;
+  background: var(--sys-surface-base) url('../images/calendar-selected.png') no-repeat left 24px center !important;
+  background-size: 24px 24px !important;
 }
 
-.mobile-date-input::-webkit-calendar-picker-indicator {
+input.mobile-date-input::-webkit-calendar-picker-indicator {
   opacity: 0;
   position: absolute;
   right: 0;
@@ -1399,5 +1439,6 @@ body:has(.loading-screen) {
   font-weight: 600;
   color: var(--sys-text-secondary);
 }
+
 
 

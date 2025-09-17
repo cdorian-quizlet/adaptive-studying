@@ -2516,166 +2516,60 @@
       }
     }
     
-    // Detect mobile browsers
-    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent);
-    
-    // For mobile browsers, replace the button with a styled date input
-    if (isMobile) {
-      console.log('Mobile detected, using direct date input approach');
-      replaceBtnWithDateInput();
-    } else {
-      // Desktop: Click handler to open native date picker
-      datePickerBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        console.log('Date picker button clicked (desktop)');
-        
-        // Get button position for precise overlay
-        const buttonRect = datePickerBtn.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        
-        // Position hidden input exactly over the button
-        hiddenInput.style.position = 'fixed';
-        hiddenInput.style.left = buttonRect.left + 'px';
-        hiddenInput.style.top = buttonRect.top + 'px';
-        hiddenInput.style.width = buttonRect.width + 'px';
-        hiddenInput.style.height = buttonRect.height + 'px';
-        hiddenInput.style.opacity = '0.01'; // Nearly invisible but still interactable
-        hiddenInput.style.zIndex = '10000';
-        hiddenInput.style.pointerEvents = 'auto';
-        hiddenInput.style.border = 'none';
-        hiddenInput.style.background = 'transparent';
-        hiddenInput.style.outline = 'none';
-        
-        // Try showPicker first (modern browsers)
-        if (typeof hiddenInput.showPicker === 'function') {
-          try {
-            hiddenInput.showPicker();
-            console.log('showPicker() succeeded');
-            // Reset styles immediately after showPicker success
-            resetHiddenInput();
-            return;
-          } catch (error) {
-            console.log('showPicker() failed, trying click:', error);
-          }
-        }
-        
-        // Fallback: focus and click the positioned input
-        console.log('Trying positioned input click');
-        hiddenInput.focus();
-        
-        // Use a tiny delay to ensure the input is properly positioned
-        setTimeout(() => {
-          hiddenInput.click();
-          
-          // Reset after a longer delay to allow picker to open
-          setTimeout(resetHiddenInput, 300);
-        }, 10);
-        
-        function resetHiddenInput() {
-          hiddenInput.style.position = 'absolute';
-          hiddenInput.style.left = '-9999px';
-          hiddenInput.style.top = '-9999px';
-          hiddenInput.style.width = '1px';
-          hiddenInput.style.height = '1px';
-          hiddenInput.style.opacity = '0';
-          hiddenInput.style.zIndex = '-1';
-          hiddenInput.style.pointerEvents = 'none';
-        }
-      });
-    }
-    
-    // Replace button with styled date input for mobile
-    function replaceBtnWithDateInput() {
-      // Create a wrapper div to hold both the input and placeholder text
-      const wrapper = document.createElement('div');
-      wrapper.style.position = 'relative';
-      wrapper.style.width = '100%';
+    // Simplified approach: position invisible date input over button
+    datePickerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       
-      // Create a date input that looks exactly like the button
-      const dateInput = document.createElement('input');
-      dateInput.type = 'date';
-      dateInput.value = hiddenInput.value;
-      dateInput.className = 'mobile-date-input';
+      console.log('Date picker button clicked');
       
-      // Create a placeholder div for when no date is selected
-      const placeholderDiv = document.createElement('div');
-      placeholderDiv.textContent = 'Select date';
-      placeholderDiv.style.cssText = `
-        position: absolute;
-        left: 24px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--sys-text-secondary);
-        font-family: var(--typography-fontFamily);
-        font-size: 16px;
-        font-weight: 600;
-        pointer-events: none;
-        transition: opacity 0.2s ease;
-        z-index: 1;
-      `;
+      // Position the hidden input exactly 8px below and left-aligned with the button
+      const buttonRect = datePickerBtn.getBoundingClientRect();
       
-      // Function to toggle placeholder visibility
-      function updatePlaceholder() {
-        if (dateInput.value) {
-          placeholderDiv.style.opacity = '0';
-          dateInput.style.color = 'var(--sys-text-primary)';
-          dateInput.style.boxShadow = 'var(--shadow-xLarge)';
-        } else {
-          placeholderDiv.style.opacity = '1';
-          dateInput.style.color = 'transparent';
-          dateInput.style.boxShadow = 'var(--shadow-card)';
+      hiddenInput.style.position = 'fixed';
+      hiddenInput.style.left = buttonRect.left + 'px';
+      hiddenInput.style.top = (buttonRect.bottom + 8) + 'px';
+      hiddenInput.style.width = buttonRect.width + 'px';
+      hiddenInput.style.height = '1px';
+      hiddenInput.style.opacity = '0';
+      hiddenInput.style.zIndex = '10000';
+      hiddenInput.style.pointerEvents = 'auto';
+      
+      // Clear any margin hints
+      hiddenInput.style.marginTop = '0px';
+      hiddenInput.style.marginBottom = '0px';
+      
+      // Focus and trigger the date picker
+      hiddenInput.focus();
+      
+      // Try showPicker if available
+      if (typeof hiddenInput.showPicker === 'function') {
+        try {
+          hiddenInput.showPicker();
+          console.log('showPicker() succeeded');
+        } catch (error) {
+          console.log('showPicker() failed, user can still type or click:', error);
         }
       }
       
-      // Initial setup
-      updatePlaceholder();
+      // Reset position after a short delay
+      const resetPosition = () => {
+        hiddenInput.style.position = 'absolute';
+        hiddenInput.style.left = '-9999px';
+        hiddenInput.style.top = '-9999px';
+        hiddenInput.style.width = '1px';
+        hiddenInput.style.height = '1px';
+        hiddenInput.style.zIndex = '-999';
+        hiddenInput.style.pointerEvents = 'none';
+      };
       
-      // Add to wrapper
-      wrapper.appendChild(dateInput);
-      wrapper.appendChild(placeholderDiv);
+      // Reset position when date picker closes (blur) or after change
+      hiddenInput.addEventListener('blur', resetPosition, { once: true });
+      hiddenInput.addEventListener('change', resetPosition, { once: true });
       
-      // Replace the button with the wrapper
-      datePickerBtn.style.display = 'none';
-      datePickerBtn.parentNode.insertBefore(wrapper, datePickerBtn.nextSibling);
-      
-      console.log('Button replaced with mobile date input');
-      
-      // Handle date changes
-      dateInput.addEventListener('change', () => {
-        updatePlaceholder();
-        console.log('Mobile date selected:', dateInput.value);
-        hiddenInput.value = dateInput.value;
-        state.dueDate = dateInput.value;
-        
-        // Update styling when date is selected
-        if (dateInput.value) {
-          dateInput.style.boxShadow = 'var(--shadow-xLarge)';
-          dateInput.style.color = 'var(--sys-text-primary)';
-        }
-        
-        // Update the title and show start button
-        if (state.dueDate) {
-          datePickerText.textContent = formatDateDisplay(state.dueDate);
-          updateTitle(state.dueDate);
-          
-          // Show the start button
-          startBtn.classList.remove('hidden');
-          startBtn.classList.add('show');
-        } else {
-          datePickerText.textContent = 'Select date';
-          updateTitle();
-          
-          // Hide the start button
-          startBtn.classList.add('hidden');
-          startBtn.classList.remove('show');
-        }
-      });
-      
-      // Focus/blur styling is now handled by CSS
-    }
+      // Also reset after a timeout as fallback
+      setTimeout(resetPosition, 5000);
+    });
     
     // Handle date selection
     hiddenInput.addEventListener('input', () => {
