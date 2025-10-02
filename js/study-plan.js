@@ -1120,40 +1120,40 @@ function generatePathStepsHTML() {
         html += generateRoundHTML(concept, roundNumber, hasNextStep);
         stepCount++;
         
-        // Add diagnostic test every 2 rounds (but not after the last concept)
-        if (roundNumber % 2 === 0 && !isLastConcept) {
-            const quizNumber = Math.floor(roundNumber / 2);
-            let diagnosticType, diagnosticTitle, conceptsCovered;
-            
-            // Set diagnostic type based on quiz number for backwards compatibility
-            if (quizNumber === 1) {
-                diagnosticType = 'mid';
-            } else {
-                diagnosticType = `checkpoint${quizNumber + 1}`;
-            }
-            
-            // All diagnostics use "Quiz X" format
-            diagnosticTitle = `Quiz ${quizNumber}`;
-            
-            // Calculate concepts covered by this quiz (previous 2 rounds)
-            const startIndex = roundNumber - 2; // Start from 2 rounds ago
-            const endIndex = roundNumber; // Up to current round
-            conceptsCovered = studyPathData.concepts.slice(startIndex, endIndex);
-            
-            console.log(`Quiz ${quizNumber} will test concepts:`, conceptsCovered);
-            
-            const hasNextStepAfterDiagnostic = index < studyPathData.concepts.length - 1;
-            html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, '', conceptsCovered);
-            
-            // Update the step line for the diagnostic
-            if (hasNextStepAfterDiagnostic) {
-                html = html.replace(/(<div class="step-line"><\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*)$/, '$1');
-            } else {
-                html = html.replace(/(<div class="step-line"><\/div>)(?=\s*<\/div>\s*<\/div>\s*<\/div>\s*$)/, '');
-            }
-            
-            stepCount++;
-        }
+        // Diagnostic tests disabled - no longer showing quizzes in study plan
+        // if (roundNumber % 2 === 0 && !isLastConcept) {
+        //     const quizNumber = Math.floor(roundNumber / 2);
+        //     let diagnosticType, diagnosticTitle, conceptsCovered;
+        //     
+        //     // Set diagnostic type based on quiz number for backwards compatibility
+        //     if (quizNumber === 1) {
+        //         diagnosticType = 'mid';
+        //     } else {
+        //         diagnosticType = `checkpoint${quizNumber + 1}`;
+        //     }
+        //     
+        //     // All diagnostics use "Quiz X" format
+        //     diagnosticTitle = `Quiz ${quizNumber}`;
+        //     
+        //     // Calculate concepts covered by this quiz (previous 2 rounds)
+        //     const startIndex = roundNumber - 2; // Start from 2 rounds ago
+        //     const endIndex = roundNumber; // Up to current round
+        //     conceptsCovered = studyPathData.concepts.slice(startIndex, endIndex);
+        //     
+        //     console.log(`Quiz ${quizNumber} will test concepts:`, conceptsCovered);
+        //     
+        //     const hasNextStepAfterDiagnostic = index < studyPathData.concepts.length - 1;
+        //     html += generateDiagnosticHTML(diagnosticType, diagnosticTitle, '', conceptsCovered);
+        //     
+        //     // Update the step line for the diagnostic
+        //     if (hasNextStepAfterDiagnostic) {
+        //         html = html.replace(/(<div class="step-line"><\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*)$/, '$1');
+        //     } else {
+        //         html = html.replace(/(<div class="step-line"><\/div>)(?=\s*<\/div>\s*<\/div>\s*<\/div>\s*$)/, '');
+        //     }
+        //     
+        //     stepCount++;
+        // }
     });
     
     return html;

@@ -11,6 +11,13 @@ let roundProgressData = {}; // Track progress within each round
 let lastShownQuestionFormat = null; // Track last shown format to prevent consecutive matching/flashcard
 let isTransitioning = false; // Prevent race conditions in question transitions
 
+// 10-question round tracking
+let questionsAnsweredInRound = 0; // Track questions answered (not necessarily correct)
+const QUESTIONS_PER_ROUND = 10; // Fixed number of questions per round
+
+// Streak tracking for audio feedback
+let correctStreak = 0; // Track consecutive correct answers
+
 // Matching question state
 let matchingPairs = [];
 let selectedItems = []; // Store up to 2 selected items
@@ -667,9 +674,29 @@ async function fetchAndLoadQuestionsFromApi() {
             return await fetchLegacyQuestions();
         }
         
-        // Get the concept for the current round (rounds start at 1, array index starts at 0)
-        const conceptIndex = currentRoundNumber - 1;
-        const currentConcept = concepts[conceptIndex];
+        // Get the concept for the current round using the new round structure
+        let currentConcept = null;
+        
+        // First try to get concept from the study plan's round-to-concept mapping
+        try {
+            const studyPathDataString = localStorage.getItem('studyPathData');
+            if (studyPathDataString) {
+                const studyPathData = JSON.parse(studyPathDataString);
+                if (studyPathData.roundToConceptMap && studyPathData.roundToConceptMap[currentRoundNumber]) {
+                    currentConcept = studyPathData.roundToConceptMap[currentRoundNumber];
+                    console.log(`📍 Found concept "${currentConcept}" for round ${currentRoundNumber} using round-to-concept mapping`);
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load round-to-concept mapping from studyPathData');
+        }
+        
+        // Fallback: use old direct mapping (round number = concept index)
+        if (!currentConcept) {
+            const conceptIndex = currentRoundNumber - 1;
+            currentConcept = concepts[conceptIndex];
+            console.log(`⚠️ Using fallback concept mapping for round ${currentRoundNumber}: concept index ${conceptIndex} = "${currentConcept}"`);
+        }
         
         if (!currentConcept) {
             console.log('No concept found for round:', currentRoundNumber, 'Available concepts:', concepts.length);
@@ -1072,11 +1099,69 @@ function initializeHeader() {
     appHeader.init();
 }
 
-// Update header title for current concept
+// Update header title for current concept with round information
 function updateHeaderTitle() {
     if (appHeader) {
         const concept = getCurrentConcept() || "Study Session";
-        appHeader.setTitle(concept);
+        const roundInfo = getCurrentRoundInfo();
+        
+        if (concept && roundInfo) {
+            // Show concept with round info: "Cell Biology (Round 2 of 10)"
+            const titleWithRound = `${concept} (Round ${roundInfo.currentRound} of ${roundInfo.totalRounds})`;
+            appHeader.setTitle(titleWithRound);
+            console.log(`📍 Updated header title: ${titleWithRound}`);
+        } else {
+            // Fallback to just concept name
+            appHeader.setTitle(concept);
+        }
+    }
+}
+
+// Get current round info for the concept being studied
+function getCurrentRoundInfo() {
+    try {
+        const currentConceptName = localStorage.getItem('currentConceptName');
+        const currentRoundNumber = parseInt(localStorage.getItem('currentRoundNumber')) || 1;
+        
+        if (!currentConceptName) {
+            return null;
+        }
+        
+        // Get study plan data to find round info for this concept
+        const studyPathDataString = localStorage.getItem('studyPathData');
+        if (!studyPathDataString) {
+            return null;
+        }
+        
+        const studyPathData = JSON.parse(studyPathDataString);
+        const conceptRounds = studyPathData.conceptToRoundsMap?.[currentConceptName];
+        
+        if (!conceptRounds || conceptRounds.length === 0) {
+            return null;
+        }
+        
+        // Find which round within the concept we're currently on
+        const roundIndexInConcept = conceptRounds.indexOf(currentRoundNumber);
+        const currentConceptRound = roundIndexInConcept >= 0 ? roundIndexInConcept + 1 : 1;
+        const totalConceptRounds = conceptRounds.length;
+        
+        console.log(`📍 Round info for concept "${currentConceptName}":`, {
+            currentGlobalRound: currentRoundNumber,
+            currentConceptRound,
+            totalConceptRounds,
+            conceptRounds
+        });
+        
+        return {
+            currentRound: currentConceptRound,
+            totalRounds: totalConceptRounds,
+            conceptName: currentConceptName,
+            globalRound: currentRoundNumber
+        };
+        
+    } catch (error) {
+        console.error('Error getting current round info:', error);
+        return null;
     }
 }
 
@@ -1229,6 +1314,26 @@ async function initStudySession() {
     if (savedRoundNumber) {
         currentRoundNumber = parseInt(savedRoundNumber);
         console.log('📥 Restored current round number:', currentRoundNumber);
+        
+        // Check if coming from a session end (continuing studying same step)
+        const sessionData = sessionStorage.getItem('completedRoundData');
+        let isContinuingSession = false;
+        if (sessionData) {
+            try {
+                const data = JSON.parse(sessionData);
+                isContinuingSession = data.isSessionEnd && data.stepStaysCurrentForMoreSessions;
+            } catch (e) {
+                // Ignore parsing errors
+            }
+        }
+        
+        if (isContinuingSession) {
+            console.log('🔄 CONTINUING STUDY: Starting new 10-question session on same step', currentRoundNumber);
+            // Clear session storage to ensure fresh start
+            sessionStorage.removeItem('completedRoundData');
+        } else {
+            console.log('📚 RESUMING STUDY: Continuing previous session on step', currentRoundNumber);
+        }
     }
     
     // Load current round progress from localStorage
@@ -1289,9 +1394,14 @@ function startNewRound() {
     
     questionsInRound = [];
     currentRoundNumber++;
+    questionsAnsweredInRound = 0; // Reset question counter for new round
+    correctStreak = 0; // Reset streak for new round
     
     // Reset consecutive format tracking for new round
     lastShownQuestionFormat = null;
+    
+    // Update multi-round progress for new round
+    initializeMultiRoundProgress();
     
     // Update header title for new round
     updateHeaderTitle();
@@ -1392,37 +1502,34 @@ function assignSequentialQuestionFormats() {
 // Initialize the first round (called on session start)
 function initFirstRound() {
     questionsInRound = [];
+    questionsAnsweredInRound = 0; // Reset question counter for new session
+    correctStreak = 0; // Reset streak for new session
     
     // Reset consecutive format tracking for session start
     lastShownQuestionFormat = null;
     
-    // Check if we have saved questions for this round
-    const roundData = roundProgressData[currentRoundNumber];
-    if (roundData && roundData.questionsInRound && roundData.questionsInRound.length > 0) {
-        // Create a map for faster lookup
-        const questionMap = new Map(questions.map(q => [q.id, q]));
-        
-        // Restore the exact same questions that were previously selected
-        questionsInRound = roundData.questionsInRound
-            .map(id => questionMap.get(id))
-            .filter(q => q && q.currentFormat !== 'completed');
-        
-        // If some questions were completed, fill with new ones
-        if (questionsInRound.length < 7) {
-            const usedIds = new Set(roundData.questionsInRound);
-            const availableQuestions = questions.filter(q => 
-                q.currentFormat !== 'completed' && !usedIds.has(q.id)
-            );
-            const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
-            // Add all available questions instead of limiting to 7
-            questionsInRound.push(...shuffled);
-        }
-    } else {
-        // Use original logic for new rounds
-        const availableQuestions = questions.filter(q => q.currentFormat !== 'completed');
-        const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
-        questionsInRound = shuffled; // Use all available questions instead of limiting to 7
+    // Initialize multi-round progress bar
+    initializeMultiRoundProgress();
+    
+    // For 10-question session system, always select fresh questions
+    // Don't restore old questions - each session should have new questions
+    console.log('🔄 Selecting fresh questions for new session');
+    
+    // Get all available questions (not completed/mastered)
+    const availableQuestions = questions.filter(q => q.currentFormat !== 'completed');
+    console.log(`📊 Available questions for session: ${availableQuestions.length} total`);
+    
+    if (availableQuestions.length === 0) {
+        console.log('🎉 All questions completed - ending study session');
+        endStudySession();
+        return;
     }
+    
+    // Shuffle and use all available questions for this session
+    const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
+    questionsInRound = shuffled; 
+    
+    console.log(`✅ Selected ${questionsInRound.length} questions for this session`);
     
     if (questionsInRound.length === 0) {
         // All questions completed
@@ -1615,11 +1722,14 @@ function showQuestion() {
     }
     
     console.log('📝 SHOWING QUESTION:', {
+        sessionQuestionNumber: questionsAnsweredInRound + 1,
+        questionsAnsweredSoFar: questionsAnsweredInRound,
         questionIndex: currentQuestionIndex,
         questionId: currentQuestion.id,
         totalQuestions: questionsInRound.length,
         roundProgress: currentRoundProgress,
-        questionFormat: currentQuestion.currentFormat
+        questionFormat: currentQuestion.currentFormat,
+        questionPreview: currentQuestion.question?.substring(0, 80) + '...'
     });
     
     // No consecutive format prevention needed in sequential system
@@ -2437,6 +2547,38 @@ function progressQuestionSequence(isCorrect, countsForProgress) {
 
 // Show feedback
 function showFeedback(isCorrect) {
+    // Play audio feedback immediately when feedback is shown
+    if (typeof audioManager !== 'undefined') {
+        if (isCorrect) {
+            // Increment streak for correct answers
+            correctStreak++;
+            
+            // Check if this is the last question in the round (question #10)
+            const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
+            
+            // Play streak-based audio (capped at 5)
+            const audioStreak = Math.min(correctStreak, 5);
+            const audioKey = `correct${audioStreak}`;
+            
+            console.log(`🎵 Playing streak audio: ${audioKey} (streak: ${correctStreak})`);
+            audioManager.play(audioKey);
+            
+            // If it's the last question, also schedule progress loop for round end screen
+            if (isLastQuestion) {
+                setTimeout(() => {
+                    console.log('🎵 Playing delayed progress loop for XP animation');
+                    audioManager.play('progressLoop');
+                }, 2000); // 2 second delay to account for navigation time
+            }
+            
+        } else {
+            // Reset streak on incorrect answer
+            correctStreak = 0;
+            console.log('❌ Incorrect answer - streak reset to 0');
+            // audioManager.play('incorrectAnswer'); // Commented out until file exists
+        }
+    }
+    
     // IMMEDIATE DEBUG: Print question and button state before any styling
     if (currentQuestion.currentFormat === 'multiple_choice') {
             console.log('🚨 IMMEDIATE MCQ FEEDBACK DEBUG:', {
@@ -2854,8 +2996,37 @@ function nextQuestion() {
         currentProgress: currentRoundProgress,
         totalQuestions: questionsInRound.length,
         currentQuestionFormat: currentQuestion?.currentFormat,
-        currentQuestionCompleted: currentQuestion?.currentFormat === 'completed'
+        currentQuestionCompleted: currentQuestion?.currentFormat === 'completed',
+        questionsAnsweredInRound: questionsAnsweredInRound
     });
+    
+    // Increment questions answered counter whenever we move to next question
+    // This tracks questions answered, not necessarily correct
+    const previousCount = questionsAnsweredInRound;
+    questionsAnsweredInRound++;
+    
+    console.log('📊 ROUND PROGRESS INCREMENT:', {
+        previousCount,
+        newCount: questionsAnsweredInRound,
+        increment: questionsAnsweredInRound - previousCount,
+        totalForRound: QUESTIONS_PER_ROUND,
+        roundComplete: questionsAnsweredInRound >= QUESTIONS_PER_ROUND,
+        calledFrom: new Error().stack.split('\n')[2]?.trim()
+    });
+    
+    // Check if we've answered 10 questions in this session (complete step and advance)
+    if (questionsAnsweredInRound >= QUESTIONS_PER_ROUND) {
+        console.log('🏁 COMPLETING STEP after 10 questions (Advance to next step):', {
+            completedRoundNumber: currentRoundNumber,
+            questionsAnswered: questionsAnsweredInRound,
+            targetQuestions: QUESTIONS_PER_ROUND,
+            advancingToNextStep: true
+        });
+        totalRoundsCompleted++;
+        saveRoundProgress();
+        completeRound(); // Complete the step and advance to next step
+        return;
+    }
     
     // Only move to next question if current question is completed
     if (currentQuestion && currentQuestion.currentFormat === 'completed') {
@@ -2871,7 +3042,8 @@ function nextQuestion() {
         newIndex: currentQuestionIndex,
         newProgress: currentRoundProgress,
         totalQuestions: questionsInRound.length,
-        completedQuestions: questionsInRound.filter(q => q.currentFormat === 'completed').length
+        completedQuestions: questionsInRound.filter(q => q.currentFormat === 'completed').length,
+        questionsAnsweredInRound: questionsAnsweredInRound
     });
     
     // Check if round is complete (all questions mastered)
@@ -3001,6 +3173,10 @@ function updateStudyPathData() {
         studyPathData.currentRound = currentRoundNumber;
         studyPathData.currentRoundProgress = currentRoundProgress;
         
+        // Calculate completed rounds properly - any round before current round is completed
+        // Only count rounds as completed if they were fully completed (reached end)
+        studyPathData.completedRounds = Math.max(0, currentRoundNumber - 1);
+        
         // Update round-specific progress
         if (!studyPathData.roundProgress) {
             studyPathData.roundProgress = {};
@@ -3008,11 +3184,6 @@ function updateStudyPathData() {
         
         // Update progress for current round
         studyPathData.roundProgress[currentRoundNumber] = currentRoundProgress;
-        
-        // Calculate completed rounds based on questions with 'completed' format
-        // Note: Without fixed rounds, we calculate completion based on mastery rather than count
-        const completedQuestions = questions.filter(q => q.currentFormat === 'completed').length;
-        // Don't artificially calculate completed rounds by division - use actual round progress instead
         
         // Save updated studyPathData
         localStorage.setItem('studyPathData', JSON.stringify(studyPathData));
@@ -3029,16 +3200,27 @@ function updateStudyPathData() {
 
 // Save current round progress
 function saveRoundProgress() {
-    // Calculate currentRoundProgress based on correctly answered formats, not just completed questions
+    // Calculate CUMULATIVE progress across ALL questions mastered for this step (not just current session)
     let totalCorrectFormats = 0;
     
-    questionsInRound.forEach(question => {
+    // Count formats mastered across all questions for this step, not just current session
+    questions.forEach(question => {
         if (question.correctFormats && question.correctFormats.length > 0) {
             totalCorrectFormats += question.correctFormats.length;
         }
     });
     
-    // Also count fully completed questions
+    // Log current state for debugging
+    const masteredQuestions = questions.filter(q => q.currentFormat === 'completed').length;
+    console.log('💾 SAVING CUMULATIVE PROGRESS:', {
+        step: currentRoundNumber,
+        totalQuestionsInStep: questions.length,
+        masteredQuestions,
+        totalCorrectFormats,
+        currentSessionSize: questionsInRound.length
+    });
+    
+    // Also count fully completed questions from current session for logging
     const completedQuestionsInRound = questionsInRound.filter(q => q.currentFormat === 'completed').length;
     const allQuestionsInRoundDetails = questionsInRound.map(q => ({
         id: q.id,
@@ -3047,7 +3229,7 @@ function saveRoundProgress() {
         correctFormats: q.correctFormats || []
     }));
     
-    // Progress is based on correct formats answered, not just completed questions
+    // Progress is based on CUMULATIVE correct formats answered across all sessions
     currentRoundProgress = totalCorrectFormats;
     
     // Calculate overall progress across all questions for home screen
@@ -3055,16 +3237,16 @@ function saveRoundProgress() {
     const completedQuestions = questions.filter(q => q.currentFormat === 'completed').length;
     const overallProgress = Math.round((completedQuestions / totalQuestions) * 100);
     
-    console.log('🚀 DETAILED PROGRESS TRACKING:', {
+    console.log('🚀 CUMULATIVE PROGRESS TRACKING:', {
         currentRoundNumber,
         totalQuestions,
         completedQuestions,
-        questionsInRound: questionsInRound.length,
-        completedQuestionsInRound,
-        totalCorrectFormats,
-        currentRoundProgress,
-        overallProgress,
-        questionDetails: allQuestionsInRoundDetails
+        currentSessionQuestions: questionsInRound.length,
+        completedInCurrentSession: completedQuestionsInRound,
+        totalCorrectFormatsAcrossAllSessions: totalCorrectFormats,
+        cumulativeRoundProgress: currentRoundProgress,
+        overallProgressPercent: overallProgress,
+        sessionDetails: allQuestionsInRoundDetails
     });
     
     // Save overall progress to localStorage for home screen
@@ -3128,6 +3310,7 @@ function saveRoundProgress() {
         questionsInRound: questionsInRound.map(q => q.id),
         questionStates: questionStates,
         totalFormats: totalAvailableFormats
+        // NOTE: questionsAnsweredInRound NOT saved - each session starts fresh with 10 questions
     };
     localStorage.setItem('roundProgressData', JSON.stringify(roundProgressData));
     
@@ -3214,11 +3397,17 @@ function restoreRoundProgress() {
         currentQuestionIndex = 0;
     }
     
+    // For 10-question sessions, always start fresh (don't restore counter)
+    // The counter should reset to 0 for each new session, even if continuing on same step
+    questionsAnsweredInRound = 0;
+    console.log('🆕 Starting fresh 10-question session for round', currentRoundNumber);
+    
     console.log('🔄 Restored round state:', {
         round: currentRoundNumber,
         progress: currentRoundProgress,
         questionIndex: currentQuestionIndex,
-        questionsInRound: questionsInRound.length
+        questionsInRound: questionsInRound.length,
+        questionsAnsweredInRound: questionsAnsweredInRound
     });
     
     // Get current question type selection to respect user's current choices
@@ -3289,10 +3478,72 @@ function restoreRoundProgress() {
     });
 }
 
-// Complete current round and return to study path
+// Complete current round and show round end screen
 function completeRound() {
+    // Play round completion audio (commented out until file exists)
+    // if (typeof audioManager !== 'undefined') {
+    //     audioManager.play('roundComplete');
+    // }
+    
     // Reset transition flag to clean up state
     isTransitioning = false;
+    
+    // Mark the specific round as completed (not all rounds up to this number)
+    try {
+        let studyPathData = {};
+        const savedData = localStorage.getItem('studyPathData');
+        if (savedData) {
+            studyPathData = JSON.parse(savedData);
+        }
+        
+        // Initialize completedRoundsList if it doesn't exist
+        if (!studyPathData.completedRoundsList) {
+            studyPathData.completedRoundsList = [];
+        }
+        
+        // Mark only this specific round as completed (avoid duplicates)
+        if (!studyPathData.completedRoundsList.includes(currentRoundNumber)) {
+            studyPathData.completedRoundsList.push(currentRoundNumber);
+            studyPathData.completedRoundsList.sort((a, b) => a - b); // Keep sorted
+        }
+        
+        // Update completedRounds count for backward compatibility
+        studyPathData.completedRounds = studyPathData.completedRoundsList.length;
+        
+        // Find the next uncompleted round to make current
+        const conceptRounds = studyPathData.concepts ? studyPathData.concepts.length : 8;
+        let nextRound = currentRoundNumber + 1;
+        while (nextRound <= conceptRounds && studyPathData.completedRoundsList.includes(nextRound)) {
+            nextRound++;
+        }
+        
+        if (nextRound <= conceptRounds) {
+            studyPathData.currentRound = nextRound;
+        } else {
+            // All rounds completed
+            studyPathData.currentRound = conceptRounds + 1;
+        }
+        studyPathData.currentRoundProgress = 0; // Reset progress for next round
+        
+        // Keep the progress for the completed round
+        if (!studyPathData.roundProgress) {
+            studyPathData.roundProgress = {};
+        }
+        studyPathData.roundProgress[currentRoundNumber] = currentRoundProgress;
+        
+        // Save the updated data
+        localStorage.setItem('studyPathData', JSON.stringify(studyPathData));
+        localStorage.setItem('currentRoundNumber', studyPathData.currentRound);
+        localStorage.setItem('currentRoundProgress', 0);
+        
+        console.log('✅ Marked specific round as completed:', {
+            completedRound: currentRoundNumber,
+            completedRoundsList: studyPathData.completedRoundsList,
+            newCurrentRound: studyPathData.currentRound
+        });
+    } catch (error) {
+        console.error('Error marking round as completed:', error);
+    }
     
     // Mark round as completed in study path (optional in mastery-based system)
     if (window.StudyPath) {
@@ -3306,74 +3557,71 @@ function completeRound() {
     // Save final progress
     saveRoundProgress();
     
-    // Update studyPathData to mark round as completed
-    updateStudyPathData();
-    
-    // Clear round progress data for completed round
+    // Clear round progress data for completed round (since it's now completed)
     delete roundProgressData[currentRoundNumber];
     localStorage.setItem('roundProgressData', JSON.stringify(roundProgressData));
     
     // Set flag that user is coming from question screen for animation
     sessionStorage.setItem('fromQuestionScreen', 'true');
     
-    // Navigate back to study path
-    window.location.href = '../html/study-plan.html';
+    // Store round completion data for round-end screen
+    const roundData = {
+        roundNumber: currentRoundNumber,
+        questionsAnswered: questionsAnsweredInRound,
+        xpEarned: 45, // Static value for now
+        accuracy: 85, // Static value for now
+        streakBonus: 5, // Static value for now
+        isStepCompletion: true, // Step completed, should advance to next step
+        advanceToNextStep: true
+    };
+    
+    sessionStorage.setItem('completedRoundData', JSON.stringify(roundData));
+    
+    console.log('🎉 ROUND COMPLETED! Navigating to round-end screen:', {
+        roundNumber: currentRoundNumber,
+        questionsAnswered: questionsAnsweredInRound
+    });
+    
+    // Navigate to round end screen instead of study plan
+    window.location.href = '../html/round-end.html';
 }
 
 // Update progress bar and counter
 function updateProgress(forceFullProgress = false) {
-    // Use the same calculation method as study-plan.js for consistency
-    let totalCorrectFormatsCompleted = 0;
-    let totalFormatsAvailable = 0;
+    // For 10-question session system: Main progress bar shows SESSION progress (1-10 questions)
+    // Multi-round progress bar (handled separately) shows cumulative progress across sessions
     
-    // First try to get totalFormats from roundProgressData for consistency with study-plan
-    const roundProgressDataString = localStorage.getItem('roundProgressData');
-    if (roundProgressDataString) {
-        try {
-            const roundProgressData = JSON.parse(roundProgressDataString);
-            const roundData = roundProgressData[currentRoundNumber];
-            if (roundData && roundData.totalFormats) {
-                totalFormatsAvailable = roundData.totalFormats;
-            }
-        } catch (e) {
-            console.warn('Could not parse roundProgressData for progress calculation');
-        }
-    }
+    console.log('📊 CALCULATING SESSION PROGRESS (1-10 questions)');
     
-    // If we don't have saved totalFormats, calculate it like we do in saveRoundProgress
-    if (totalFormatsAvailable === 0) {
-        questionsInRound.forEach(question => {
-            const enabledFormats = question.enabledFormats || ['flashcard', 'multiple_choice', 'matching', 'written'];
-            totalFormatsAvailable += enabledFormats.length;
-        });
-    }
+    // Session progress: How many questions answered out of 10 in current session
+    const sessionProgress = Math.min((questionsAnsweredInRound / QUESTIONS_PER_ROUND) * 100, 100);
     
-    // Calculate total correct formats completed (same as currentRoundProgress)
-    questionsInRound.forEach(question => {
-        if (question.correctFormats && question.correctFormats.length > 0) {
-            totalCorrectFormatsCompleted += question.correctFormats.length;
-        }
+    console.log('📊 SESSION PROGRESS CALCULATION:', {
+        questionsAnsweredInSession: questionsAnsweredInRound,
+        targetQuestionsPerSession: QUESTIONS_PER_ROUND,
+        sessionProgressPercent: Math.round(sessionProgress),
+        sessionComplete: questionsAnsweredInRound >= QUESTIONS_PER_ROUND
     });
     
-    let roundProgress = totalFormatsAvailable > 0 ? (totalCorrectFormatsCompleted / totalFormatsAvailable) * 100 : 0;
-    
     // Cap at 100% just in case
-    roundProgress = Math.min(roundProgress, 100);
+    const finalSessionProgress = Math.min(sessionProgress, 100);
     
+    const progressFill = document.querySelector('.progress-fill');
     const progressBar = document.querySelector('.progress-bar');
     const progressCounter = document.getElementById('progressCounter');
     
-    console.log('Progress bar update (consistent with study-plan):', {
-        totalCorrectFormatsCompleted,
-        totalFormatsAvailable,
-        roundProgress: Math.round(roundProgress),
-        progressType: 'consistent_calculation',
-        roundComplete: roundProgress >= 100,
-        currentRoundNumber: currentRoundNumber
+    console.log('📊 SESSION PROGRESS BAR UPDATE:', {
+        questionsAnswered: questionsAnsweredInRound,
+        totalQuestions: QUESTIONS_PER_ROUND,
+        calculation: `${questionsAnsweredInRound} / ${QUESTIONS_PER_ROUND} * 100 = ${sessionProgress}`,
+        finalProgressPercent: Math.round(finalSessionProgress),
+        progressBarWidth: `${finalSessionProgress}%`,
+        progressType: 'session_progress',
+        sessionComplete: questionsAnsweredInRound >= QUESTIONS_PER_ROUND
     });
     
-    // Handle zero state (no questions completed)
-    if (roundProgress === 0) {
+    // Handle zero state (no questions answered in session)
+    if (finalSessionProgress === 0) {
         // Add zero-state class for CSS styling
         if (progressBar) {
             progressBar.classList.add('zero-state');
@@ -3391,14 +3639,28 @@ function updateProgress(forceFullProgress = false) {
             progressBar.classList.remove('zero-state');
         }
         if (progressFill) {
-            progressFill.style.width = `${roundProgress}%`;
+            progressFill.style.width = `${finalSessionProgress}%`;
         }
         if (progressCounter) {
-            progressCounter.style.left = `${roundProgress}%`;
+            progressCounter.style.left = `${finalSessionProgress}%`;
         }
     }
     
-    currentQuestionEl.textContent = currentQuestionIndex + 1;
+    const currentQuestionEl = document.getElementById('currentQuestion');
+    if (currentQuestionEl) {
+        // Show current question number (questions answered + 1 = current question)
+        const currentQuestionNumber = questionsAnsweredInRound + 1;
+        currentQuestionEl.textContent = currentQuestionNumber;
+        
+        console.log('📊 QUESTION COUNTER UPDATE:', {
+            currentQuestionNumber,
+            questionsAnsweredSoFar: questionsAnsweredInRound,
+            displayingQuestion: currentQuestionNumber
+        });
+    }
+    
+    // Update multi-round progress bar
+    updateMultiRoundProgress();
     
     // Save progress to localStorage
     saveRoundProgress();
@@ -6677,6 +6939,132 @@ function initializePageHeader() {
     initializeHeader();
     // Set initial title immediately - will be updated later when content loads
     updateHeaderTitle();
+}
+
+// Initialize multi-round progress bar
+function initializeMultiRoundProgress() {
+    const progressContainer = document.getElementById('multiRoundProgress');
+    if (!progressContainer) return;
+    
+    try {
+        // Get total number of concepts/rounds
+        const totalConcepts = getTotalConcepts();
+        const currentRound = parseInt(localStorage.getItem('currentRoundNumber')) || 1;
+        
+        console.log('Initializing multi-round progress:', {
+            totalConcepts,
+            currentRound
+        });
+        
+        // Clear existing content
+        progressContainer.innerHTML = '';
+        
+        // Create progress segments for each round
+        for (let i = 1; i <= totalConcepts; i++) {
+            const segment = document.createElement('div');
+            segment.className = 'round-segment';
+            segment.dataset.round = i;
+            
+            // Determine segment state
+            if (i < currentRound) {
+                segment.classList.add('completed');
+            } else if (i === currentRound) {
+                segment.classList.add('current');
+            } else {
+                segment.classList.add('future');
+            }
+            
+            // Create segment fill
+            const fill = document.createElement('div');
+            fill.className = 'round-segment-fill';
+            segment.appendChild(fill);
+            
+            // Create question counter
+            const counter = document.createElement('div');
+            counter.className = 'round-question-counter';
+            counter.textContent = i === currentRound ? (questionsAnsweredInRound + 1) : (i < currentRound ? '10' : '0');
+            segment.appendChild(counter);
+            
+            // Add to container
+            progressContainer.appendChild(segment);
+        }
+        
+        // Update current progress
+        updateMultiRoundProgress();
+        
+    } catch (error) {
+        console.error('Error initializing multi-round progress:', error);
+    }
+}
+
+// Update multi-round progress bar
+function updateMultiRoundProgress() {
+    const currentRound = parseInt(localStorage.getItem('currentRoundNumber')) || 1;
+    const currentSegment = document.querySelector(`[data-round="${currentRound}"]`);
+    
+    if (!currentSegment) return;
+    
+    // For multi-round progress bar: Show session progress (1-10 questions) in fill
+    // This matches the main progress bar behavior during the 10-question session
+    const sessionProgressPercent = Math.min((questionsAnsweredInRound / QUESTIONS_PER_ROUND) * 100, 100);
+    
+    const fill = currentSegment.querySelector('.round-segment-fill');
+    const counter = currentSegment.querySelector('.round-question-counter');
+    
+    // Toggle has-progress class based on questions answered
+    if (questionsAnsweredInRound > 0) {
+        currentSegment.classList.add('has-progress');
+    } else {
+        currentSegment.classList.remove('has-progress');
+    }
+    
+    if (fill) {
+        if (sessionProgressPercent === 0) {
+            // For 0% state, remove inline width to let CSS handle the 40px gray fill
+            fill.style.width = '';
+        } else {
+            fill.style.width = `${sessionProgressPercent}%`;
+        }
+    }
+    
+    if (counter) {
+        // Show current session question count (1, 2, 3... up to 10) 
+        // Same as main question counter: questions answered + 1 = current question
+        counter.textContent = questionsAnsweredInRound + 1;
+    }
+    
+    console.log('Updated multi-round progress (SESSION-BASED):', {
+        currentRound,
+        currentSessionQuestion: questionsAnsweredInRound + 1,
+        sessionProgressPercent: Math.round(sessionProgressPercent),
+        questionsInSession: questionsAnsweredInRound,
+        totalSessionQuestions: QUESTIONS_PER_ROUND
+    });
+}
+
+// Get total concepts from localStorage
+function getTotalConcepts() {
+    try {
+        // Try to get from onboarding data
+        const conceptsData = localStorage.getItem('onboarding_concepts');
+        if (conceptsData) {
+            const concepts = JSON.parse(conceptsData);
+            return concepts.length;
+        }
+        
+        // Fallback to study path data
+        const studyPathData = localStorage.getItem('studyPathData');
+        if (studyPathData) {
+            const data = JSON.parse(studyPathData);
+            return data.concepts?.length || 8;
+        }
+        
+        // Default fallback
+        return 8;
+    } catch (error) {
+        console.error('Error getting total concepts:', error);
+        return 8;
+    }
 }
 
 // Initialize page components in proper order

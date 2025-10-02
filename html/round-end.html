@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Complete - BIOL 210</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/components/header.css">
+    <link rel="stylesheet" href="../css/round-end-styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=close,settings" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header will be inserted here by AppHeader component -->
+
+        <!-- Main Content -->
+        <main class="round-end-content">
+            <!-- Celebratory Hands -->
+            <div class="celebration-visual">
+                <div class="hands-images">
+                    <img src="../images/high-five.png" alt="High five" class="hand-high-five">
+                </div>
+                <div class="sparkle-dots">
+                    <div class="sparkle-dot sparkle-1"></div>
+                    <div class="sparkle-dot sparkle-2"></div>
+                    <div class="sparkle-dot sparkle-3"></div>
+                    <div class="sparkle-dot sparkle-4"></div>
+                    <div class="sparkle-dot sparkle-5"></div>
+                </div>
+            </div>
+
+            <!-- Round Title -->
+            <div class="round-info">
+                <h1 class="round-title">Round complete!</h1>
+            </div>
+
+            <!-- Total XP -->
+            <div class="xp-section">
+                <p class="xp-label">Total XP</p>
+                <div class="xp-display">
+                    <span class="xp-amount" id="xpAmount">40</span>
+                    <img src="../images/xp.png" alt="XP" class="xp-icon">
+                </div>
+            </div>
+
+            <!-- Continue Button -->
+            <div class="action-section">
+                <button class="continue-btn" id="nextRoundBtn">
+                    <span class="button-text">Continue</span>
+                    <div class="button-spinner">
+                        <svg class="material-spinner-small" width="24" height="24" viewBox="0 0 24 24">
+                            <circle class="spinner-path-small" cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"></circle>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/components/header.js"></script>
+    <script src="../js/audio-manager.js"></script>
+    <script src="../js/round-end.js"></script>
+</body>
+</html>

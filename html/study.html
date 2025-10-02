@@ -19,12 +19,9 @@
 
         <!-- Main Content -->
         <main class="study-content">
-            <!-- Progress Bar -->
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-                <div class="progress-counter" id="progressCounter">
-                    <span id="currentQuestion">5</span>
-                </div>
+            <!-- Multi-Round Progress Bar -->
+            <div class="multi-round-progress" id="multiRoundProgress">
+                <!-- Progress segments will be generated dynamically -->
             </div>
             <!-- Question Container -->
             <div class="question-container" id="questionContainer">
@@ -250,6 +247,7 @@
 
     <script src="../js/api.js"></script>
     <script src="../js/components/header.js"></script>
+    <script src="../js/audio-manager.js"></script>
     <script src="../js/adaptive-learning.js"></script>
     <script src="../js/study.js"></script>
 </body>

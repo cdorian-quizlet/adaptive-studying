@@ -557,6 +557,12 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Hurme Geometric Sans 2', 'Montserrat', 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: var(--sys-surface-base);
@@ -578,6 +584,7 @@ body {
     display: flex;
     flex-direction: column;
     max-width: 480px;
+    width: 100%;
     margin: 0 auto;
     position: relative;
     overflow: visible;
@@ -624,6 +631,49 @@ body {
     align-items: center;
     gap: 12px;
     padding: 48px 20px 48px;
+}
+
+/* Responsive padding for smaller screens */
+@media (max-width: 400px) {
+    .search-section,
+    .help-section,
+    .jump-back-section,
+    .studying-new-section,
+    .recents-section {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+    
+    .section-title {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+    
+    .floating-bottom-bar {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+@media (max-width: 360px) {
+    .search-section,
+    .help-section,
+    .jump-back-section,
+    .studying-new-section,
+    .recents-section {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    
+    .section-title {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    
+    .floating-bottom-bar {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
 }
 
 /* Help Section (first-time state) */
@@ -695,14 +745,15 @@ body {
 .search-bar {
     flex: 1;
     position: relative;
-    background: white;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--sys-border-primary);
     border-radius: 24px;
     padding: 0 16px;
     height: 48px;
     display: flex;
     align-items: center;
-    border: 0;
-    box-shadow: inset 0 0 0 1px var(--sys-border-primary);
 }
 
 .search-icon {
@@ -820,7 +871,8 @@ body {
     margin-bottom: 8px;
 }
 
-.progress-fill {
+/* Only apply to standard progress bars, not study plan step progress */
+.progress-bar .progress-fill {
     height: 100%;
     background: var(--color-mint-500);
     border-radius: 20px;
@@ -833,6 +885,7 @@ body {
     background: var(--color-gray-200);
 }
 
+/* Only apply zero-state styling to standard progress bars */
 .progress-bar.zero-state .progress-fill {
     background: var(--color-gray-500);
     width: 24px !important; /* Force minimum width for 0% state */
@@ -1131,12 +1184,13 @@ body {
 /* Align Recents header flush like other sections */
 .recents-section .section-title {
     padding-left: 0;
+    margin-bottom: 8px;
 }
 
 .recents-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
 }
 
 .recent-item {
@@ -1431,8 +1485,7 @@ body {
 }
 
 .search-bar:has(.search-input:focus) {
-    border: 0;
-    box-shadow: inset 0 0 0 2px var(--shared-input-border-focus);
+    border: 1px solid var(--shared-input-border-focus);
 }
 
 /* Animation for page load */
@@ -1550,4 +1603,286 @@ body {
 .ds-input--inverse .ds-input__end {
     color: var(--sys-text-inverse);
     opacity: 0.85;
+}
+
+/* Floating Bottom Bar - Apple Liquid Glass Style */
+.floating-bottom-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    pointer-events: none; /* Allow clicks to pass through the container */
+    /* Match app-container structure exactly */
+    max-width: 480px;
+    width: 100%;
+    padding: 0 20px; /* Same padding pattern as content sections */
+}
+
+.bottom-bar-content {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 16px;
+    width: 100%; /* Now constrained by floating-bottom-bar padding */
+    min-height: 64px;
+    pointer-events: auto; /* Re-enable clicks on the actual content */
+}
+
+.nav-items {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 200px;
+    padding: 10px 20px;
+    height: 64px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 1px 0px rgba(255, 255, 255, 0.2) inset,
+        0 -1px 0px rgba(0, 0, 0, 0.05) inset;
+}
+
+.nav-items .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-items .nav-item .nav-icon {
+    width: 32px;
+    height: 32px;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    filter: brightness(0) saturate(100%) invert(35%) sepia(15%) saturate(435%) hue-rotate(202deg) brightness(95%) contrast(90%);
+}
+
+/* Specific sizing for quizlet-plus-icon */
+.nav-items .nav-item .nav-icon[src*="quizlet-plus-icon"] {
+    width: 36px;
+    height: 32px;
+}
+
+.nav-items .nav-item.active .nav-icon {
+    filter: brightness(0) saturate(100%) invert(24%) sepia(93%) saturate(1745%) hue-rotate(232deg) brightness(102%) contrast(104%);
+}
+
+
+.nav-items .nav-item:active {
+    transform: scale(0.95);
+}
+
+/* FAB Container */
+.fab-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 16px;
+    position: relative;
+    width: 64px;
+    overflow: visible;
+}
+
+/* FAB Menu */
+.fab-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Align items to the right (near FAB) but let them size naturally */
+    gap: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
+    transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                visibility 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: none;
+}
+
+.fab-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+/* FAB Menu Options - Primary Button Style */
+.fab-menu-option {
+    display: inline-flex; /* Changed to inline-flex to hug content */
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--sys-interactive-bg-primary-default);
+    color: var(--sys-surface-base);
+    border: none;
+    border-radius: 200px;
+    padding: 12px 24px; /* 12px top/bottom, 24px left/right */
+    min-height: 48px; /* Ensure 48px tall */
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 
+        0 4px 16px rgba(66, 85, 255, 0.2),
+        0 1px 0px rgba(255, 255, 255, 0.15) inset;
+    opacity: 0;
+    transform: translateY(15px) scale(0.8);
+    transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                background-color 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Opening state - buttons become visible with staggered delays */
+.fab-menu.show .fab-menu-option {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+
+/* Smooth closing with staggered transition delays */
+.fab-menu-option:nth-child(1) {
+    transition-delay: 0.1s; /* First button (top) closes last */
+}
+
+.fab-menu-option:nth-child(2) {
+    transition-delay: 0.05s; /* Middle button closes second */
+}
+
+.fab-menu-option:nth-child(3) {
+    transition-delay: 0s; /* Last button (bottom) closes first */
+}
+
+/* When opening, animate from bottom to top - bottom item appears first */
+.fab-menu.show .fab-menu-option:nth-child(1) {
+    transition-delay: 0.15s; /* First (top) opens last */
+}
+
+.fab-menu.show .fab-menu-option:nth-child(2) {
+    transition-delay: 0.1s; /* Middle opens second */
+}
+
+.fab-menu.show .fab-menu-option:nth-child(3) {
+    transition-delay: 0.05s; /* Last (bottom) opens first */
+}
+
+.fab-menu-option:hover {
+    background: var(--sys-interactive-bg-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(66, 85, 255, 0.25),
+        0 1px 0px rgba(255, 255, 255, 0.15) inset;
+}
+
+.fab-menu-option:active {
+    transform: translateY(-1px);
+}
+
+.fab-menu-icon {
+    width: 24px;
+    height: 24px;
+}
+
+/* FAB (Floating Action Button) */
+.fab {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--color-twilight-500);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 
+        0 8px 32px rgba(66, 85, 255, 0.3),
+        0 1px 0px rgba(255, 255, 255, 0.15) inset,
+        0 -1px 0px rgba(0, 0, 0, 0.05) inset;
+}
+
+/* FAB Open State - Secondary Colors */
+.fab.open {
+    background: var(--sys-interactive-bg-secondary-default);
+    box-shadow: 
+        0 4px 16px rgba(168, 177, 255, 0.2),
+        0 1px 0px rgba(255, 255, 255, 0.2) inset,
+        0 -1px 0px rgba(0, 0, 0, 0.03) inset;
+}
+
+.fab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+    border-radius: 50%;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.fab:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.fab:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.fab-icon {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) saturate(100%) invert(100%);
+    position: relative;
+    z-index: 1;
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+                filter 0s; /* Instant color change */
+}
+
+/* FAB Icon in Open State */
+.fab.open .fab-icon {
+    filter: brightness(0) saturate(100%) invert(24%) sepia(93%) saturate(1745%) hue-rotate(232deg) brightness(102%) contrast(104%);
+}
+
+/* Remove browser default focus outline */
+.fab:focus {
+    outline: none;
+}
+
+/* Remove browser default active/pressed state styling */
+.fab:active {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Optional: Add custom focus state for accessibility */
+.fab:focus-visible {
+    box-shadow: 
+        0 8px 32px rgba(66, 85, 255, 0.3),
+        0 1px 0px rgba(255, 255, 255, 0.15) inset,
+        0 -1px 0px rgba(0, 0, 0, 0.05) inset,
+        0 0 0 3px rgba(66, 85, 255, 0.3);
 }

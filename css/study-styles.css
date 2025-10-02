@@ -2,18 +2,173 @@
 /* Import reusable progress bar component */
 @import url('components/progress-bar.css');
 
+/* Multi-Round Progress Bar */
+.multi-round-progress {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 16px;
+    margin: 0 20px 8px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.round-segment {
+    position: relative;
+    height: 32px;
+    border-radius: 16px;
+    background: var(--color-gray-200);
+    min-width: 32px;
+    flex: 1;
+    max-width: 80px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.round-segment.current {
+    background: var(--color-gray-200);
+    height: 32px;
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    flex: none;
+    border-radius: 16px;
+    position: relative;
+}
+
+.round-segment.current.has-progress {
+    background: var(--color-twilight-100);
+}
+
+.round-segment.completed {
+    background: var(--color-mint-300);
+}
+
+.round-segment.future {
+    background: var(--color-gray-300);
+    opacity: 0.5;
+}
+
+.round-segment-fill {
+    height: 100%;
+    background: var(--color-twilight-500);
+    border-radius: inherit;
+    width: 0%; /* Default hidden state */
+    transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+}
+
+.round-segment.current .round-segment-fill {
+    width: 40px; /* Current round 0% state shows 40px gray fill */
+    background: var(--color-gray-400);
+}
+
+.round-segment.current.has-progress .round-segment-fill {
+    background: var(--color-twilight-300);
+}
+
+.round-segment.completed .round-segment-fill {
+    width: 100%;
+    background: var(--color-mint-500);
+}
+
+.round-question-counter {
+    display: none; /* Hide round question counter from progress bars */
+}
+
+.round-segment.current .round-question-counter {
+    width: 28px;
+    height: 28px;
+    right: -12px;
+    font-size: 14px;
+}
+
+.round-segment.completed .round-question-counter {
+    background: var(--color-mint-500);
+}
+
+.round-segment.future .round-question-counter {
+    background: var(--color-gray-400);
+    opacity: 0.7;
+}
+
+.round-segment-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--sys-text-secondary);
+    white-space: nowrap;
+}
+
+.round-segment.current .round-segment-label {
+    color: var(--color-twilight-500);
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+    .multi-round-progress {
+        margin: 0 16px 8px;
+        padding-bottom: 16px;
+        gap: 6px;
+    }
+    
+    .round-segment {
+        min-width: 24px;
+        max-width: 60px;
+        height: 32px;
+    }
+    
+    .round-segment.current {
+        height: 32px;
+        width: 160px;
+        min-width: 160px;
+        max-width: 160px;
+        background: var(--color-gray-200);
+    }
+    
+    .round-segment.current.has-progress {
+        background: var(--color-twilight-100);
+    }
+    
+    .round-segment.current .round-segment-fill {
+        width: 32px; /* Mobile current round 0% state shows 32px gray fill */
+        background: var(--color-gray-400);
+    }
+    
+    .round-segment.current.has-progress .round-segment-fill {
+        background: var(--color-twilight-300);
+    }
+    
+    .round-question-counter {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+        right: -8px;
+    }
+    
+    .round-segment.current .round-question-counter {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        right: -10px;
+    }
+}
+
 /* Hide progress counter */
 .progress-counter {
     display: none !important;
 }
 
-/* Progress bar pulse animation */
-.progress-fill {
+/* Progress bar pulse animation - only for main study progress bar */
+.progress-counter .progress-fill {
     position: relative;
     overflow: hidden;
 }
 
-.progress-fill::after {
+.progress-counter .progress-fill::after {
     content: '';
     position: absolute;
     top: 0;

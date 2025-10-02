@@ -302,6 +302,38 @@ async function getQuestionsByConcept(schoolName, courseName, goal, concept) {
   return getUnifiedContent(schoolName, courseName, goal, concept);
 }
 
+// Helper function to get question count for a specific concept without fetching all questions
+async function getQuestionCountByConcept(schoolName, courseName, goal, concept) {
+  try {
+    const response = await getUnifiedContent(schoolName, courseName, goal, concept);
+    const questions = response?.content?.questions || [];
+    return questions.length;
+  } catch (error) {
+    console.warn('Error fetching question count for concept:', concept, error);
+    return 0; // Return 0 if we can't get the count
+  }
+}
+
+// Helper function to get question counts for multiple concepts
+async function getQuestionCountsForConcepts(schoolName, courseName, goals, concepts) {
+  const conceptCounts = {};
+  
+  for (const concept of concepts) {
+    let totalQuestions = 0;
+    
+    // Sum questions across all goals for this concept
+    for (const goal of goals) {
+      const count = await getQuestionCountByConcept(schoolName, courseName, goal, concept);
+      totalQuestions += count;
+    }
+    
+    conceptCounts[concept] = totalQuestions;
+    console.log(`Concept "${concept}" has ${totalQuestions} total questions across all goals`);
+  }
+  
+  return conceptCounts;
+}
+
 // Expose on window for non-module scripts
 window.QuizletApi = {
   // Original endpoints
@@ -326,6 +358,8 @@ window.QuizletApi = {
   getGoalsBySchoolAndCourse,
   getConceptsByGoal,
   getQuestionsByConcept,
+  getQuestionCountByConcept,
+  getQuestionCountsForConcepts,
   
   // Utility functions
   formatCourseDisplay,

@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupHapticFeedback();
     setupAccessibility();
+    initializeFloatingBottomBar();
 });
 
 // Also refresh progress when page becomes visible (e.g., returning from diagnostic test)
@@ -78,6 +79,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Event Listeners
 function setupEventListeners() {
+    // Profile avatar click handler
+    if (profileAvatar) {
+        profileAvatar.addEventListener('click', function() {
+            // Add fade out animation
+            document.body.classList.add('page-fade-out');
+            
+            setTimeout(() => {
+                window.location.href = 'html/profile.html';
+            }, 250);
+        });
+        
+        // Add cursor pointer to indicate it's clickable
+        profileAvatar.style.cursor = 'pointer';
+    }
+
     // Search functionality
     searchInput.addEventListener('input', function(e) {
         // Debounced live preview could go here; keep quiet to avoid spam toasts
@@ -225,6 +241,131 @@ function setupEventListeners() {
     });
 
 
+}
+
+// Floating Bottom Bar Navigation
+function initializeFloatingBottomBar() {
+    const navItems = document.querySelectorAll('.nav-items .nav-item');
+    const createFab = document.getElementById('createFab');
+    const fabMenu = document.getElementById('fabMenu');
+    const fabIcon = document.getElementById('fabIcon');
+    const fabMenuOptions = document.querySelectorAll('.fab-menu-option');
+    
+    let fabIsOpen = false;
+    
+    // Handle navigation item clicks
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const page = item.dataset.page;
+            
+            // Remove active class from all items
+            navItems.forEach(navItem => navItem.classList.remove('active'));
+            
+            // Add active class to clicked item
+            item.classList.add('active');
+            
+            // Handle navigation based on page
+            switch(page) {
+                case 'home':
+                    // Already on home page
+                    console.log('Home navigation clicked');
+                    break;
+                case 'library':
+                    console.log('Library navigation clicked');
+                    // TODO: Navigate to library page
+                    break;
+                case 'plus':
+                    console.log('Quizlet+ navigation clicked');
+                    // TODO: Navigate to Quizlet+ page
+                    break;
+            }
+        });
+    });
+    
+    // Toggle FAB menu
+    function toggleFabMenu() {
+        fabIsOpen = !fabIsOpen;
+        
+        if (fabIsOpen) {
+            // Open state
+            createFab.classList.add('open');
+            fabMenu.classList.add('show');
+            fabIcon.src = 'images/close-x.png';
+            fabIcon.alt = 'Close menu';
+            createFab.setAttribute('aria-label', 'Close create menu');
+        } else {
+            // Closed state
+            createFab.classList.remove('open');
+            fabMenu.classList.remove('show');
+            fabIcon.src = 'images/sparkle.png';
+            fabIcon.alt = '';
+            createFab.setAttribute('aria-label', 'Create new study set');
+        }
+    }
+    
+    // Close FAB menu
+    function closeFabMenu() {
+        if (fabIsOpen) {
+            fabIsOpen = false;
+            createFab.classList.remove('open');
+            fabMenu.classList.remove('show');
+            fabIcon.src = 'images/sparkle.png';
+            fabIcon.alt = '';
+            createFab.setAttribute('aria-label', 'Create new study set');
+        }
+    }
+    
+    // Handle FAB click
+    if (createFab) {
+        createFab.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Create FAB clicked, current state:', fabIsOpen ? 'open' : 'closed');
+            toggleFabMenu();
+        });
+    }
+    
+    // Handle menu option clicks
+    fabMenuOptions.forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = option.dataset.action;
+            
+            console.log(`FAB menu option clicked: ${action}`);
+            
+            // Close menu first
+            closeFabMenu();
+            
+            // Handle the action
+            switch(action) {
+                case 'create':
+                    // Navigate to plan flow for creating new study plan
+                    window.location.href = 'html/plan-flow.html?goal=study-plan';
+                    break;
+                case 'tutor':
+                    // Navigate to AI tutor (future implementation)
+                    showToast('AI tutor coming soon!');
+                    break;
+                case 'cram':
+                    // Navigate to cram plan
+                    window.location.href = 'html/plan-flow.html?goal=cram';
+                    break;
+            }
+        });
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (fabIsOpen && !e.target.closest('.fab-container')) {
+            closeFabMenu();
+        }
+    });
+    
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && fabIsOpen) {
+            closeFabMenu();
+        }
+    });
 }
 
 // Determine whether to show first-time help state or standard state
