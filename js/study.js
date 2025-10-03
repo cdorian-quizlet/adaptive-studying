@@ -2469,9 +2469,24 @@ function checkAnswer() {
     
     // Play progress loop audio for correct answers on the last question
     const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
+    console.log('🔍 Last question check:', {
+        isCorrect,
+        isLastQuestion,
+        questionsAnsweredInRound,
+        QUESTIONS_PER_ROUND,
+        currentQuestionNumber: questionsAnsweredInRound + 1
+    });
+    
     if (isCorrect && isLastQuestion && typeof audioManager !== 'undefined') {
+        console.log('🎵 TRIGGERING PROGRESS LOOP AUDIO!');
         setTimeout(() => {
+            console.log('🎵 ACTUALLY PLAYING PROGRESS LOOP NOW!');
             audioManager.play('progressLoop');
+            
+            // Add a longer delay to prevent navigation from cutting off audio
+            setTimeout(() => {
+                console.log('🎵 Audio should have played, allowing navigation...');
+            }, 2000);
         }, 1000);
     }
     

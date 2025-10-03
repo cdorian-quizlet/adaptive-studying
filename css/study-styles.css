@@ -41,7 +41,7 @@
 }
 
 .round-segment.completed {
-    background: var(--color-mint-300);
+    background: var(--color-mint-200);
 }
 
 .round-segment.future {
@@ -70,7 +70,7 @@
 
 .round-segment.completed .round-segment-fill {
     width: 100%;
-    background: var(--color-mint-500);
+    background: var(--color-mint-200);
 }
 
 .round-segment.future .round-segment-fill {
