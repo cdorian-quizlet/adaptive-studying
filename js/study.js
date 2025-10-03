@@ -2281,13 +2281,6 @@ function handleAnswerSelect(answer) {
     selectedAnswer = answer;
     isAnswered = true;
     
-    // Check if this is the last question in the round and trigger progress loop audio
-    const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
-    if (isLastQuestion) {
-        console.log('🎵 Last question answered - setting flag for progress loop audio');
-        sessionStorage.setItem('playProgressLoop', 'true');
-    }
-    
     // Update UI to show selection
     if (currentQuestion.currentFormat === 'multiple_choice') {
         const optionBtns = document.querySelectorAll('.option-btn');
@@ -2474,6 +2467,14 @@ function checkAnswer() {
     // Show feedback BEFORE adapting difficulty
     showFeedback(isCorrect);
     
+    // Play progress loop audio for correct answers on the last question
+    const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
+    if (isCorrect && isLastQuestion && typeof audioManager !== 'undefined') {
+        setTimeout(() => {
+            audioManager.play('progressLoop');
+        }, 1000);
+    }
+    
     // Track correctly answered formats for progress calculation
     if (countsForProgress && isCorrect && currentQuestion.currentFormat) {
         if (!currentQuestion.correctFormats) {
@@ -2564,16 +2565,11 @@ function showFeedback(isCorrect) {
             const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
             
             // Use the new audio manager method that handles both single and build modes
-            console.log(`🎵 Playing correct answer audio (mode: ${audioManager.getAudioMode()}, streak: ${correctStreak})`);
-            audioManager.playCorrectAnswer(correctStreak);
+            console.log(`🎵 Playing correct answer audio (mode: ${audioManager.getAudioMode()}, streak: ${correctStreak}, isLast: ${isLastQuestion})`);
+            audioManager.playCorrectAnswer(correctStreak, isLastQuestion);
             
-            // If it's the last question, also schedule progress loop for round end screen
-            if (isLastQuestion) {
-                setTimeout(() => {
-                    console.log('🎵 Playing delayed progress loop for XP animation');
-                    audioManager.play('progressLoop');
-                }, 2000); // 2 second delay to account for navigation time
-            }
+            // For the last question, we'll play progress loop when user takes final action (not here)
+            // This will be handled in the continue button click or answer selection logic
             
         } else {
             // Reset streak on incorrect answer
@@ -3831,6 +3827,9 @@ let closeBottomSheetBtn;
 // Track selected question types for multi-select functionality
 let selectedQuestionTypes = ['multiple_choice', 'flashcard', 'written', 'matching'];
 
+// Track selected badge types for multi-select functionality
+let selectedBadgeTypes = []; // Start with no badges selected by default
+
 // Explanation bottom sheet functionality
 let explanationBottomSheet;
 let closeExplanationSheetBtn;
@@ -3983,16 +3982,12 @@ function updateDebugUI() {
                 }
             }
         } else if (type === 'badge-toggle') {
-            // Handle badge toggle state
-            const body = document.body;
-            const showBadges = body.classList.contains('show-debug-badges');
-            
-            if (showBadges) {
+            // Handle multi-select badge toggle state
+            const value = option.dataset.value;
+            if (selectedBadgeTypes && selectedBadgeTypes.includes(value)) {
                 option.classList.add('selected');
-                option.textContent = 'Hide API/CORRECT badges';
             } else {
                 option.classList.remove('selected');
-                option.textContent = 'Show API/CORRECT badges';
             }
         } else if (type === 'audio-mode') {
             // Handle audio mode selection state
@@ -4286,8 +4281,45 @@ function handleDebugOptionClick(option) {
             }
         }
     } else if (type === 'badge-toggle') {
-        // Toggle badge visibility
-        toggleBadgeVisibility();
+        // Handle multi-select badge types
+        const value = option.dataset.value;
+        const isCurrentlySelected = selectedBadgeTypes.includes(value);
+        
+        if (isCurrentlySelected) {
+            // Deselect the badge type
+            selectedBadgeTypes = selectedBadgeTypes.filter(t => t !== value);
+            option.classList.remove('selected');
+            console.log(`Deselected badge: ${value}`);
+        } else {
+            // Select the badge type
+            selectedBadgeTypes.push(value);
+            option.classList.add('selected');
+            console.log(`Selected badge: ${value}`);
+        }
+        
+        console.log('Updated selected badge types:', selectedBadgeTypes);
+        
+        // Save to localStorage
+        localStorage.setItem('debugSelectedBadgeTypes', JSON.stringify(selectedBadgeTypes));
+        
+        // Update body classes to show/hide badges
+        const body = document.body;
+        body.classList.remove('show-api-badges', 'show-correct-badges', 'show-debug-badges');
+        
+        if (selectedBadgeTypes.includes('api')) {
+            body.classList.add('show-api-badges');
+        }
+        if (selectedBadgeTypes.includes('correct')) {
+            body.classList.add('show-correct-badges');
+        }
+        
+        // Show toast with current selection
+        const selectedNames = selectedBadgeTypes.map(type => type.toUpperCase()).join(' & ');
+        if (selectedBadgeTypes.length > 0) {
+            showToast(`${selectedNames} badges visible`, 2000);
+        } else {
+            showToast('All badges hidden', 2000);
+        }
     } else if (type === 'audio-mode') {
         // Handle audio mode selection
         if (typeof audioManager !== 'undefined') {
@@ -4310,47 +4342,49 @@ function handleDebugOptionClick(option) {
     }
 }
 
-// Initialize badge toggle state (always start hidden each session)
+// Initialize badge toggle state (multi-select)
 function initializeBadgeToggle() {
-    const toggleBtn = document.getElementById('toggleBadgesBtn');
-    if (!toggleBtn) {
-        console.warn('Badge toggle button not found in DOM!');
-        return;
-    }
-            console.log('Badge toggle button found:', toggleBtn.textContent.trim());
+    // Load saved selection from localStorage or use default (empty)
+    const savedBadges = localStorage.getItem('debugSelectedBadgeTypes');
+    console.log('🔍 Raw badge data from localStorage:', savedBadges);
     
-    // Always start with badges hidden (don't persist setting between sessions)
-    const body = document.body;
-    
-    // Clear any existing localStorage setting to ensure clean state
-    localStorage.removeItem('debugBadgesVisible');
-    
-    body.classList.remove('show-debug-badges');
-    toggleBtn.textContent = 'Show API/CORRECT badges';
-    toggleBtn.classList.remove('selected');
-    console.log('🏷️ Initialized badges as hidden (default state)');
-}
-
-// Toggle badge visibility (API, STATIC, CORRECT badges)
-function toggleBadgeVisibility() {
-    const body = document.body;
-    const toggleBtn = document.getElementById('toggleBadgesBtn');
-    const isCurrentlyShowing = body.classList.contains('show-debug-badges');
-    
-    if (isCurrentlyShowing) {
-        // Hide badges
-        body.classList.remove('show-debug-badges');
-        toggleBtn.textContent = 'Show API/CORRECT badges';
-        toggleBtn.classList.remove('selected');
-        console.log('🏷️ Badges hidden');
-        showToast('Debug badges hidden', 1500);
+    if (savedBadges) {
+        try {
+            selectedBadgeTypes = JSON.parse(savedBadges);
+            console.log('✅ Loaded badge selection from localStorage:', selectedBadgeTypes);
+        } catch (e) {
+            console.warn('⚠️ Failed to parse saved badge types, using default');
+            selectedBadgeTypes = [];
+        }
     } else {
-        // Show badges
-        body.classList.add('show-debug-badges');
-        toggleBtn.textContent = 'Hide API/CORRECT badges';
-        toggleBtn.classList.add('selected');
-        console.log('🏷️ Badges visible');
-        showToast('Debug badges visible', 1500);
+        selectedBadgeTypes = [];
+        console.log('🔧 No saved badge selection, using default (none selected)');
+    }
+    
+    // Ensure selectedBadgeTypes is an array and contains only valid types
+    if (!Array.isArray(selectedBadgeTypes)) {
+        selectedBadgeTypes = [];
+    }
+    
+    const validBadgeTypes = ['api', 'correct'];
+    selectedBadgeTypes = selectedBadgeTypes.filter(type => validBadgeTypes.includes(type));
+    
+    // If somehow we have invalid data, reset to default
+    if (selectedBadgeTypes.some(type => !validBadgeTypes.includes(type))) {
+        selectedBadgeTypes = [];
+    }
+    
+    console.log('🏷️ Final badge selection:', selectedBadgeTypes);
+    
+    // Apply the badge visibility to body classes
+    const body = document.body;
+    body.classList.remove('show-api-badges', 'show-correct-badges', 'show-debug-badges');
+    
+    if (selectedBadgeTypes.includes('api')) {
+        body.classList.add('show-api-badges');
+    }
+    if (selectedBadgeTypes.includes('correct')) {
+        body.classList.add('show-correct-badges');
     }
 }
 
@@ -4657,6 +4691,15 @@ function createIncorrectAnswerButtons() {
     continueBtn.textContent = 'Continue';
     continueBtn.className = 'continue-btn';
     continueBtn.addEventListener('click', () => {
+        // Check if this is the last question in the round before proceeding
+        const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
+        
+        if (isLastQuestion && typeof audioManager !== 'undefined') {
+            setTimeout(() => {
+                audioManager.play('progressLoop');
+            }, 1000);
+        }
+        
         nextQuestion();
     });
     
@@ -4797,6 +4840,58 @@ window.testDebugSheet = function() {
     if (bottomSheet) {
         bottomSheet.classList.add('show');
         console.log('Debug sheet should now be visible');
+    }
+};
+
+// Test function to check current question state
+window.debugQuestionState = function() {
+    console.log('🔍 Current question state:', {
+        questionsAnsweredInRound,
+        QUESTIONS_PER_ROUND,
+        currentQuestionNumber: questionsAnsweredInRound + 1,
+        isLastQuestion: (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND,
+        currentQuestion: currentQuestion?.id,
+        currentFormat: currentQuestion?.currentFormat
+    });
+};
+
+// Test function to manually trigger the last question progress loop logic
+window.testLastQuestionLogic = function() {
+    console.log('🧪 Testing last question progress loop logic...');
+    const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
+    const isCorrect = true; // Simulate correct answer
+    
+    console.log('🔍 Test conditions:', {
+        isCorrect,
+        isLastQuestion,
+        questionsAnsweredInRound,
+        QUESTIONS_PER_ROUND,
+        audioManagerAvailable: typeof audioManager !== 'undefined'
+    });
+    
+    if (isCorrect && isLastQuestion && typeof audioManager !== 'undefined') {
+        console.log('🎵 Triggering progress loop (1s delay)');
+        setTimeout(() => {
+            console.log('🎵 Playing progress loop now');
+            audioManager.play('progressLoop');
+        }, 1000);
+    } else {
+        console.log('❌ Conditions not met for progress loop');
+    }
+};
+window.testProgressLoop = function() {
+    console.log('🧪 Testing progress loop audio manually...');
+    if (typeof audioManager !== 'undefined') {
+        console.log('🔍 Audio manager available:', {
+            type: typeof audioManager,
+            hasCachedAudio: audioManager.audioCache.has('progressLoop'),
+            isMuted: audioManager.isMuted,
+            volume: audioManager.volume
+        });
+        console.log('🎵 Playing progress loop now...');
+        audioManager.play('progressLoop');
+    } else {
+        console.error('❌ Audio manager not available');
     }
 };
 

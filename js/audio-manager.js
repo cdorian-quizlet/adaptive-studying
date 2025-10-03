@@ -65,8 +65,9 @@ class AudioManager {
         this.preload('correct4', '../audio/correct-4.wav');
         this.preload('correct5', '../audio/correct-5.wav');
         
-        // Single correct answer sound (single mode)
+        // Single correct answer sounds (single mode)
         this.preload('correctSingle', '../audio/correct-short.mp3');
+        this.preload('correctLong', '../audio/correct-long.mp3');
         
         // Other sounds
         this.preload('progressLoop', '../audio/progress-loop.mp3');
@@ -97,9 +98,14 @@ class AudioManager {
     }
 
     // Play correct answer audio based on current mode
-    playCorrectAnswer(streak = 1) {
+    playCorrectAnswer(streak = 1, isLastQuestion = false) {
         if (this.audioMode === 'single') {
-            this.play('correctSingle');
+            // In single mode, use correct-long.mp3 for the last question, correct-short.mp3 for others
+            if (isLastQuestion) {
+                this.play('correctLong');
+            } else {
+                this.play('correctSingle');
+            }
         } else {
             // Build mode - use streak-based audio (capped at 5)
             const audioStreak = Math.min(streak, 5);

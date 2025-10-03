@@ -1080,6 +1080,16 @@ body {
 }
 
 /* Show badges when debug mode is enabled */
+body.show-api-badges .api-badge,
+body.show-api-badges .static-badge {
+    display: inline-block !important;
+}
+
+body.show-correct-badges .correct-badge {
+    display: inline-block !important;
+}
+
+/* Legacy support for show-debug-badges (shows all) */
 body.show-debug-badges .api-badge,
 body.show-debug-badges .static-badge,
 body.show-debug-badges .correct-badge {
@@ -1384,6 +1394,10 @@ body.show-debug-badges .correct-badge {
 /* Debug Bottom Sheet Styles - Using home page pattern */
 .debug-section {
     margin-bottom: 24px;
+}
+
+.debug-section-header {
+    margin-bottom: 12px;
 }
 
 .debug-section:last-child {

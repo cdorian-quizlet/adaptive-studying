@@ -103,7 +103,9 @@
                 <div class="bottom-sheet-actions">
                     <!-- Question Types Section (moved outside accordion for better UX) -->
                     <div class="debug-section">
-                        <h4 class="debug-label">Question types</h4>
+                        <div class="debug-section-header">
+                            <span class="subheading-3">Question types</span>
+                        </div>
                         <div class="debug-options multi-select">
                             <button class="debug-option multi-select-option selected" data-type="question-type" data-value="multiple_choice">Multiple choice</button>
                             <button class="debug-option multi-select-option selected" data-type="question-type" data-value="flashcard">Flashcard</button>
@@ -112,90 +114,28 @@
                         </div>
                     </div>
 
-                    <!-- Audio Section -->
-                    <div class="debug-section">
-                        <h4 class="debug-label">Audio</h4>
-                        <div class="debug-options">
-                            <button class="debug-option selected" data-type="audio-mode" data-value="single">Single</button>
-                            <button class="debug-option" data-type="audio-mode" data-value="build">Build</button>
-                        </div>
-                    </div>
-
                     <!-- Debug Options Accordion -->
-                    <div class="debug-accordion">
+                    <div class="debug-accordion expanded">
                         <button class="debug-accordion-toggle" id="debugAccordionToggle">
-                            <span>Debug Options</span>
-                            <span class="material-icons-round accordion-chevron">expand_more</span>
+                            <span class="subheading-3">Debug options</span>
+                            <span class="material-icons-round accordion-chevron">expand_less</span>
                         </button>
                         <div class="debug-accordion-content" id="debugAccordionContent">
-                            <!-- Current Question Section -->
+                            <!-- Audio Section -->
                             <div class="debug-section">
-                                <h4 class="debug-label">Current Question</h4>
-                                <div class="debug-info">
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Knowledge depth:</span>
-                                        <span class="debug-info-value" id="currentDepth">-</span>
-                                    </div>
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Difficulty:</span>
-                                        <span class="debug-info-value" id="currentDifficulty">-</span>
-                                    </div>
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Type:</span>
-                                        <span class="debug-info-value" id="currentType">-</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- If Answer is Correct Section -->
-                            <div class="debug-section">
-                                <h4 class="debug-label">If Answer is Correct</h4>
-                                <div class="debug-info">
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Knowledge depth:</span>
-                                        <span class="debug-info-value" id="correctDepth">-</span>
-                                    </div>
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Difficulty:</span>
-                                        <span class="debug-info-value" id="correctDifficulty">-</span>
-                                    </div>
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Type:</span>
-                                        <span class="debug-info-value" id="correctType">-</span>
-                                    </div>
-                                </div>
-                                <div class="debug-note" id="correctNote" style="display: none;">
-                                    <span>⚠️ Adjusted due to consecutive prevention</span>
-                                </div>
-                            </div>
-
-                            <!-- If Answer is Incorrect Section -->
-                            <div class="debug-section">
-                                <h4 class="debug-label">If Answer is Incorrect</h4>
-                                <div class="debug-info">
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Knowledge depth:</span>
-                                        <span class="debug-info-value" id="incorrectDepth">-</span>
-                                    </div>
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Difficulty:</span>
-                                        <span class="debug-info-value" id="incorrectDifficulty">-</span>
-                                    </div>
-                                    <div class="debug-info-row">
-                                        <span class="debug-info-label">Type:</span>
-                                        <span class="debug-info-value" id="incorrectType">-</span>
-                                    </div>
-                                </div>
-                                <div class="debug-note" id="incorrectNote" style="display: none;">
-                                    <span>⚠️ Adjusted due to consecutive prevention</span>
+                                <h4 class="debug-label">Audio</h4>
+                                <div class="debug-options">
+                                    <button class="debug-option selected" data-type="audio-mode" data-value="single">Single</button>
+                                    <button class="debug-option" data-type="audio-mode" data-value="build">Build</button>
                                 </div>
                             </div>
 
                             <!-- Badge Visibility Section -->
                             <div class="debug-section">
-                                <h4 class="debug-label">Badge Visibility</h4>
-                                <div class="debug-options">
-                                    <button class="debug-option" id="toggleBadgesBtn" data-type="badge-toggle">Show API/CORRECT badges</button>
+                                <h4 class="debug-label">Badge questions</h4>
+                                <div class="debug-options multi-select">
+                                    <button class="debug-option multi-select-option" data-type="badge-toggle" data-value="api">API</button>
+                                    <button class="debug-option multi-select-option" data-type="badge-toggle" data-value="correct">CORRECT</button>
                                 </div>
                             </div>
 
