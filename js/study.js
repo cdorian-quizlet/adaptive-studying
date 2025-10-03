@@ -2281,6 +2281,13 @@ function handleAnswerSelect(answer) {
     selectedAnswer = answer;
     isAnswered = true;
     
+    // Check if this is the last question in the round and trigger progress loop audio
+    const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
+    if (isLastQuestion) {
+        console.log('🎵 Last question answered - setting flag for progress loop audio');
+        sessionStorage.setItem('playProgressLoop', 'true');
+    }
+    
     // Update UI to show selection
     if (currentQuestion.currentFormat === 'multiple_choice') {
         const optionBtns = document.querySelectorAll('.option-btn');
@@ -3484,6 +3491,10 @@ function completeRound() {
     // if (typeof audioManager !== 'undefined') {
     //     audioManager.play('roundComplete');
     // }
+    
+    // Set flag for round-end screen to play progress loop audio
+    // Note: This is now set in handleAnswerSelect when user clicks last question
+    // sessionStorage.setItem('playProgressLoop', 'true');
     
     // Reset transition flag to clean up state
     isTransitioning = false;

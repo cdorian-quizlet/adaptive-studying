@@ -27,72 +27,19 @@ body {
     position: relative;
 }
 
-/* Audio Enable Overlay */
-.audio-enable-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-}
-
-.audio-enable-overlay.hidden {
-    display: none;
-}
-
-.audio-prompt {
-    background: var(--sys-surface-base);
-    padding: 40px;
-    border-radius: var(--radius-large);
-    text-align: center;
-    max-width: 300px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.audio-prompt p {
-    font-size: 24px;
-    margin-bottom: 24px;
-    color: var(--sys-text-primary);
-}
-
-.start-btn {
-    background: var(--sys-interactive-bg-primary-default);
-    color: white;
-    border: none;
-    padding: 16px 32px;
-    border-radius: var(--radius-full);
-    font-family: var(--typography-fontFamily);
-    font-size: var(--typography-size-subheading-three);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.start-btn:hover {
-    background: var(--sys-interactive-bg-primary-hover);
-    transform: translateY(-1px);
-}
-
-.start-btn:active {
-    transform: translateY(0);
-}
+/* Main Content */
 
 .round-end-content {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 48px 20px 32px;
+    padding: 24px 20px 100px; /* Add bottom padding for fixed button */
     min-height: calc(100vh - 60px); /* Account for header */
-    justify-content: center;
-    gap: 64px;
+    justify-content: flex-start;
+    gap: 48px;
     text-align: center;
+    margin-top: 30px;
 }
 
 /* Celebration Visual */
@@ -101,7 +48,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
+    margin-bottom: 0;
+    animation: celebrationPop 0.8s ease-out 0.2s both;
 }
 
 .hands-images {
@@ -112,62 +60,67 @@ body {
 }
 
 .hand-high-five {
-    width: 80px;
-    height: 80px;
+    width: 178px;
+    height: 178px;
     object-fit: contain;
-    animation: handClap 1.2s ease-in-out infinite;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+    animation: handCelebrate 2s ease-in-out 1;
+    filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.15));
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 2;
 }
 
 /* Sparkle Dots */
 .sparkle-dots {
     position: absolute;
-    width: 200px;
-    height: 200px;
+    width: 240px;
+    height: 240px;
     pointer-events: none;
+    z-index: 1;
 }
 
 .sparkle-dot {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     background: var(--color-skyblue-400);
     border-radius: 50%;
     opacity: 0;
+    box-shadow: 0 0 8px rgba(91, 204, 242, 0.4);
 }
 
 .sparkle-1 {
     top: 20%;
     left: 15%;
-    animation: sparkleFloat 2s ease-in-out 0.5s infinite;
+    animation: sparkleFloat 2s ease-in-out 0.5s 1;
 }
 
 .sparkle-2 {
     top: 30%;
     right: 10%;
     background: var(--color-mint-400);
-    animation: sparkleFloat 2s ease-in-out 1s infinite;
+    animation: sparkleFloat 2s ease-in-out 1s 1;
 }
 
 .sparkle-3 {
     bottom: 25%;
     left: 20%;
     background: var(--color-sherbert-400);
-    animation: sparkleFloat 2s ease-in-out 1.5s infinite;
+    animation: sparkleFloat 2s ease-in-out 1.5s 1;
 }
 
 .sparkle-4 {
     top: 15%;
     right: 25%;
     background: var(--color-twilight-400);
-    animation: sparkleFloat 2s ease-in-out 0.8s infinite;
+    animation: sparkleFloat 2s ease-in-out 0.8s 1;
 }
 
 .sparkle-5 {
     bottom: 35%;
     right: 30%;
     background: var(--color-rosewater);
-    animation: sparkleFloat 2s ease-in-out 1.2s infinite;
+    animation: sparkleFloat 2s ease-in-out 1.2s 1;
 }
 
 /* Round Info */
@@ -182,6 +135,16 @@ body {
     font-weight: 700;
     color: var(--sys-text-primary);
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.round-text,
+.complete-text {
+    display: block;
 }
 
 /* XP Section */
@@ -189,15 +152,33 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 4px;
 }
 
 .xp-label {
     font-family: var(--typography-fontFamily);
-    font-size: 16px;
-    font-weight: 400;
+    font-size: var(--typography-size-subheading-four);
+    font-weight: var(--typography-weight-subheading-four);
+    line-height: var(--typography-lineHeight-subheading-four);
     color: var(--sys-text-secondary);
     margin: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+}
+
+.xp-label.multiplier {
+    color: var(--sys-text-primary);
+    transform: scale(1.1);
+}
+
+.xp-label.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.xp-label.fade-in {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .xp-display {
@@ -225,10 +206,15 @@ body {
     object-fit: contain;
 }
 
-/* Action Section */
+/* Action Section - Fixed Bottom Treatment */
 .action-section {
-    width: 100%;
-    max-width: 400px;
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 440px;
+    z-index: 100;
 }
 
 .continue-btn {
@@ -236,17 +222,18 @@ body {
     background: var(--sys-interactive-bg-primary-default);
     color: white;
     border: none;
-    padding: 20px;
+    padding: 16px 32px;
     border-radius: var(--radius-full);
     font-family: var(--typography-fontFamily);
     font-size: var(--typography-size-subheading-three);
+    font-weight: var(--typography-fontWeight-subheading-three);
     line-height: var(--typography-lineHeight-subheading-three);
-    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
     min-height: 64px;
+    box-shadow: var(--shadow-large);
 }
 
 .continue-btn::before {
@@ -325,6 +312,40 @@ body {
 }
 
 /* Animations */
+@keyframes contentFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes celebrationPop {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes handCelebrate {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    25% {
+        transform: scale(1.05) rotate(-2deg);
+    }
+    75% {
+        transform: scale(1.05) rotate(2deg);
+    }
+}
+
 @keyframes handClap {
     0%, 100% {
         transform: scale(1) rotate(0deg);
