@@ -2563,12 +2563,9 @@ function showFeedback(isCorrect) {
             // Check if this is the last question in the round (question #10)
             const isLastQuestion = (questionsAnsweredInRound + 1) >= QUESTIONS_PER_ROUND;
             
-            // Play streak-based audio (capped at 5)
-            const audioStreak = Math.min(correctStreak, 5);
-            const audioKey = `correct${audioStreak}`;
-            
-            console.log(`🎵 Playing streak audio: ${audioKey} (streak: ${correctStreak})`);
-            audioManager.play(audioKey);
+            // Use the new audio manager method that handles both single and build modes
+            console.log(`🎵 Playing correct answer audio (mode: ${audioManager.getAudioMode()}, streak: ${correctStreak})`);
+            audioManager.playCorrectAnswer(correctStreak);
             
             // If it's the last question, also schedule progress loop for round end screen
             if (isLastQuestion) {
@@ -3997,6 +3994,16 @@ function updateDebugUI() {
                 option.classList.remove('selected');
                 option.textContent = 'Show API/CORRECT badges';
             }
+        } else if (type === 'audio-mode') {
+            // Handle audio mode selection state
+            if (typeof audioManager !== 'undefined') {
+                const currentMode = audioManager.getAudioMode();
+                if (value === currentMode) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            }
         }
         // For other types, preserve their existing state
     });
@@ -4281,6 +4288,25 @@ function handleDebugOptionClick(option) {
     } else if (type === 'badge-toggle') {
         // Toggle badge visibility
         toggleBadgeVisibility();
+    } else if (type === 'audio-mode') {
+        // Handle audio mode selection
+        if (typeof audioManager !== 'undefined') {
+            audioManager.setAudioMode(value);
+            
+            // Update UI to show selection
+            const audioOptions = document.querySelectorAll('[data-type="audio-mode"]');
+            audioOptions.forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.dataset.value === value) {
+                    opt.classList.add('selected');
+                }
+            });
+            
+            console.log(`🎵 Audio mode changed to: ${value}`);
+            showToast(`Audio mode: ${value === 'single' ? 'Single' : 'Build'}`, 2000);
+        } else {
+            console.warn('Audio manager not available');
+        }
     }
 }
 
