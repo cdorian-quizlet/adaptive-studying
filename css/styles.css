@@ -1665,11 +1665,16 @@ body {
     width: 32px;
     height: 32px;
     transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Color plus and library icons gray600 */
+.nav-items .nav-item .nav-icon[src*="plus"],
+.nav-items .nav-item .nav-icon[src*="library"] {
     filter: brightness(0) saturate(100%) invert(35%) sepia(15%) saturate(435%) hue-rotate(202deg) brightness(95%) contrast(90%);
 }
 
-/* Specific sizing for quizlet-plus-icon */
-.nav-items .nav-item .nav-icon[src*="quizlet-plus-icon"] {
+/* Specific sizing for library icon */
+.nav-items .nav-item .nav-icon[src*="library"] {
     width: 36px;
     height: 32px;
 }
@@ -1797,11 +1802,12 @@ body {
 .fab {
     width: 64px;
     height: 64px;
-    border-radius: 50%;
-    background: var(--color-twilight-500);
+    border-radius: 200px var(--radius-full, 200px) 200px 200px;
+    border: 1px solid var(--border-transparent, rgba(255, 255, 255, 0.00));
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: 0 var(--shadow-offset-medium, 4px) var(--shadow-blur-large, 32px) var(--shadow-spread-none, 0) rgba(40, 46, 62, 0.20);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 0.5px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1810,10 +1816,6 @@ body {
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 
-        0 8px 32px rgba(66, 85, 255, 0.3),
-        0 1px 0px rgba(255, 255, 255, 0.15) inset,
-        0 -1px 0px rgba(0, 0, 0, 0.05) inset;
 }
 
 /* FAB Open State - Secondary Colors */
@@ -1847,19 +1849,18 @@ body {
 }
 
 .fab-icon {
-    width: 24px;
-    height: 24px;
-    filter: brightness(0) saturate(100%) invert(100%);
+    width: 48px;
+    height: 48px;
+    filter: none;
     position: relative;
     z-index: 1;
     transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
-                height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
-                filter 0s; /* Instant color change */
+                height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* FAB Icon in Open State */
 .fab.open .fab-icon {
-    filter: brightness(0) saturate(100%) invert(24%) sepia(93%) saturate(1745%) hue-rotate(232deg) brightness(102%) contrast(104%);
+    filter: none;
 }
 
 /* Remove browser default focus outline */

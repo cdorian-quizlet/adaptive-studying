@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What would you like to do?</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/ai-coach-styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body class="ai-coach">
+    <div class="app-container">
+        <!-- Header -->
+        <div class="ai-coach-header">
+            <button class="header-menu-button" id="menuButton" aria-label="Menu">
+                <span class="material-icons-round">more_horiz</span>
+            </button>
+            <button class="header-dropdown-button" id="dropdownButton" aria-label="Dropdown">
+                <span class="material-icons-round">expand_more</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="ai-coach-content" id="initialView">
+            <!-- Gradient Glow Background -->
+            <img src="../images/gradient-glow.png" alt="" class="gradient-glow-bg" aria-hidden="true">
+            
+            <h1 class="ai-coach-title heading-2">What would you like to do?</h1>
+            
+            <div class="ai-coach-options">
+                <button class="ai-coach-option" data-action="cram">
+                    <span class="subheading-2">Help me cram</span>
+                </button>
+                <button class="ai-coach-option" data-action="quiz">
+                    <span class="subheading-2">Quiz me</span>
+                </button>
+                <button class="ai-coach-option" data-action="exam">
+                    <span class="subheading-2">Prep for an exam</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Interface (hidden initially) -->
+        <div class="ai-coach-chat-container" id="chatView" style="display: none;">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Bottom Input Section -->
+        <div class="ai-coach-bottom">
+            <div class="study-question-input-container">
+                <div class="input-row-1">
+                    <input 
+                        type="text" 
+                        id="studyQuestionInput" 
+                        class="study-question-input body-3" 
+                        placeholder="Type your study question"
+                    />
+                </div>
+                <div class="input-row-2">
+                    <button class="add-button" id="addButton" aria-label="Add">
+                        <span class="material-icons-round">add</span>
+                    </button>
+                    <button class="submit-button" id="submitButton" aria-label="Submit">
+                        <span class="material-icons-round">arrow_upward</span>
+                    </button>
+                </div>
+            </div>
+            <p class="enhanced-by-ai subheading-5 text-secondary">Enhanced by AI</p>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/ai-coach.js"></script>
+</body>
+</html>
+

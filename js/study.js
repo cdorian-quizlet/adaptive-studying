@@ -4350,7 +4350,7 @@ function handleDebugOptionClick(option) {
             });
             
             console.log(`🎵 Audio mode changed to: ${value}`);
-            showToast(`Audio mode: ${value === 'single' ? 'Single' : 'Build'}`, 2000);
+            showToast(`Audio: ${value.toUpperCase()}${value === 'c' ? ' (Default)' : ''}`, 2000);
         } else {
             console.warn('Audio manager not available');
         }
@@ -4405,22 +4405,33 @@ function initializeBadgeToggle() {
 
 // Initialize question type multi-select state
 function initializeQuestionTypes() {
-    // Load saved selection from localStorage or use default
-    const savedTypes = localStorage.getItem('debugSelectedQuestionTypes');
-    console.log('🔍 Raw data from localStorage:', savedTypes);
+    // Check URL parameters for flashcards-only mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
     
-    if (savedTypes) {
-        try {
-            selectedQuestionTypes = JSON.parse(savedTypes);
-            console.log('✅ Successfully parsed from localStorage:', selectedQuestionTypes);
-        } catch (error) {
-            console.warn('❌ Failed to parse saved question types, using defaults:', error);
+    if (mode === 'flashcards-only') {
+        // Force flashcards-only mode
+        selectedQuestionTypes = ['flashcard'];
+        localStorage.setItem('debugSelectedQuestionTypes', JSON.stringify(selectedQuestionTypes));
+        console.log('🎴 Flashcards-only mode activated from URL parameter');
+    } else {
+        // Load saved selection from localStorage or use default
+        const savedTypes = localStorage.getItem('debugSelectedQuestionTypes');
+        console.log('🔍 Raw data from localStorage:', savedTypes);
+        
+        if (savedTypes) {
+            try {
+                selectedQuestionTypes = JSON.parse(savedTypes);
+                console.log('✅ Successfully parsed from localStorage:', selectedQuestionTypes);
+            } catch (error) {
+                console.warn('❌ Failed to parse saved question types, using defaults:', error);
+                selectedQuestionTypes = ['multiple_choice', 'flashcard', 'written', 'matching'];
+            }
+        } else {
+            console.log('📝 No saved data found, using defaults');
+            // Set defaults if no saved data
             selectedQuestionTypes = ['multiple_choice', 'flashcard', 'written', 'matching'];
         }
-    } else {
-        console.log('📝 No saved data found, using defaults');
-        // Set defaults if no saved data
-        selectedQuestionTypes = ['multiple_choice', 'flashcard', 'written', 'matching'];
     }
     
     // Clean up any duplicates that might exist from previous bugs

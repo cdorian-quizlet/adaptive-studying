@@ -319,8 +319,9 @@ function initializeFloatingBottomBar() {
     if (createFab) {
         createFab.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('Create FAB clicked, current state:', fabIsOpen ? 'open' : 'closed');
-            toggleFabMenu();
+            console.log('Create FAB clicked - navigating to AI coach');
+            // Navigate to AI coach screen
+            window.location.href = 'html/ai-coach.html';
         });
     }
     

@@ -605,6 +605,22 @@ function updateOverviewCardProgress() {
         console.error('❌ [STUDY PLAN] circularProgressView element not found');
     }
     
+    // Force reload study path data to ensure we have the latest information
+    const savedData = localStorage.getItem('studyPathData');
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            Object.assign(studyPathData, parsed);
+            console.log('🔄 [STUDY PLAN] Refreshed studyPathData for progress calculation:', {
+                currentRound: studyPathData.currentRound,
+                completedRounds: studyPathData.completedRounds,
+                currentRoundProgress: studyPathData.currentRoundProgress
+            });
+        } catch (error) {
+            console.error('Error refreshing study path data:', error);
+        }
+    }
+    
     // Use simplified progress calculation directly
     let overallProgressPercentage = calculateOverallPlanProgress();
     console.log('🔍 DEBUG: [STUDY PLAN] Using simplified progress calculation:', overallProgressPercentage);
@@ -882,93 +898,109 @@ document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
         console.log('🔄 STUDY PLAN BECAME VISIBLE - Refreshing progress data');
         
-        // Debug current localStorage state
-        const currentRoundProgressLS = localStorage.getItem('currentRoundProgress');
-        const currentRoundNumberLS = localStorage.getItem('currentRoundNumber');
-        const studyPathDataLS = localStorage.getItem('studyPathData');
-        
-        console.log('📱 VISIBILITY CHANGE - Current localStorage:', {
-            currentRoundProgress: currentRoundProgressLS,
-            currentRoundNumber: currentRoundNumberLS,
-            studyPathData: studyPathDataLS ? JSON.parse(studyPathDataLS) : null,
-            fromQuestionScreen: sessionStorage.getItem('fromQuestionScreen')
-        });
-
-        // Store current progress before updating
-        const currentRound = studyPathData.currentRound;
-        const currentProgress = studyPathData.currentRoundProgress;
-        
-        console.log('📊 BEFORE REFRESH - studyPathData:', {
-            currentRound,
-            currentProgress,
-            completedRounds: studyPathData.completedRounds
-        });
-
-        // Load new data from localStorage (no adaptive learning dependency)
-        console.log('📥 Loading studyPathData from localStorage...');
-        loadStudyPathData();
-        
-        console.log('📊 AFTER REFRESH - studyPathData:', {
-            currentRound: studyPathData.currentRound,
-            currentProgress: studyPathData.currentRoundProgress,
-            completedRounds: studyPathData.completedRounds
-        });
-        
-        // Sync with home page using traditional calculation
-        syncDailyProgressWithHome();
-        
-        // Ensure current round progress is properly synced after loading
-        syncCurrentRoundProgressFromRoundData();
-
-        // Check if progress has been reset (no data in localStorage)
-        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
-        if (!hasProgressData) {
-            console.log('❌ Progress data has been reset, updating overview card');
-            // Reset overview card display for 0% state
-            const overviewTitle = document.querySelector('.overview-title');
-            
-            if (progressSummary) {
-                progressSummary.style.display = 'none'; // Hide progress summary for 0% state
-            }
-            if (overviewTitle) {
-                overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
-            }
-            
-            // Reset circular progress (no animation for reset)
-            updateCircularProgress(0, false);
-            
-            // Ensure circular view is shown
-            showCircularProgress();
-            
-            return;
-        }
-
-        // Check if current round progress increased and trigger animation
-        const newProgress = studyPathData.currentRoundProgress;
-        console.log('🎯 PROGRESS COMPARISON:', {
-            oldRound: currentRound,
-            newRound: studyPathData.currentRound,
-            oldProgress: currentProgress,
-            newProgress: newProgress,
-            progressIncreased: studyPathData.currentRound === currentRound && newProgress > currentProgress
-        });
-        
-        if (studyPathData.currentRound === currentRound && newProgress > currentProgress) {
-            console.log(`📈 Progress increased from ${currentProgress} to ${newProgress} for round ${currentRound}`);
-            previousProgress.set(currentRound, currentProgress);
-            setTimeout(() => {
-                animateProgressUpdate(currentRound, currentProgress, newProgress);
-            }, 100); // Small delay to ensure DOM is ready
-        } else {
-            console.log('🔄 No progress increase detected, calling updateUI');
-            updateUI();
-        }
-        
-        // Force overview card update after everything
+        // Add a delay to ensure DOM is ready and match the initial load timing
         setTimeout(() => {
-            console.log('🔄 Force updating overview card after visibility change...');
-            updateOverviewCardProgress();
-        }, 500);
+            // Debug current localStorage state
+            const currentRoundProgressLS = localStorage.getItem('currentRoundProgress');
+            const currentRoundNumberLS = localStorage.getItem('currentRoundNumber');
+            const studyPathDataLS = localStorage.getItem('studyPathData');
+            
+            console.log('📱 VISIBILITY CHANGE - Current localStorage:', {
+                currentRoundProgress: currentRoundProgressLS,
+                currentRoundNumber: currentRoundNumberLS,
+                studyPathData: studyPathDataLS ? JSON.parse(studyPathDataLS) : null,
+                fromQuestionScreen: sessionStorage.getItem('fromQuestionScreen')
+            });
+
+            // Store current progress before updating
+            const currentRound = studyPathData.currentRound;
+            const currentProgress = studyPathData.currentRoundProgress;
+            
+            console.log('📊 BEFORE REFRESH - studyPathData:', {
+                currentRound,
+                currentProgress,
+                completedRounds: studyPathData.completedRounds
+            });
+
+            // Load new data from localStorage (no adaptive learning dependency)
+            console.log('📥 Loading studyPathData from localStorage...');
+            loadStudyPathData();
+            
+            console.log('📊 AFTER REFRESH - studyPathData:', {
+                currentRound: studyPathData.currentRound,
+                currentProgress: studyPathData.currentRoundProgress,
+                completedRounds: studyPathData.completedRounds
+            });
+            
+            // Use the same comprehensive refresh logic as initial page load
+            const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+            if (!hasProgressData) {
+                console.log('❌ Progress data has been reset, updating overview card');
+                // Reset overview card display for 0% state
+                const overviewTitle = document.querySelector('.overview-title');
+                
+                if (progressSummary) {
+                    progressSummary.style.display = 'none'; // Hide progress summary for 0% state
+                }
+                if (overviewTitle) {
+                    const examDate = formatExamDate();
+                    if (examDate) {
+                        overviewTitle.textContent = `Let's get ready for your test ${examDate}`;
+                    } else {
+                        overviewTitle.textContent = "let's get ready for Exam 1. You got this!";
+                    }
+                }
+                
+                // Initialize circular progress properly to start from 0% (with visible pill)
+                initializeProgressRing();
+                
+                // Reset circular progress and ensure circular view is shown
+                updateCircularProgress(0, false); // Don't animate the initial 0% reset
+                
+                // Make sure circular view is visible and add zero-state class
+                const circularView = document.getElementById('circularProgressView');
+                const trendView = document.getElementById('trendGraphView');
+                if (circularView) {
+                    circularView.style.display = 'flex';
+                    circularView.classList.add('zero-state');
+                }
+                if (trendView) trendView.style.display = 'none';
+            } else {
+                // Use simplified sync with traditional calculation
+                syncDailyProgressWithHome();
+            }
+            
+            // Ensure current round progress is properly synced after loading
+            syncCurrentRoundProgressFromRoundData();
+
+            // Check if current round progress increased and trigger animation
+            const newProgress = studyPathData.currentRoundProgress;
+            console.log('🎯 PROGRESS COMPARISON:', {
+                oldRound: currentRound,
+                newRound: studyPathData.currentRound,
+                oldProgress: currentProgress,
+                newProgress: newProgress,
+                progressIncreased: studyPathData.currentRound === currentRound && newProgress > currentProgress
+            });
+            
+            if (studyPathData.currentRound === currentRound && newProgress > currentProgress) {
+                console.log(`📈 Progress increased from ${currentProgress} to ${newProgress} for round ${currentRound}`);
+                previousProgress.set(currentRound, currentProgress);
+                setTimeout(() => {
+                    animateProgressUpdate(currentRound, currentProgress, newProgress);
+                }, 100); // Small delay to ensure DOM is ready
+            } else {
+                console.log('🔄 No progress increase detected, calling updateUI');
+                updateUI();
+            }
+            
+            // Force a comprehensive update to ensure everything is in sync
+            setTimeout(() => {
+                console.log('🔄 Final comprehensive update after visibility change...');
+                updateOverviewCardProgress();
+                updatePathSteps();
+            }, 100);
+        }, 200); // Match the initial page load delay
     }
 });
 
@@ -1081,26 +1113,26 @@ function generatePathStepsHTML() {
             <div class="path-step" data-round="${roundNumber}">
                 <div class="path-step-main">
                     <div class="step-indicator">
-                        <div class="step-circle">
-                            <span class="material-icons-round step-icon loaded">star_outline</span>
-                        </div>
                         ${hasNextStep ? '<div class="step-line"></div>' : ''}
                     </div>
                     <div class="step-content">
-                        <div class="step-text-group">
-                            <h3 class="step-title">${concept}</h3>
-                            <div class="step-progress">
-                                <div class="step-progress-bar">
-                                    <div class="step-progress-fill" style="width: 0%"></div>
-                                </div>
-                                <span class="step-progress-text">0/${studyPathData.questionsPerRound}</span>
+                        <div class="step-title-group">
+                            <div class="step-circle">
+                                <span class="material-icons-round step-icon loaded">star_outline</span>
                             </div>
+                            <h3 class="step-title">${concept}</h3>
                         </div>
                         <div class="step-status" id="round${roundNumber}Status">
                             <span class="material-icons-round loaded">play_arrow</span>
                             <span class="status-text">Start</span>
                         </div>
                     </div>
+                </div>
+                <div class="step-progress">
+                    <div class="step-progress-bar">
+                        <div class="step-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="step-progress-text">0/${studyPathData.questionsPerRound}</span>
                 </div>
                 <div class="step-accordion-content">
                     ${getAccordionContent(roundNumber)}
@@ -1450,7 +1482,7 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
     const stepProgressBar = step.querySelector('.step-progress-bar');
     if (oldPercentage === 0) {
         stepProgressFill.style.width = '8px';
-        stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+        stepProgressFill.style.background = 'var(--color-gray-400)'; // Gray for 0% progress
         if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
     } else {
         stepProgressFill.style.width = `${oldPercentage}%`;
@@ -1495,7 +1527,7 @@ function animateProgressUpdate(roundNumber, oldProgress, newProgress) {
     setTimeout(() => {
         if (newPercentage === 0) {
             stepProgressFill.style.width = '8px';
-            stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+            stepProgressFill.style.background = 'var(--color-gray-400)'; // Gray for 0% progress
             if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
         } else {
             stepProgressFill.style.width = `${newPercentage}%`;
@@ -1777,7 +1809,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         const stepProgressBar = step.querySelector('.step-progress-bar');
         if (progressPercentage === 0) {
             stepProgressFill.style.width = '8px';
-            stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+            stepProgressFill.style.background = 'var(--color-gray-400)'; // Gray for 0% progress
             if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
         } else {
             stepProgressFill.style.width = `${progressPercentage}%`;
@@ -1833,7 +1865,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepStatus.classList.remove('in-progress');
         
         stepProgressFill.style.width = '0%';
-        stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for disabled/next rounds
+        stepProgressFill.style.background = 'var(--color-gray-400)'; // Gray for disabled/next rounds
         const stepProgressBar = step.querySelector('.step-progress-bar');
         if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for disabled
         stepProgress.classList.remove('has-progress');
@@ -1860,7 +1892,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         stepStatus.classList.add('next');
         
         stepProgressFill.style.width = '0%';
-        stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for disabled/next rounds
+        stepProgressFill.style.background = 'var(--color-gray-400)'; // Gray for disabled/next rounds
         const stepProgressBar = step.querySelector('.step-progress-bar');
         if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for disabled
         stepProgress.classList.remove('has-progress');
@@ -1890,7 +1922,7 @@ function updateRoundStep(step, stepCircle, stepLine, stepStatus, stepProgressFil
         const stepProgressBar = step.querySelector('.step-progress-bar');
         if (progressPercentage === 0) {
             stepProgressFill.style.width = '8px';
-            stepProgressFill.style.background = 'var(--color-gray-500)'; // Gray for 0% progress
+            stepProgressFill.style.background = 'var(--color-gray-400)'; // Gray for 0% progress
             if (stepProgressBar) stepProgressBar.style.background = 'var(--color-gray-200)'; // Gray background for 0%
         } else {
             stepProgressFill.style.width = `${progressPercentage}%`;
@@ -3567,6 +3599,77 @@ window.debugOverviewCard = function() {
             overviewTitleText: overviewTitle?.textContent
         });
     }, 500);
+};
+
+// Test function to verify progress refresh is working correctly
+window.testProgressRefresh = function() {
+    console.log('🧪 Testing progress refresh mechanism...');
+    
+    // Get current state
+    const currentState = {
+        studyPathData: JSON.parse(JSON.stringify(studyPathData)),
+        localStorage: {
+            studyPathData: localStorage.getItem('studyPathData'),
+            currentRoundProgress: localStorage.getItem('currentRoundProgress'),
+            currentRoundNumber: localStorage.getItem('currentRoundNumber')
+        },
+        ui: {
+            progressSummaryText: document.getElementById('progressSummary')?.textContent,
+            progressSummaryVisible: document.getElementById('progressSummary')?.style.display !== 'none',
+            circularProgressText: document.getElementById('progressPercentageText')?.textContent,
+            overviewTitleText: document.querySelector('.overview-title')?.textContent
+        }
+    };
+    
+    console.log('🔍 Current state before refresh:', currentState);
+    
+    // Simulate the refresh process
+    console.log('🔄 Simulating visibility change refresh...');
+    
+    // Force a complete refresh like the visibility change handler does
+    setTimeout(() => {
+        loadStudyPathData();
+        
+        const hasProgressData = localStorage.getItem('studyPathData') || localStorage.getItem('dailyProgress');
+        if (!hasProgressData) {
+            console.log('❌ No progress data found during test');
+        } else {
+            syncDailyProgressWithHome();
+        }
+        
+        syncCurrentRoundProgressFromRoundData();
+        updateOverviewCardProgress();
+        updatePathSteps();
+        
+        // Get state after refresh
+        const afterState = {
+            studyPathData: JSON.parse(JSON.stringify(studyPathData)),
+            localStorage: {
+                studyPathData: localStorage.getItem('studyPathData'),
+                currentRoundProgress: localStorage.getItem('currentRoundProgress'),
+                currentRoundNumber: localStorage.getItem('currentRoundNumber')
+            },
+            ui: {
+                progressSummaryText: document.getElementById('progressSummary')?.textContent,
+                progressSummaryVisible: document.getElementById('progressSummary')?.style.display !== 'none',
+                circularProgressText: document.getElementById('progressPercentageText')?.textContent,
+                overviewTitleText: document.querySelector('.overview-title')?.textContent
+            }
+        };
+        
+        console.log('🔍 State after refresh:', afterState);
+        
+        // Compare states
+        const progressChanged = currentState.ui.progressSummaryText !== afterState.ui.progressSummaryText ||
+                              currentState.ui.circularProgressText !== afterState.ui.circularProgressText;
+        
+        console.log('✅ Refresh test complete:', {
+            progressChanged,
+            beforeProgress: currentState.ui.circularProgressText,
+            afterProgress: afterState.ui.circularProgressText
+        });
+        
+    }, 200);
 };
 
 // Export functions for external use

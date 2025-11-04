@@ -6,7 +6,7 @@ class AudioManager {
         this.audioCache = new Map();
         this.isMuted = localStorage.getItem('audioMuted') === 'true';
         this.volume = parseFloat(localStorage.getItem('audioVolume')) || 0.7;
-        this.audioMode = localStorage.getItem('debugAudioMode') || 'single'; // 'single' or 'build'
+        this.audioMode = localStorage.getItem('debugAudioMode') || 'c'; // 'c' or 'd'
     }
 
     // Preload audio files for better performance
@@ -58,16 +58,9 @@ class AudioManager {
 
     // Initialize common UI sounds
     initializeUISounds() {
-        // Streak-based correct answer sounds (build mode)
-        this.preload('correct1', '../audio/correct-1.wav');
-        this.preload('correct2', '../audio/correct-2.wav');
-        this.preload('correct3', '../audio/correct-3.wav');
-        this.preload('correct4', '../audio/correct-4.wav');
-        this.preload('correct5', '../audio/correct-5.wav');
-        
-        // Single correct answer sounds (single mode)
-        this.preload('correctSingle', '../audio/correct-short.mp3');
-        this.preload('correctLong', '../audio/correct-long.mp3');
+        // Correct answer sounds
+        this.preload('correctC', '../audio/c-correct.wav');
+        this.preload('correctD', '../audio/d-correct.wav');
         
         // Other sounds
         this.preload('progressLoop', '../audio/progress-loop.mp3');
@@ -83,12 +76,12 @@ class AudioManager {
 
     // Set audio mode for correct answers
     setAudioMode(mode) {
-        if (mode === 'single' || mode === 'build') {
+        if (mode === 'c' || mode === 'd') {
             this.audioMode = mode;
             localStorage.setItem('debugAudioMode', mode);
-            console.log(`🎵 Audio mode set to: ${mode}`);
+            console.log(`🎵 Audio mode set to: ${mode.toUpperCase()}`);
         } else {
-            console.warn(`🚫 Invalid audio mode: ${mode}. Use 'single' or 'build'.`);
+            console.warn(`🚫 Invalid audio mode: ${mode}. Use 'c' or 'd'.`);
         }
     }
 
@@ -99,19 +92,9 @@ class AudioManager {
 
     // Play correct answer audio based on current mode
     playCorrectAnswer(streak = 1, isLastQuestion = false) {
-        if (this.audioMode === 'single') {
-            // In single mode, use correct-long.mp3 for the last question, correct-short.mp3 for others
-            if (isLastQuestion) {
-                this.play('correctLong');
-            } else {
-                this.play('correctSingle');
-            }
-        } else {
-            // Build mode - use streak-based audio (capped at 5)
-            const audioStreak = Math.min(streak, 5);
-            const audioKey = `correct${audioStreak}`;
-            this.play(audioKey);
-        }
+        // Play the sound based on current mode (C or D)
+        const audioKey = `correct${this.audioMode.toUpperCase()}`;
+        this.play(audioKey);
     }
 }
 

@@ -1,0 +1,33 @@
+{
+  "name": "adaptive-studying-ai-coach-api",
+  "version": "1.0.0",
+  "description": "Backend API for AI Coach powered by OpenAI custom GPT",
+  "main": "ai-coach-endpoint.js",
+  "scripts": {
+    "start": "node ai-coach-endpoint.js",
+    "dev": "nodemon ai-coach-endpoint.js"
+  },
+  "keywords": [
+    "ai",
+    "coach",
+    "openai",
+    "gpt",
+    "study",
+    "education"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.20.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

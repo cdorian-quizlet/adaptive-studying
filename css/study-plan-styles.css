@@ -327,7 +327,7 @@ body {
 }
 
 .circular-progress.zero-state .progress-ring-fill {
-    stroke: var(--color-gray-500);
+    stroke: var(--color-gray-400);
 }
 
 .circular-progress.zero-state .progress-percentage {
@@ -445,8 +445,8 @@ body {
 
 .path-step-main {
     display: flex;
-    align-items: center;
-    gap: 16px;
+    align-items: flex-start; /* Align to top since step-circle is now inside content */
+    gap: 16px; /* Gap between step-indicator and step-content */
     margin-bottom: 8px; /* Default 8px spacing - consistent for all path steps including accordions */
     transition: margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -522,13 +522,13 @@ body {
 }
 
 .step-circle {
-    width: 64px;
-    height: 64px;
+    width: 40px;
+    height: 40px;
     border-radius: 16px; /* Rounded square for all rounds */
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-twilight-100);
+    background: transparent;
     transition: all 0.3s ease;
     color: var(--color-gray-500);
     background-image: url('../images/star-filled.png');
@@ -538,7 +538,7 @@ body {
 }
 
 .step-circle.completed {
-    background: var(--color-mint-200);
+    background: transparent;
     color: var(--sys-text-primary);
     border-radius: 16px;
     animation: checkmarkPulse 0.6s ease-out;
@@ -549,7 +549,7 @@ body {
 }
 
 .step-circle.in-progress {
-    background: var(--color-twilight-200);
+    background: transparent;
     color: var(--sys-text-primary);
     border-radius: 16px;
     background-image: url('../images/star-filled.png');
@@ -560,10 +560,10 @@ body {
 
 /* Next/future rounds - disabled state */
 .step-circle.next {
-    background: var(--color-gray-400);
+    background: transparent;
     color: var(--sys-text-primary);
     border-radius: 16px;
-    background-image: url('../images/star-filled-disabled.png');
+    background-image: url('../images/star-filled.png');
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -618,20 +618,30 @@ body {
     display: none;
 }
 
+/* Updated structure: step-title-group contains step-circle + step-title */
+.step-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Tight spacing between step-circle and step-title */
+}
+
 .step-content {
     flex: 1;
     display: flex;
     flex-direction: row;
-    align-items: center; /* Center align text group and status button */
+    align-items: center; /* Center align title-group and status button */
+    justify-content: space-between; /* Space between title-group and status button */
     gap: 16px;
     position: relative;
     width: 100%;
 }
 
-.step-text-group {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+/* Progress bar is now a separate block below the main content */
+.step-progress {
+    margin-top: 8px;
+    margin-left: 48px; /* Align with step-title (40px circle + 8px gap) */
+    display: none; /* Hide by default */
+    align-items: center;
     gap: 0;
 }
 
@@ -717,7 +727,7 @@ body {
 .step-vertical-spacer::before {
     content: '';
     position: absolute;
-    left: 28px; /* Center align with 64px step-circle, adjusted for 8px width (32px - 4px) */
+    left: 36px; /* Align with step-circle in step-title-group (16px step-indicator + 20px to circle center) */
     top: 0;
     width: 8px;
     height: 100%;
@@ -776,6 +786,7 @@ body {
     font-weight: 600;
     color: var(--sys-text-primary);
     margin: 0;
+    line-height: 24px; /* Proper line-height for 18px font-size */
 }
 
 .step-status {
@@ -899,10 +910,10 @@ body {
 
 /* Disabled appearance for rounds below current diagnostic - exclude diagnostics */
 .path-step.next .step-circle.next:not(.diagnostic) {
-    background: var(--color-gray-400);
+    background: transparent;
     color: var(--sys-text-primary);
     border-radius: 16px;
-    background-image: url('../images/star-filled-disabled.png');
+    background-image: url('../images/star-filled.png');
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
