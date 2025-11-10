@@ -62,6 +62,9 @@ class AudioManager {
         this.preload('correctC', '../audio/c-correct.wav');
         this.preload('correctD', '../audio/d-correct.wav');
         
+        // Incorrect answer sound
+        this.preload('incorrectAnswer', '../audio/incorrect-1.wav');
+        
         // Other sounds
         this.preload('progressLoop', '../audio/progress-loop.mp3');
         
@@ -71,7 +74,6 @@ class AudioManager {
         // this.preload('error', '../audio/error.mp3');
         // this.preload('roundComplete', '../audio/round-complete.mp3');
         // this.preload('levelUp', '../audio/level-up.mp3');
-        // this.preload('incorrectAnswer', '../audio/incorrect-answer.mp3');
     }
 
     // Set audio mode for correct answers

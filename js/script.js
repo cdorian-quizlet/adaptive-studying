@@ -320,8 +320,14 @@ function initializeFloatingBottomBar() {
         createFab.addEventListener('click', (e) => {
             e.stopPropagation();
             console.log('Create FAB clicked - navigating to AI coach');
-            // Navigate to AI coach screen
-            window.location.href = 'html/ai-coach.html';
+            
+            // Add fade out animation before navigating
+            document.body.classList.add('page-fade-out');
+            
+            setTimeout(() => {
+                // Navigate to AI coach screen
+                window.location.href = 'html/ai-coach.html';
+            }, 250);
         });
     }
     

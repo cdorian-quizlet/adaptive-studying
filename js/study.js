@@ -2590,7 +2590,7 @@ function showFeedback(isCorrect) {
             // Reset streak on incorrect answer
             correctStreak = 0;
             console.log('❌ Incorrect answer - streak reset to 0');
-            // audioManager.play('incorrectAnswer'); // Commented out until file exists
+            audioManager.play('incorrectAnswer');
         }
     }
     

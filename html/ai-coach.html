@@ -19,7 +19,7 @@
             <button class="header-menu-button" id="menuButton" aria-label="Menu">
                 <span class="material-icons-round">more_horiz</span>
             </button>
-            <button class="header-dropdown-button" id="dropdownButton" aria-label="Dropdown">
+            <button class="header-close-button" id="closeButton" aria-label="Close">
                 <span class="material-icons-round">expand_more</span>
             </button>
         </div>
@@ -29,17 +29,17 @@
             <!-- Gradient Glow Background -->
             <img src="../images/gradient-glow.png" alt="" class="gradient-glow-bg" aria-hidden="true">
             
-            <h1 class="ai-coach-title heading-2">What would you like to do?</h1>
+            <h1 class="ai-coach-title subheading-1">What would you like to do?</h1>
             
             <div class="ai-coach-options">
                 <button class="ai-coach-option" data-action="cram">
-                    <span class="subheading-2">Help me cram</span>
+                    <span class="subheading-3">Help me cram</span>
                 </button>
                 <button class="ai-coach-option" data-action="quiz">
-                    <span class="subheading-2">Quiz me</span>
+                    <span class="subheading-3">Quiz me</span>
                 </button>
                 <button class="ai-coach-option" data-action="exam">
-                    <span class="subheading-2">Prep for an exam</span>
+                    <span class="subheading-3">Prep for an exam</span>
                 </button>
             </div>
         </div>
@@ -53,27 +53,117 @@
 
         <!-- Bottom Input Section -->
         <div class="ai-coach-bottom">
-            <div class="study-question-input-container">
-                <div class="input-row-1">
-                    <input 
-                        type="text" 
-                        id="studyQuestionInput" 
-                        class="study-question-input body-3" 
-                        placeholder="Type your study question"
-                    />
+            <div class="ai-coach-bottom-wrapper">
+                <div class="study-question-input-container">
+                    <div class="input-row-attachments" id="attachmentsRow">
+                        <!-- Attachments will be dynamically added here -->
+                    </div>
+                    <div class="input-row-1">
+                        <textarea 
+                            id="studyQuestionInput" 
+                            class="study-question-input body-3" 
+                            placeholder="Type your study question"
+                            rows="1"
+                        ></textarea>
+                    </div>
+                    <div class="input-row-2">
+                        <button class="add-button" id="addButton" aria-label="Add">
+                            <span class="material-icons-round">add</span>
+                        </button>
+                        <button class="submit-button" id="submitButton" aria-label="Submit">
+                            <span class="material-icons-round">arrow_upward</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="input-row-2">
-                    <button class="add-button" id="addButton" aria-label="Add">
-                        <span class="material-icons-round">add</span>
-                    </button>
-                    <button class="submit-button" id="submitButton" aria-label="Submit">
-                        <span class="material-icons-round">arrow_upward</span>
-                    </button>
-                </div>
+                <p class="enhanced-by-ai subheading-5 text-secondary">Enhanced by AI</p>
             </div>
-            <p class="enhanced-by-ai subheading-5 text-secondary">Enhanced by AI</p>
         </div>
     </div>
+
+    <!-- Menu Bottom Sheet -->
+    <div class="ai-coach-menu-sheet" id="menuSheet">
+        <div class="menu-sheet-content">
+            <div class="menu-sheet-header">
+                <h3 class="subheading-2 text-primary">Options</h3>
+                <button class="close-menu-sheet" id="closeMenuSheet">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="menu-sheet-actions">
+                <button class="menu-action-button" id="newConversation">
+                    <span class="material-icons-round">refresh</span>
+                    <span class="subheading-3">New conversation</span>
+                </button>
+                <button class="menu-action-button" id="clearHistory">
+                    <span class="material-icons-round">delete_outline</span>
+                    <span class="subheading-3">Clear chat history</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Message Bottom Sheet -->
+    <div class="ai-coach-menu-sheet" id="reportSheet">
+        <div class="menu-sheet-content">
+            <div class="menu-sheet-header">
+                <h3 class="subheading-2 text-primary">Report message</h3>
+                <button class="close-menu-sheet" id="closeReportSheet">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="report-sheet-options">
+                <label class="report-option">
+                    <input type="radio" name="report-reason" value="intellectual-property">
+                    <span class="body-3">Intellectual property</span>
+                </label>
+                <label class="report-option">
+                    <input type="radio" name="report-reason" value="inaccurate-information">
+                    <span class="body-3">Inaccurate information</span>
+                </label>
+                <label class="report-option">
+                    <input type="radio" name="report-reason" value="partially-correct">
+                    <span class="body-3">Partially correct answer</span>
+                </label>
+                <label class="report-option">
+                    <input type="radio" name="report-reason" value="irrelevant-content">
+                    <span class="body-3">Irrelevant content</span>
+                </label>
+                <label class="report-option">
+                    <input type="radio" name="report-reason" value="something-else">
+                    <span class="body-3">Something else</span>
+                </label>
+            </div>
+            <button class="report-submit-button subheading-4" id="submitReport">
+                Submit
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload Bottom Sheet -->
+    <div class="ai-coach-menu-sheet" id="uploadSheet">
+        <div class="menu-sheet-content">
+            <div class="menu-sheet-header">
+                <h3 class="subheading-2 text-primary">Add to your message</h3>
+                <button class="close-menu-sheet" id="closeUploadSheet">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="menu-sheet-actions">
+                <button class="menu-action-button" id="uploadPhotoBtn">
+                    <span class="material-icons-round">add_a_photo</span>
+                    <span class="subheading-3">Upload a photo</span>
+                </button>
+                <button class="menu-action-button" id="selectFileBtn">
+                    <span class="material-icons-round">description</span>
+                    <span class="subheading-3">Select a file</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="photoInput" accept="image/*" style="display: none;">
+    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx" style="display: none;">
 
     <script src="../js/api.js"></script>
     <script src="../js/ai-coach.js"></script>
